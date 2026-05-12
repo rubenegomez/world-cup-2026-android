@@ -8,10 +8,11 @@ import com.example.worldcup2026.data.model.Group
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.repository.WorldCupRepository
 import kotlinx.coroutines.launch
+import com.example.worldcup2026.data.model.Team
 
 sealed class WorldCupUiState {
     object Loading : WorldCupUiState()
-    data class Success(val groups: List<Group>, val matches: List<Match>) : WorldCupUiState()
+    data class Success(val groups: List<Group>, val matches: List<Match>, val teams: List<Team>) : WorldCupUiState()
     data class Error(val message: String) : WorldCupUiState()
 }
 
@@ -30,7 +31,8 @@ class WorldCupViewModel(private val repository: WorldCupRepository = WorldCupRep
             try {
                 val groups = repository.getMockGroups()
                 val matches = repository.getMockMatches()
-                _uiState.value = WorldCupUiState.Success(groups, matches)
+                val teams = repository.getAllTeams()
+                _uiState.value = WorldCupUiState.Success(groups, matches, teams)
             } catch (e: Exception) {
                 _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
             }
