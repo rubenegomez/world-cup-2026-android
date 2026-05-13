@@ -1,75 +1,100 @@
 package com.example.worldcup2026.data.repository
 
-import com.example.worldcup2026.data.model.Group
-import com.example.worldcup2026.data.model.Match
-import com.example.worldcup2026.data.model.Team
+import com.example.worldcup2026.data.local.MatchDao
+import com.example.worldcup2026.data.local.MatchEntity
+import com.example.worldcup2026.data.model.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
-class WorldCupRepository {
+class WorldCupRepository(private val matchDao: MatchDao) {
 
-    // Mock data for initial development
     suspend fun getMockGroups(): List<Group> {
-        delay(1000) // Simulate network delay
+        delay(100)
         return listOf(
-            Group("A", listOf(
-                Team(1, "USA", "https://flagcdn.com/w320/us.png", "A"),
-                Team(2, "Mexico", "https://flagcdn.com/w320/mx.png", "A"),
-                Team(3, "Canada", "https://flagcdn.com/w320/ca.png", "A"),
-                Team(4, "Argentina", "https://flagcdn.com/w320/ar.png", "A")
-            )),
-            Group("B", listOf(
-                Team(5, "Brazil", "https://flagcdn.com/w320/br.png", "B"),
-                Team(6, "France", "https://flagcdn.com/w320/fr.png", "B"),
-                Team(7, "Spain", "https://flagcdn.com/w320/es.png", "B"),
-                Team(8, "Japan", "https://flagcdn.com/w320/jp.png", "B")
-            ))
+            Group("A", listOf(createTeam(1, "México", "mx", "A"), createTeam(2, "Sudáfrica", "za", "A"), createTeam(3, "Corea Rep.", "kr", "A"), createTeam(4, "N. Zelanda", "nz", "A"))),
+            Group("B", listOf(createTeam(5, "Canadá", "ca", "B"), createTeam(6, "Bosnia", "ba", "B"), createTeam(7, "Qatar", "qa", "B"), createTeam(8, "Irak", "iq", "B"))),
+            Group("C", listOf(createTeam(9, "EE.UU.", "us", "C"), createTeam(10, "Paraguay", "py", "C"), createTeam(11, "Australia", "au", "C"), createTeam(12, "Jordania", "jo", "C"))),
+            Group("D", listOf(createTeam(13, "Francia", "fr", "D"), createTeam(14, "Senegal", "sn", "D"), createTeam(15, "Irán", "ir", "D"), createTeam(16, "Noruega", "no", "D"))),
+            Group("E", listOf(createTeam(17, "Alemania", "de", "E"), createTeam(18, "Ghana", "gh", "E"), createTeam(19, "Rep. Checa", "cz", "E"), createTeam(20, "Jamaica", "jm", "E"))),
+            Group("F", listOf(createTeam(21, "Brasil", "br", "F"), createTeam(22, "Marruecos", "ma", "F"), createTeam(23, "Suecia", "se", "F"), createTeam(24, "Túnez", "tn", "F"))),
+            Group("G", listOf(createTeam(25, "Argentina", "ar", "G"), createTeam(26, "Argelia", "dz", "G"), createTeam(27, "Austria", "at", "G"), createTeam(28, "Turquía", "tr", "G"))),
+            Group("H", listOf(createTeam(29, "Bélgica", "be", "H"), createTeam(30, "Egipto", "eg", "H"), createTeam(31, "Eslovaquia", "sk", "H"), createTeam(32, "Honduras", "hn", "H")))
         )
     }
 
-    suspend fun getMockMatches(): List<Match> {
-        delay(800)
-        val usa = Team(1, "USA", "https://flagcdn.com/w320/us.png", "A")
-        val mexico = Team(2, "Mexico", "https://flagcdn.com/w320/mx.png", "A")
-        
-        return listOf(
-            Match(101, usa, mexico, null, null, "2026-06-11 18:00", "Scheduled"),
-            Match(102, Team(3, "Canada", "https://flagcdn.com/w320/ca.png", "A"), Team(4, "Argentina", "https://flagcdn.com/w320/ar.png", "A"), null, null, "2026-06-12 20:00", "Scheduled")
-        )
+    private fun createTeam(id: Int, name: String, flagCode: String, group: String): Team {
+        return Team(id, name, "https://flagcdn.com/w160/$flagCode.png", group, emptyList())
+    }
+
+    private fun createPlaceholderTeam(name: String): Team {
+        return Team(-1, name, "", "Final", emptyList())
+    }
+
+    suspend fun getMatches(): List<Match> {
+        val allTeams = getAllTeams()
+        val savedMatches = matchDao.getAllMatches().first()
+        val matches = mutableListOf<Match>()
+        fun findTeam(name: String) = allTeams.find { it.name == name } ?: Team(0, name, "", "", emptyList())
+
+        // FASE DE GRUPOS
+        addMatchWithPersistence(matches, savedMatches, Match(1, findTeam("México"), findTeam("Sudáfrica"), null, null, null, null, "2026-06-11 CDMX", "Scheduled"))
+        addMatchWithPersistence(matches, savedMatches, Match(2, findTeam("Canadá"), findTeam("Bosnia"), null, null, null, null, "2026-06-12 Toronto", "Scheduled"))
+        addMatchWithPersistence(matches, savedMatches, Match(3, findTeam("EE.UU."), findTeam("Paraguay"), null, null, null, null, "2026-06-12 LA", "Scheduled"))
+
+        // DIECISEISAVOS (IDs 101-116)
+        for (i in 1..16) {
+            val date = if (i == 1) "2026-06-28 Los Ángeles" else "Por definir"
+            val home = if (i == 1) createPlaceholderTeam("2° Grupo A") else createPlaceholderTeam("Ganador $i")
+            val away = if (i == 1) createPlaceholderTeam("2° Grupo B") else createPlaceholderTeam("Rival $i")
+            addMatchWithPersistence(matches, savedMatches, Match(100 + i, home, away, null, null, null, null, date, "Scheduled"))
+        }
+
+        // OCTAVOS (IDs 117-124)
+        for (i in 1..8) {
+            addMatchWithPersistence(matches, savedMatches, Match(116 + i, createPlaceholderTeam("Ganador 16avo $i"), createPlaceholderTeam("Rival 16avo $i"), null, null, null, null, "Por definir", "Scheduled"))
+        }
+
+        // CUARTOS (IDs 125-128)
+        for (i in 1..4) {
+            addMatchWithPersistence(matches, savedMatches, Match(124 + i, createPlaceholderTeam("Ganador Octavos $i"), createPlaceholderTeam("Rival Octavos $i"), null, null, null, null, "Por definir", "Scheduled"))
+        }
+
+        // SEMIFINALES (IDs 129-130)
+        for (i in 1..2) {
+            addMatchWithPersistence(matches, savedMatches, Match(128 + i, createPlaceholderTeam("Ganador Cuartos $i"), createPlaceholderTeam("Rival Cuartos $i"), null, null, null, null, "Por definir", "Scheduled"))
+        }
+
+        // FINAL (131)
+        addMatchWithPersistence(matches, savedMatches, Match(131, createPlaceholderTeam("Ganador Semi 1"), createPlaceholderTeam("Ganador Semi 2"), null, null, null, null, "2026-07-19 NY/NJ", "Scheduled"))
+
+        // TERCER PUESTO (132)
+        addMatchWithPersistence(matches, savedMatches, Match(132, createPlaceholderTeam("Perdedor Semi 1"), createPlaceholderTeam("Perdedor Semi 2"), null, null, null, null, "2026-07-18 Miami", "Scheduled"))
+
+        return matches
+    }
+
+    private fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match) {
+        val saved = savedEntities.find { it.id == baseMatch.id }
+        if (saved != null) {
+            targetList.add(baseMatch.copy(
+                homeScore = saved.homeScore,
+                awayScore = saved.awayScore,
+                homePenalties = saved.homePenalties,
+                awayPenalties = saved.awayPenalties,
+                status = saved.status
+            ))
+        } else {
+            targetList.add(baseMatch)
+        }
+    }
+
+    suspend fun saveMatchScore(matchId: Int, homeScore: Int?, awayScore: Int?, homePenalties: Int? = null, awayPenalties: Int? = null) {
+        val status = if (homeScore != null && awayScore != null) "Finished" else "Scheduled"
+        matchDao.insertMatch(MatchEntity(matchId, homeScore, awayScore, homePenalties, awayPenalties, status))
     }
 
     suspend fun getAllTeams(): List<Team> {
-        delay(500)
-        // Mocking 48 teams for the World Cup
-        val mockTeams = mutableListOf<Team>()
-        
-        val someRealTeams = listOf(
-            Team(1, "USA", "https://flagcdn.com/w320/us.png", "A"),
-            Team(2, "Mexico", "https://flagcdn.com/w320/mx.png", "A"),
-            Team(3, "Canada", "https://flagcdn.com/w320/ca.png", "A"),
-            Team(4, "Argentina", "https://flagcdn.com/w320/ar.png", "A"),
-            Team(5, "Brazil", "https://flagcdn.com/w320/br.png", "B"),
-            Team(6, "France", "https://flagcdn.com/w320/fr.png", "B"),
-            Team(7, "Spain", "https://flagcdn.com/w320/es.png", "B"),
-            Team(8, "Japan", "https://flagcdn.com/w320/jp.png", "B"),
-            Team(9, "England", "https://flagcdn.com/w320/gb-eng.png", "C"),
-            Team(10, "Germany", "https://flagcdn.com/w320/de.png", "C"),
-            Team(11, "Italy", "https://flagcdn.com/w320/it.png", "C"),
-            Team(12, "Uruguay", "https://flagcdn.com/w320/uy.png", "C")
-        )
-        mockTeams.addAll(someRealTeams)
-
-        // Generate placeholders for the rest up to 48
-        val groups = listOf("D", "E", "F", "G", "H", "I", "J", "K", "L")
-        var idCounter = 13
-        
-        for (i in 13..48) {
-            val groupIndex = (i - 13) / 4
-            val assignedGroup = if (groupIndex < groups.size) groups[groupIndex] else "Unknown"
-            mockTeams.add(
-                Team(idCounter, "Team Placeholder $idCounter", "https://flagcdn.com/w320/xx.png", assignedGroup)
-            )
-            idCounter++
-        }
-        return mockTeams
+        return getMockGroups().flatMap { it.teams }
     }
 }

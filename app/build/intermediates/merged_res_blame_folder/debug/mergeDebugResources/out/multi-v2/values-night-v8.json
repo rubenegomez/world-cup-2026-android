@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.worldcup2026.app-mergeDebugResources-2:/values-night-v8/values-night-v8.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\ruben\\.gradle\\caches\\transforms-4\\7b1f42e94b3121b79a6fd39be8ef2bea\\transformed\\jetified-core-splashscreen-1.0.1\\res\\values-night-v8\\values-night-v8.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "85",
+                        "endOffsets": "136"
+                    }
+                }
+            ]
+        }
+    ]
+}

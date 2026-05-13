@@ -7,11 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.worldcup2026.ui.theme.WorldCup2026Theme
 import com.example.worldcup2026.ui.MainScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Instalamos el Splash nativo antes de super.onCreate
+        installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         setContent {
             WorldCup2026Theme {
