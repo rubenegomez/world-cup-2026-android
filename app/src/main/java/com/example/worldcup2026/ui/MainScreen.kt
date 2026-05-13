@@ -20,6 +20,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     val uiState by viewModel.uiState
     var selectedScreen by remember { mutableIntStateOf(0) }
     var showSplash by remember { mutableStateOf(true) }
+    var showVipDialog by remember { mutableStateOf(false) }
     
     // Almacenamos si ya se mostró el festejo para el campeón actual
     var showCelebration by remember { 
@@ -116,11 +117,21 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                     },
                                     onStatusChange = { id, status ->
                                         viewModel.updateMatchStatus(id, status)
+                                    },
+                                    onShowVipStats = {
+                                        showVipDialog = true
+                                    },
+                                    onPredictionChange = { id, winner, home, away ->
+                                        viewModel.updateMatchPrediction(id, winner, home, away)
                                     }
                                 )
                                 1 -> StandingsScreen(matches = state.matches)
                                 2 -> AboutScreen()
                             }
+                        }
+
+                        if (showVipDialog) {
+                            VipStatsDialog(onDismiss = { showVipDialog = false })
                         }
                     }
                     is WorldCupUiState.Error -> {

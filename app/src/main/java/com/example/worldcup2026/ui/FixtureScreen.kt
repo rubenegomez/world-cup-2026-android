@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,7 @@ import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 
 @Composable
@@ -34,7 +36,9 @@ fun FixtureScreen(
     matches: List<Match>,
     onScoreChange: (Int, Int?, Int?) -> Unit,
     onPenaltiesChange: (Int, Int?, Int?) -> Unit = { _, _, _ -> },
-    onStatusChange: (Int, String) -> Unit = { _, _ -> }
+    onStatusChange: (Int, String) -> Unit = { _, _ -> },
+    onShowVipStats: () -> Unit = {},
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit = { _, _, _, _ -> }
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
@@ -68,9 +72,9 @@ fun FixtureScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when (selectedTab) {
-                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange)
-                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange)
-                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange)
+                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
             }
         }
     }
@@ -81,7 +85,9 @@ fun KnockoutBracket(
     matches: List<Match>,
     onScoreChange: (Int, Int?, Int?) -> Unit,
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
-    onStatusChange: (Int, String) -> Unit
+    onStatusChange: (Int, String) -> Unit,
+    onShowVipStats: () -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
 ) {
     val rounds = listOf("DIECISEISAVOS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL")
     var selectedRound by remember { mutableStateOf(rounds[0]) }
@@ -121,8 +127,11 @@ fun KnockoutBracket(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange)
+            itemsIndexed(filteredMatches) { index, match ->
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                if ((index + 1) % 5 == 0) {
+                    SponsorCard(modifier = Modifier.padding(vertical = 8.dp))
+                }
             }
         }
     }
@@ -133,7 +142,9 @@ fun DayFilteredFixture(
     matches: List<Match>, 
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
-    onStatusChange: (Int, String) -> Unit
+    onStatusChange: (Int, String) -> Unit,
+    onShowVipStats: () -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
 ) {
     // Extraemos la fecha completa (Día DD/MM) para mostrarla y ordenarla
     val dates = matches.filter { it.id <= 100 }
@@ -172,8 +183,12 @@ fun DayFilteredFixture(
             contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange)
+            itemsIndexed(filteredMatches) { index, match ->
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                // En la vista por día, como hay pocos partidos, mostramos el sponsor cada 3 partidos
+                if ((index + 1) % 3 == 0) {
+                    SponsorCard(modifier = Modifier.padding(vertical = 8.dp))
+                }
             }
         }
     }
@@ -184,7 +199,9 @@ fun GroupFilteredFixture(
     matches: List<Match>, 
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
-    onStatusChange: (Int, String) -> Unit
+    onStatusChange: (Int, String) -> Unit,
+    onShowVipStats: () -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
 ) {
     val groups = matches.filter { it.id <= 100 }.map { it.homeTeam.group }.distinct().sorted()
     var selectedGroup by remember { mutableStateOf(if (groups.isNotEmpty()) groups.first() else "") }
@@ -205,8 +222,11 @@ fun GroupFilteredFixture(
             contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange)
+            itemsIndexed(filteredMatches) { index, match ->
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                if ((index + 1) % 5 == 0) {
+                    SponsorCard(modifier = Modifier.padding(vertical = 8.dp))
+                }
             }
         }
     }
@@ -217,7 +237,9 @@ fun MatchCard(
     match: Match, 
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
-    onStatusChange: (Int, String) -> Unit
+    onStatusChange: (Int, String) -> Unit,
+    onShowVipStats: () -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -259,7 +281,10 @@ fun MatchCard(
                     if (match.status == "Finished") {
                         Spacer(modifier = Modifier.width(8.dp))
                         TextButton(
-                            onClick = { onScoreChange(match.id, null, null) },
+                            onClick = { 
+                                onScoreChange(match.id, null, null)
+                                onPredictionChange(match.id, null, null, null)
+                            },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(24.dp)
                         ) {
@@ -341,7 +366,101 @@ fun MatchCard(
                 )
             }
 
-            // Sección de Penales (Solo si es eliminación y hay empate)
+            if (match.status == "Finished") {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { onShowVipStats() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("VER ESTADÍSTICAS VIP", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // SECCIÓN PRODE (Predicción)
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .padding(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("MI PRONÓSTICO (PRODE)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                if (match.status == "Scheduled") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Botones L E V (Solo marcan ganador, no ponen goles)
+                        PredictionChip(label = "L", selected = match.predictedWinner == "L") {
+                            onPredictionChange(match.id, "L", match.predictedHomeScore, match.predictedAwayScore)
+                        }
+                        PredictionChip(label = "E", selected = match.predictedWinner == "E") {
+                            onPredictionChange(match.id, "E", match.predictedHomeScore, match.predictedAwayScore)
+                        }
+                        PredictionChip(label = "V", selected = match.predictedWinner == "V") {
+                            onPredictionChange(match.id, "V", match.predictedHomeScore, match.predictedAwayScore)
+                        }
+                        
+                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp))
+                        
+                        PredictionInput(value = match.predictedHomeScore, onValueChange = { onPredictionChange(match.id, match.predictedWinner, it, match.predictedAwayScore) })
+                        Text(" - ", fontWeight = FontWeight.Bold)
+                        PredictionInput(value = match.predictedAwayScore, onValueChange = { onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, it) })
+                    }
+                } else {
+                    // Si ya terminó, mostramos el resultado de la predicción
+                    val realWinner = when {
+                        match.homeScore!! > match.awayScore!! -> "L"
+                        match.homeScore!! < match.awayScore!! -> "V"
+                        else -> "E"
+                    }
+                    
+                    val winnerPoints = if (match.predictedWinner == realWinner) 1 else 0
+                    val scorePoints = if (match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) 2 else 0
+                    val totalPoints = winnerPoints + scorePoints
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                "Ganador: ${match.predictedWinner ?: "-"} | Marcador: ${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (totalPoints > 0) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                if (totalPoints > 0) "+$totalPoints PUNTOS" else "0 PUNTOS",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (totalPoints > 0) Color(0xFF2E7D32) else Color.Red
+                            )
+                        }
+                    }
+                }
+            }
             if (match.id > 100 && match.homeScore != null && match.homeScore == match.awayScore) {
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
@@ -409,6 +528,58 @@ fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enable
             ) {
                 Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun PredictionInput(value: Int?, onValueChange: (Int?) -> Unit) {
+    Surface(
+        modifier = Modifier.size(width = 40.dp, height = 40.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            val textValue = value?.toString() ?: ""
+            androidx.compose.foundation.text.BasicTextField(
+                value = textValue,
+                onValueChange = {
+                    if (it.isEmpty()) onValueChange(null)
+                    else it.toIntOrNull()?.let { num -> if (num in 0..20) onValueChange(num) }
+                },
+                textStyle = MaterialTheme.typography.titleMedium.copy(
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                ),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun PredictionChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .size(32.dp)
+            .clickable { onClick() },
+        shape = CircleShape,
+        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)) else null
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }

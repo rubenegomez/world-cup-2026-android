@@ -1,4 +1,4 @@
-#Wed May 13 17:27:47 ART 2026
+#Wed May 13 19:11:11 ART 2026
 base.0=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.2=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\12\\classes.dex

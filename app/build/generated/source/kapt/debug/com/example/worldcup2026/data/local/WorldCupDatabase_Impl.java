@@ -31,12 +31,12 @@ public final class WorldCupDatabase_Impl extends WorldCupDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(1) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `matches` (`id` INTEGER NOT NULL, `homeScore` INTEGER, `awayScore` INTEGER, `homePenalties` INTEGER, `awayPenalties` INTEGER, `status` TEXT NOT NULL, PRIMARY KEY(`id`))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `matches` (`id` INTEGER NOT NULL, `homeScore` INTEGER, `awayScore` INTEGER, `homePenalties` INTEGER, `awayPenalties` INTEGER, `status` TEXT NOT NULL, `predictedWinner` TEXT, `predictedHomeScore` INTEGER, `predictedAwayScore` INTEGER, `homePossession` INTEGER, `awayPossession` INTEGER, `homeShots` INTEGER, `awayShots` INTEGER, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f96abc06630e72f3dab4dfb62e6baef6')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a935feabecf43b2c842f326e6c601aea')");
       }
 
       @Override
@@ -85,13 +85,20 @@ public final class WorldCupDatabase_Impl extends WorldCupDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsMatches = new HashMap<String, TableInfo.Column>(6);
+        final HashMap<String, TableInfo.Column> _columnsMatches = new HashMap<String, TableInfo.Column>(13);
         _columnsMatches.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatches.put("homeScore", new TableInfo.Column("homeScore", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatches.put("awayScore", new TableInfo.Column("awayScore", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatches.put("homePenalties", new TableInfo.Column("homePenalties", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatches.put("awayPenalties", new TableInfo.Column("awayPenalties", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsMatches.put("status", new TableInfo.Column("status", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("predictedWinner", new TableInfo.Column("predictedWinner", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("predictedHomeScore", new TableInfo.Column("predictedHomeScore", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("predictedAwayScore", new TableInfo.Column("predictedAwayScore", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("homePossession", new TableInfo.Column("homePossession", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("awayPossession", new TableInfo.Column("awayPossession", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("homeShots", new TableInfo.Column("homeShots", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsMatches.put("awayShots", new TableInfo.Column("awayShots", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysMatches = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesMatches = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoMatches = new TableInfo("matches", _columnsMatches, _foreignKeysMatches, _indicesMatches);
@@ -103,7 +110,7 @@ public final class WorldCupDatabase_Impl extends WorldCupDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "f96abc06630e72f3dab4dfb62e6baef6", "5b45a21b68f4e84b82ca2aa2838ace97");
+    }, "a935feabecf43b2c842f326e6c601aea", "374e50bc37d3956010d0ebe7a86debeb");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

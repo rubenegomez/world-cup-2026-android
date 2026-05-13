@@ -99,7 +99,14 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 awayScore = saved.awayScore,
                 homePenalties = saved.homePenalties,
                 awayPenalties = saved.awayPenalties,
-                status = saved.status
+                status = saved.status,
+                predictedWinner = saved.predictedWinner,
+                predictedHomeScore = saved.predictedHomeScore,
+                predictedAwayScore = saved.predictedAwayScore,
+                homePossession = saved.homePossession,
+                awayPossession = saved.awayPossession,
+                homeShots = saved.homeShots,
+                awayShots = saved.awayShots
             ))
         } else {
             targetList.add(baseMatch)
@@ -107,8 +114,42 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     }
 
     suspend fun saveMatchScore(matchId: Int, homeScore: Int?, awayScore: Int?, homePenalties: Int? = null, awayPenalties: Int? = null, status: String? = null) {
+        val saved = matchDao.getAllMatches().first().find { it.id == matchId }
         val finalStatus = status ?: if (homeScore != null && awayScore != null) "Finished" else "Scheduled"
-        matchDao.insertMatch(MatchEntity(matchId, homeScore, awayScore, homePenalties, awayPenalties, finalStatus))
+        matchDao.insertMatch(MatchEntity(
+            matchId, 
+            homeScore, 
+            awayScore, 
+            homePenalties, 
+            awayPenalties, 
+            finalStatus,
+            predictedWinner = saved?.predictedWinner,
+            predictedHomeScore = saved?.predictedHomeScore,
+            predictedAwayScore = saved?.predictedAwayScore,
+            homePossession = saved?.homePossession,
+            awayPossession = saved?.awayPossession,
+            homeShots = saved?.homeShots,
+            awayShots = saved?.awayShots
+        ))
+    }
+
+    suspend fun saveMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?) {
+        val saved = matchDao.getAllMatches().first().find { it.id == matchId }
+        matchDao.insertMatch(MatchEntity(
+            matchId,
+            saved?.homeScore,
+            saved?.awayScore,
+            saved?.homePenalties,
+            saved?.awayPenalties,
+            saved?.status ?: "Scheduled",
+            predictedWinner = winner,
+            predictedHomeScore = homePredict,
+            predictedAwayScore = awayPredict,
+            homePossession = saved?.homePossession,
+            awayPossession = saved?.awayPossession,
+            homeShots = saved?.homeShots,
+            awayShots = saved?.awayShots
+        ))
     }
 
     suspend fun saveMatchStatus(matchId: Int, status: String) {
@@ -121,7 +162,14 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             away, 
             saved?.homePenalties, 
             saved?.awayPenalties, 
-            status
+            status,
+            predictedWinner = saved?.predictedWinner,
+            predictedHomeScore = saved?.predictedHomeScore,
+            predictedAwayScore = saved?.predictedAwayScore,
+            homePossession = saved?.homePossession,
+            awayPossession = saved?.awayPossession,
+            homeShots = saved?.homeShots,
+            awayShots = saved?.awayShots
         ))
     }
 

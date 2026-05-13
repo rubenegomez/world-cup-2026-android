@@ -33,5 +33,15 @@ data class Match(
     val date: String,
     val status: String,
     val stadium: String = "",
-    val city: String = ""
+    val city: String = "",
+    // Campos para el Prode
+    val predictedWinner: String? = null, // "L", "E", "V"
+    val predictedHomeScore: Int? = null,
+    val predictedAwayScore: Int? = null,
+    // Estadísticas VIP
+    val homePossession: Int? = null,
+    val awayPossession: Int? = null,
+    val homeShots: Int? = null,
+    val awayShots: Int? = null,
+    val scorers: List<String> = emptyList()
 )

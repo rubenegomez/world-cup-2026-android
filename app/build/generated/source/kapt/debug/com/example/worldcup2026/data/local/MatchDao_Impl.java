@@ -40,7 +40,7 @@ public final class MatchDao_Impl implements MatchDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR REPLACE INTO `matches` (`id`,`homeScore`,`awayScore`,`homePenalties`,`awayPenalties`,`status`) VALUES (?,?,?,?,?,?)";
+        return "INSERT OR REPLACE INTO `matches` (`id`,`homeScore`,`awayScore`,`homePenalties`,`awayPenalties`,`status`,`predictedWinner`,`predictedHomeScore`,`predictedAwayScore`,`homePossession`,`awayPossession`,`homeShots`,`awayShots`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -71,6 +71,41 @@ public final class MatchDao_Impl implements MatchDao {
           statement.bindNull(6);
         } else {
           statement.bindString(6, entity.getStatus());
+        }
+        if (entity.getPredictedWinner() == null) {
+          statement.bindNull(7);
+        } else {
+          statement.bindString(7, entity.getPredictedWinner());
+        }
+        if (entity.getPredictedHomeScore() == null) {
+          statement.bindNull(8);
+        } else {
+          statement.bindLong(8, entity.getPredictedHomeScore());
+        }
+        if (entity.getPredictedAwayScore() == null) {
+          statement.bindNull(9);
+        } else {
+          statement.bindLong(9, entity.getPredictedAwayScore());
+        }
+        if (entity.getHomePossession() == null) {
+          statement.bindNull(10);
+        } else {
+          statement.bindLong(10, entity.getHomePossession());
+        }
+        if (entity.getAwayPossession() == null) {
+          statement.bindNull(11);
+        } else {
+          statement.bindLong(11, entity.getAwayPossession());
+        }
+        if (entity.getHomeShots() == null) {
+          statement.bindNull(12);
+        } else {
+          statement.bindLong(12, entity.getHomeShots());
+        }
+        if (entity.getAwayShots() == null) {
+          statement.bindNull(13);
+        } else {
+          statement.bindLong(13, entity.getAwayShots());
         }
       }
     };
@@ -129,6 +164,13 @@ public final class MatchDao_Impl implements MatchDao {
           final int _cursorIndexOfHomePenalties = CursorUtil.getColumnIndexOrThrow(_cursor, "homePenalties");
           final int _cursorIndexOfAwayPenalties = CursorUtil.getColumnIndexOrThrow(_cursor, "awayPenalties");
           final int _cursorIndexOfStatus = CursorUtil.getColumnIndexOrThrow(_cursor, "status");
+          final int _cursorIndexOfPredictedWinner = CursorUtil.getColumnIndexOrThrow(_cursor, "predictedWinner");
+          final int _cursorIndexOfPredictedHomeScore = CursorUtil.getColumnIndexOrThrow(_cursor, "predictedHomeScore");
+          final int _cursorIndexOfPredictedAwayScore = CursorUtil.getColumnIndexOrThrow(_cursor, "predictedAwayScore");
+          final int _cursorIndexOfHomePossession = CursorUtil.getColumnIndexOrThrow(_cursor, "homePossession");
+          final int _cursorIndexOfAwayPossession = CursorUtil.getColumnIndexOrThrow(_cursor, "awayPossession");
+          final int _cursorIndexOfHomeShots = CursorUtil.getColumnIndexOrThrow(_cursor, "homeShots");
+          final int _cursorIndexOfAwayShots = CursorUtil.getColumnIndexOrThrow(_cursor, "awayShots");
           final List<MatchEntity> _result = new ArrayList<MatchEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final MatchEntity _item;
@@ -164,7 +206,49 @@ public final class MatchDao_Impl implements MatchDao {
             } else {
               _tmpStatus = _cursor.getString(_cursorIndexOfStatus);
             }
-            _item = new MatchEntity(_tmpId,_tmpHomeScore,_tmpAwayScore,_tmpHomePenalties,_tmpAwayPenalties,_tmpStatus);
+            final String _tmpPredictedWinner;
+            if (_cursor.isNull(_cursorIndexOfPredictedWinner)) {
+              _tmpPredictedWinner = null;
+            } else {
+              _tmpPredictedWinner = _cursor.getString(_cursorIndexOfPredictedWinner);
+            }
+            final Integer _tmpPredictedHomeScore;
+            if (_cursor.isNull(_cursorIndexOfPredictedHomeScore)) {
+              _tmpPredictedHomeScore = null;
+            } else {
+              _tmpPredictedHomeScore = _cursor.getInt(_cursorIndexOfPredictedHomeScore);
+            }
+            final Integer _tmpPredictedAwayScore;
+            if (_cursor.isNull(_cursorIndexOfPredictedAwayScore)) {
+              _tmpPredictedAwayScore = null;
+            } else {
+              _tmpPredictedAwayScore = _cursor.getInt(_cursorIndexOfPredictedAwayScore);
+            }
+            final Integer _tmpHomePossession;
+            if (_cursor.isNull(_cursorIndexOfHomePossession)) {
+              _tmpHomePossession = null;
+            } else {
+              _tmpHomePossession = _cursor.getInt(_cursorIndexOfHomePossession);
+            }
+            final Integer _tmpAwayPossession;
+            if (_cursor.isNull(_cursorIndexOfAwayPossession)) {
+              _tmpAwayPossession = null;
+            } else {
+              _tmpAwayPossession = _cursor.getInt(_cursorIndexOfAwayPossession);
+            }
+            final Integer _tmpHomeShots;
+            if (_cursor.isNull(_cursorIndexOfHomeShots)) {
+              _tmpHomeShots = null;
+            } else {
+              _tmpHomeShots = _cursor.getInt(_cursorIndexOfHomeShots);
+            }
+            final Integer _tmpAwayShots;
+            if (_cursor.isNull(_cursorIndexOfAwayShots)) {
+              _tmpAwayShots = null;
+            } else {
+              _tmpAwayShots = _cursor.getInt(_cursorIndexOfAwayShots);
+            }
+            _item = new MatchEntity(_tmpId,_tmpHomeScore,_tmpAwayScore,_tmpHomePenalties,_tmpAwayPenalties,_tmpStatus,_tmpPredictedWinner,_tmpPredictedHomeScore,_tmpPredictedAwayScore,_tmpHomePossession,_tmpAwayPossession,_tmpHomeShots,_tmpAwayShots);
             _result.add(_item);
           }
           return _result;
@@ -200,6 +284,13 @@ public final class MatchDao_Impl implements MatchDao {
           final int _cursorIndexOfHomePenalties = CursorUtil.getColumnIndexOrThrow(_cursor, "homePenalties");
           final int _cursorIndexOfAwayPenalties = CursorUtil.getColumnIndexOrThrow(_cursor, "awayPenalties");
           final int _cursorIndexOfStatus = CursorUtil.getColumnIndexOrThrow(_cursor, "status");
+          final int _cursorIndexOfPredictedWinner = CursorUtil.getColumnIndexOrThrow(_cursor, "predictedWinner");
+          final int _cursorIndexOfPredictedHomeScore = CursorUtil.getColumnIndexOrThrow(_cursor, "predictedHomeScore");
+          final int _cursorIndexOfPredictedAwayScore = CursorUtil.getColumnIndexOrThrow(_cursor, "predictedAwayScore");
+          final int _cursorIndexOfHomePossession = CursorUtil.getColumnIndexOrThrow(_cursor, "homePossession");
+          final int _cursorIndexOfAwayPossession = CursorUtil.getColumnIndexOrThrow(_cursor, "awayPossession");
+          final int _cursorIndexOfHomeShots = CursorUtil.getColumnIndexOrThrow(_cursor, "homeShots");
+          final int _cursorIndexOfAwayShots = CursorUtil.getColumnIndexOrThrow(_cursor, "awayShots");
           final MatchEntity _result;
           if (_cursor.moveToFirst()) {
             final int _tmpId;
@@ -234,7 +325,49 @@ public final class MatchDao_Impl implements MatchDao {
             } else {
               _tmpStatus = _cursor.getString(_cursorIndexOfStatus);
             }
-            _result = new MatchEntity(_tmpId,_tmpHomeScore,_tmpAwayScore,_tmpHomePenalties,_tmpAwayPenalties,_tmpStatus);
+            final String _tmpPredictedWinner;
+            if (_cursor.isNull(_cursorIndexOfPredictedWinner)) {
+              _tmpPredictedWinner = null;
+            } else {
+              _tmpPredictedWinner = _cursor.getString(_cursorIndexOfPredictedWinner);
+            }
+            final Integer _tmpPredictedHomeScore;
+            if (_cursor.isNull(_cursorIndexOfPredictedHomeScore)) {
+              _tmpPredictedHomeScore = null;
+            } else {
+              _tmpPredictedHomeScore = _cursor.getInt(_cursorIndexOfPredictedHomeScore);
+            }
+            final Integer _tmpPredictedAwayScore;
+            if (_cursor.isNull(_cursorIndexOfPredictedAwayScore)) {
+              _tmpPredictedAwayScore = null;
+            } else {
+              _tmpPredictedAwayScore = _cursor.getInt(_cursorIndexOfPredictedAwayScore);
+            }
+            final Integer _tmpHomePossession;
+            if (_cursor.isNull(_cursorIndexOfHomePossession)) {
+              _tmpHomePossession = null;
+            } else {
+              _tmpHomePossession = _cursor.getInt(_cursorIndexOfHomePossession);
+            }
+            final Integer _tmpAwayPossession;
+            if (_cursor.isNull(_cursorIndexOfAwayPossession)) {
+              _tmpAwayPossession = null;
+            } else {
+              _tmpAwayPossession = _cursor.getInt(_cursorIndexOfAwayPossession);
+            }
+            final Integer _tmpHomeShots;
+            if (_cursor.isNull(_cursorIndexOfHomeShots)) {
+              _tmpHomeShots = null;
+            } else {
+              _tmpHomeShots = _cursor.getInt(_cursorIndexOfHomeShots);
+            }
+            final Integer _tmpAwayShots;
+            if (_cursor.isNull(_cursorIndexOfAwayShots)) {
+              _tmpAwayShots = null;
+            } else {
+              _tmpAwayShots = _cursor.getInt(_cursorIndexOfAwayShots);
+            }
+            _result = new MatchEntity(_tmpId,_tmpHomeScore,_tmpAwayScore,_tmpHomePenalties,_tmpAwayPenalties,_tmpStatus,_tmpPredictedWinner,_tmpPredictedHomeScore,_tmpPredictedAwayScore,_tmpHomePossession,_tmpAwayPossession,_tmpHomeShots,_tmpAwayShots);
           } else {
             _result = null;
           }
