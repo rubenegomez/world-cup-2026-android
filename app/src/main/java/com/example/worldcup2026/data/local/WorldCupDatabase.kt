@@ -19,7 +19,9 @@ abstract class WorldCupDatabase : RoomDatabase() {
                     context.applicationContext,
                     WorldCupDatabase::class.java,
                     "world_cup_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

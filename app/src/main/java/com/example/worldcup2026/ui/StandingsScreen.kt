@@ -3,7 +3,6 @@ package com.example.worldcup2026.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -11,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -20,16 +18,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
+import com.example.worldcup2026.data.util.StandingsCalculator
+import com.example.worldcup2026.data.util.TeamStats
 
 @Composable
 fun StandingsScreen(matches: List<Match>) {
     val teamsByGroup = matches.flatMap { listOf(it.homeTeam, it.awayTeam) }
         .distinctBy { it.id }
-        .filter { it.id > 0 } // Solo equipos reales
+        .filter { it.id > 0 && it.group.isNotEmpty() } 
         .groupBy { it.group }
         .toSortedMap()
 
@@ -48,9 +47,7 @@ fun StandingsScreen(matches: List<Match>) {
 
 @Composable
 fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Match>) {
-    val standings = teams.map { team ->
-        calculateTeamStats(team, matches)
-    }.sortedWith(compareByDescending<TeamStats> { it.pts }.thenByDescending { it.gd }.thenByDescending { it.gf })
+    val standings = StandingsCalculator.calculateStandings(teams, matches)
 
     Column(
         modifier = Modifier
@@ -65,7 +62,6 @@ fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Matc
             modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
         )
 
-        // Cabecera idéntica a la imagen del usuario
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -130,55 +126,4 @@ fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Matc
             }
         }
     }
-}
-
-data class TeamStats(
-    val team: Team,
-    val pj: Int,
-    val g: Int,
-    val e: Int,
-    val p: Int,
-    val gf: Int,
-    val ga: Int,
-    val gd: Int,
-    val pts: Int
-)
-
-fun calculateTeamStats(team: Team, matches: List<Match>): TeamStats {
-    var pj = 0
-    var g = 0
-    var e = 0
-    var p = 0
-    var gf = 0
-    var ga = 0
-    var pts = 0
-
-    matches.filter { it.id <= 100 }.forEach { match ->
-        if (match.homeTeam.id == team.id || match.awayTeam.id == team.id) {
-            val hScore = match.homeScore
-            val aScore = match.awayScore
-            
-            if (hScore != null && aScore != null) {
-                pj++
-                val (teamScore, opponentScore) = if (match.homeTeam.id == team.id) hScore to aScore else aScore to hScore
-                
-                gf += teamScore
-                ga += opponentScore
-                
-                when {
-                    teamScore > opponentScore -> {
-                        g++
-                        pts += 3
-                    }
-                    teamScore == opponentScore -> {
-                        e++
-                        pts += 1
-                    }
-                    else -> p++
-                }
-            }
-        }
-    }
-
-    return TeamStats(team, pj, g, e, p, gf, ga, gf - ga, pts)
 }

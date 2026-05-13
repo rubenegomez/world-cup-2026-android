@@ -1,4 +1,4 @@
-#Wed May 13 01:55:39 ART 2026
+#Wed May 13 17:27:47 ART 2026
 base.0=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
 base.1=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
 base.2=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\12\\classes.dex
@@ -7,6 +7,7 @@ base.4=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\d
 base.5=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\4\\classes.dex
 base.6=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\6\\classes.dex
 base.7=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes2.dex
+base.8=C\:\\Proyectos\\world-cup-2026-android\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\7\\classes.dex
 path.0=classes.dex
 path.1=0/classes.dex
 path.2=12/classes.dex
@@ -15,6 +16,7 @@ path.4=1/classes.dex
 path.5=4/classes.dex
 path.6=6/classes.dex
 path.7=classes2.dex
+path.8=7/classes.dex
 renamed.0=classes.dex
 renamed.1=classes2.dex
 renamed.2=classes3.dex
@@ -23,3 +25,4 @@ renamed.4=classes5.dex
 renamed.5=classes6.dex
 renamed.6=classes7.dex
 renamed.7=classes8.dex
+renamed.8=classes9.dex

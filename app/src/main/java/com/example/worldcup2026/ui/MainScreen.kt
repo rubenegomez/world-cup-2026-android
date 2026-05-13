@@ -2,20 +2,53 @@ package com.example.worldcup2026.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
     val uiState by viewModel.uiState
     var selectedScreen by remember { mutableIntStateOf(0) }
     var showSplash by remember { mutableStateOf(true) }
+    
+    // Almacenamos si ya se mostró el festejo para el campeón actual
+    var showCelebration by remember { 
+        mutableStateOf(false) 
+    }
+
+    LaunchedEffect(uiState) {
+        val state = uiState as? WorldCupUiState.Success ?: return@LaunchedEffect
+        if (state.champion != null) {
+            val lastChampionId = prefs.getInt("last_champion_id", -1)
+            val hasShown = prefs.getBoolean("has_shown_celebration_${state.champion.id}", false)
+            
+            if (!hasShown || lastChampionId != state.champion.id) {
+                showCelebration = true
+                prefs.edit().putInt("last_champion_id", state.champion.id).apply()
+            }
+        } else {
+            showCelebration = false
+            // Si no hay campeón, buscamos cuál fue el último y le quitamos la marca de "mostrado"
+            // para que cuando lo vuelvan a finalizar, salte de nuevo.
+            val lastId = prefs.getInt("last_champion_id", -1)
+            if (lastId != -1) {
+                prefs.edit()
+                    .putBoolean("has_shown_celebration_$lastId", false)
+                    .putInt("last_champion_id", -1)
+                    .apply()
+            }
+        }
+    }
 
     if (showSplash) {
         SplashScreen(onTimeout = { showSplash = false })
@@ -34,7 +67,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                     NavigationBarItem(
                         selected = selectedScreen == 0,
                         onClick = { selectedScreen = 0 },
-                        icon = { Icon(Icons.Default.List, contentDescription = null) },
+                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
                         label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) }
                     )
                     NavigationBarItem(
@@ -53,31 +86,46 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
             }
         ) { paddingValues ->
             Box(modifier = Modifier.padding(paddingValues)) {
-                when (uiState) {
+                when (val state = uiState) {
                     is WorldCupUiState.Loading -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                             CircularProgressIndicator()
                         }
                     }
                     is WorldCupUiState.Success -> {
-                        val state = uiState as WorldCupUiState.Success
-                        when (selectedScreen) {
-                            0 -> FixtureScreen(
-                                matches = state.matches,
-                                onScoreChange = { id, home, away -> 
-                                    viewModel.updateMatchScore(id, home, away)
-                                },
-                                onPenaltiesChange = { id, home, away ->
-                                    viewModel.updateMatchPenalties(id, home, away)
+                        if (state.champion != null && showCelebration) {
+                            CelebrationScreen(
+                                champion = state.champion,
+                                onDismiss = { 
+                                    showCelebration = false 
+                                    prefs.edit().putBoolean("has_shown_celebration_${state.champion.id}", true).apply()
                                 }
                             )
-                            1 -> StandingsScreen(matches = state.matches)
-                            2 -> AboutScreen()
+                        } else {
+                            if (state.champion == null) {
+                                showCelebration = true
+                            }
+                            when (selectedScreen) {
+                                0 -> FixtureScreen(
+                                    matches = state.matches,
+                                    onScoreChange = { id, home, away -> 
+                                        viewModel.updateMatchScore(id, home, away)
+                                    },
+                                    onPenaltiesChange = { id, home, away ->
+                                        viewModel.updateMatchPenalties(id, home, away)
+                                    },
+                                    onStatusChange = { id, status ->
+                                        viewModel.updateMatchStatus(id, status)
+                                    }
+                                )
+                                1 -> StandingsScreen(matches = state.matches)
+                                2 -> AboutScreen()
+                            }
                         }
                     }
                     is WorldCupUiState.Error -> {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                            Text("Error al cargar datos")
+                            Text("Error: ${state.message}")
                         }
                     }
                 }

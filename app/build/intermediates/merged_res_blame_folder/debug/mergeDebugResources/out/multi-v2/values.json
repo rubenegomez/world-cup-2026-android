@@ -27,10 +27,10 @@
                     "from": {
                         "startLines": "4,2",
                         "startColumns": "4,4",
-                        "startOffsets": "146,55",
+                        "startOffsets": "150,57",
                         "endLines": "8,2",
                         "endColumns": "12,89",
-                        "endOffsets": "444,140"
+                        "endOffsets": "452,142"
                     },
                     "to": {
                         "startLines": "231,262",
@@ -63,9 +63,9 @@
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
-                        "startOffsets": "55",
+                        "startOffsets": "57",
                         "endColumns": "51",
-                        "endOffsets": "102"
+                        "endOffsets": "104"
                     },
                     "to": {
                         "startLines": "115",

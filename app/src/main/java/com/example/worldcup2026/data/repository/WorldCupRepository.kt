@@ -12,14 +12,18 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     suspend fun getMockGroups(): List<Group> {
         delay(100)
         return listOf(
-            Group("A", listOf(createTeam(1, "México", "mx", "A"), createTeam(2, "Sudáfrica", "za", "A"), createTeam(3, "Corea Rep.", "kr", "A"), createTeam(4, "N. Zelanda", "nz", "A"))),
-            Group("B", listOf(createTeam(5, "Canadá", "ca", "B"), createTeam(6, "Bosnia", "ba", "B"), createTeam(7, "Qatar", "qa", "B"), createTeam(8, "Irak", "iq", "B"))),
-            Group("C", listOf(createTeam(9, "EE.UU.", "us", "C"), createTeam(10, "Paraguay", "py", "C"), createTeam(11, "Australia", "au", "C"), createTeam(12, "Jordania", "jo", "C"))),
-            Group("D", listOf(createTeam(13, "Francia", "fr", "D"), createTeam(14, "Senegal", "sn", "D"), createTeam(15, "Irán", "ir", "D"), createTeam(16, "Noruega", "no", "D"))),
-            Group("E", listOf(createTeam(17, "Alemania", "de", "E"), createTeam(18, "Ghana", "gh", "E"), createTeam(19, "Rep. Checa", "cz", "E"), createTeam(20, "Jamaica", "jm", "E"))),
-            Group("F", listOf(createTeam(21, "Brasil", "br", "F"), createTeam(22, "Marruecos", "ma", "F"), createTeam(23, "Suecia", "se", "F"), createTeam(24, "Túnez", "tn", "F"))),
-            Group("G", listOf(createTeam(25, "Argentina", "ar", "G"), createTeam(26, "Argelia", "dz", "G"), createTeam(27, "Austria", "at", "G"), createTeam(28, "Turquía", "tr", "G"))),
-            Group("H", listOf(createTeam(29, "Bélgica", "be", "H"), createTeam(30, "Egipto", "eg", "H"), createTeam(31, "Eslovaquia", "sk", "H"), createTeam(32, "Honduras", "hn", "H")))
+            Group("A", listOf(createTeam(1, "México", "mx", "A"), createTeam(2, "Sudáfrica", "za", "A"), createTeam(3, "Corea del Sur", "kr", "A"), createTeam(4, "República Checa", "cz", "A"))),
+            Group("B", listOf(createTeam(5, "Canadá", "ca", "B"), createTeam(6, "Bosnia", "ba", "B"), createTeam(7, "Qatar", "qa", "B"), createTeam(8, "Suiza", "ch", "B"))),
+            Group("C", listOf(createTeam(9, "Brasil", "br", "C"), createTeam(10, "Marruecos", "ma", "C"), createTeam(11, "Haití", "ht", "C"), createTeam(12, "Escocia", "gb-sct", "C"))),
+            Group("D", listOf(createTeam(13, "Estados Unidos", "us", "D"), createTeam(14, "Paraguay", "py", "D"), createTeam(15, "Australia", "au", "D"), createTeam(16, "Turquía", "tr", "D"))),
+            Group("E", listOf(createTeam(17, "Alemania", "de", "E"), createTeam(18, "Curazao", "cw", "E"), createTeam(19, "Costa de Marfil", "ci", "E"), createTeam(20, "Ecuador", "ec", "E"))),
+            Group("F", listOf(createTeam(21, "Países Bajos", "nl", "F"), createTeam(22, "Japón", "jp", "F"), createTeam(23, "Suecia", "se", "F"), createTeam(24, "Túnez", "tn", "F"))),
+            Group("G", listOf(createTeam(25, "Bélgica", "be", "G"), createTeam(26, "Egipto", "eg", "G"), createTeam(27, "Irán", "ir", "G"), createTeam(28, "Nueva Zelanda", "nz", "G"))),
+            Group("H", listOf(createTeam(29, "España", "es", "H"), createTeam(30, "Cabo Verde", "cv", "H"), createTeam(31, "Arabia Saudita", "sa", "H"), createTeam(32, "Uruguay", "uy", "H"))),
+            Group("I", listOf(createTeam(33, "Francia", "fr", "I"), createTeam(34, "Senegal", "sn", "I"), createTeam(35, "Irak", "iq", "I"), createTeam(36, "Noruega", "no", "I"))),
+            Group("J", listOf(createTeam(37, "Argentina", "ar", "J"), createTeam(38, "Argelia", "dz", "J"), createTeam(39, "Austria", "at", "J"), createTeam(40, "Jordania", "jo", "J"))),
+            Group("K", listOf(createTeam(41, "Portugal", "pt", "K"), createTeam(42, "RD Congo", "cd", "K"), createTeam(43, "Uzbekistán", "uz", "K"), createTeam(44, "Colombia", "co", "K"))),
+            Group("L", listOf(createTeam(45, "Inglaterra", "gb-eng", "L"), createTeam(46, "Croacia", "hr", "L"), createTeam(47, "Ghana", "gh", "L"), createTeam(48, "Panamá", "pa", "L")))
         )
     }
 
@@ -37,10 +41,23 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val matches = mutableListOf<Match>()
         fun findTeam(name: String) = allTeams.find { it.name == name } ?: Team(0, name, "", "", emptyList())
 
-        // FASE DE GRUPOS
-        addMatchWithPersistence(matches, savedMatches, Match(1, findTeam("México"), findTeam("Sudáfrica"), null, null, null, null, "2026-06-11 CDMX", "Scheduled"))
-        addMatchWithPersistence(matches, savedMatches, Match(2, findTeam("Canadá"), findTeam("Bosnia"), null, null, null, null, "2026-06-12 Toronto", "Scheduled"))
-        addMatchWithPersistence(matches, savedMatches, Match(3, findTeam("EE.UU."), findTeam("Paraguay"), null, null, null, null, "2026-06-12 LA", "Scheduled"))
+        // FASE DE GRUPOS (IDs 1-72)
+        MatchData.groupMatches.forEach { info ->
+            addMatchWithPersistence(
+                matches, 
+                savedMatches, 
+                Match(
+                    info.id, 
+                    findTeam(info.home), 
+                    findTeam(info.away), 
+                    null, null, null, null, 
+                    info.date, 
+                    "Scheduled",
+                    info.stadium,
+                    info.city
+                )
+            )
+        }
 
         // DIECISEISAVOS (IDs 101-116)
         for (i in 1..16) {
@@ -89,9 +106,23 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         }
     }
 
-    suspend fun saveMatchScore(matchId: Int, homeScore: Int?, awayScore: Int?, homePenalties: Int? = null, awayPenalties: Int? = null) {
-        val status = if (homeScore != null && awayScore != null) "Finished" else "Scheduled"
-        matchDao.insertMatch(MatchEntity(matchId, homeScore, awayScore, homePenalties, awayPenalties, status))
+    suspend fun saveMatchScore(matchId: Int, homeScore: Int?, awayScore: Int?, homePenalties: Int? = null, awayPenalties: Int? = null, status: String? = null) {
+        val finalStatus = status ?: if (homeScore != null && awayScore != null) "Finished" else "Scheduled"
+        matchDao.insertMatch(MatchEntity(matchId, homeScore, awayScore, homePenalties, awayPenalties, finalStatus))
+    }
+
+    suspend fun saveMatchStatus(matchId: Int, status: String) {
+        val saved = matchDao.getAllMatches().first().find { it.id == matchId }
+        val home = if (status == "Finished") (saved?.homeScore ?: 0) else saved?.homeScore
+        val away = if (status == "Finished") (saved?.awayScore ?: 0) else saved?.awayScore
+        matchDao.insertMatch(MatchEntity(
+            matchId, 
+            home, 
+            away, 
+            saved?.homePenalties, 
+            saved?.awayPenalties, 
+            status
+        ))
     }
 
     suspend fun getAllTeams(): List<Team> {

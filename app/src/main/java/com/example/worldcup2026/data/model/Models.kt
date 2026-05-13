@@ -28,8 +28,10 @@ data class Match(
     val awayTeam: Team,
     val homeScore: Int?,
     val awayScore: Int?,
-    val homePenalties: Int? = null, // Goles en tanda de penales
-    val awayPenalties: Int? = null, // Goles en tanda de penales
+    val homePenalties: Int? = null,
+    val awayPenalties: Int? = null,
     val date: String,
-    val status: String
+    val status: String,
+    val stadium: String = "",
+    val city: String = ""
 )

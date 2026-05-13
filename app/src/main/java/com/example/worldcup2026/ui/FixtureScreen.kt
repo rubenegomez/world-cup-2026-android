@@ -33,7 +33,8 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 fun FixtureScreen(
     matches: List<Match>,
     onScoreChange: (Int, Int?, Int?) -> Unit,
-    onPenaltiesChange: (Int, Int?, Int?) -> Unit = { _, _, _ -> }
+    onPenaltiesChange: (Int, Int?, Int?) -> Unit = { _, _, _ -> },
+    onStatusChange: (Int, String) -> Unit = { _, _ -> }
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
@@ -67,9 +68,9 @@ fun FixtureScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when (selectedTab) {
-                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange)
-                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange)
-                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange)
+                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange)
+                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange)
+                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange)
             }
         }
     }
@@ -79,7 +80,8 @@ fun FixtureScreen(
 fun KnockoutBracket(
     matches: List<Match>,
     onScoreChange: (Int, Int?, Int?) -> Unit,
-    onPenaltiesChange: (Int, Int?, Int?) -> Unit
+    onPenaltiesChange: (Int, Int?, Int?) -> Unit,
+    onStatusChange: (Int, String) -> Unit
 ) {
     val rounds = listOf("DIECISEISAVOS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL")
     var selectedRound by remember { mutableStateOf(rounds[0]) }
@@ -120,15 +122,38 @@ fun KnockoutBracket(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange)
             }
         }
     }
 }
 
 @Composable
-fun DayFilteredFixture(matches: List<Match>, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltiesChange: (Int, Int?, Int?) -> Unit) {
-    val dates = matches.filter { it.id <= 100 }.map { it.date.split(" ")[0] }.distinct().sorted()
+fun DayFilteredFixture(
+    matches: List<Match>, 
+    onScoreChange: (Int, Int?, Int?) -> Unit, 
+    onPenaltiesChange: (Int, Int?, Int?) -> Unit,
+    onStatusChange: (Int, String) -> Unit
+) {
+    // Extraemos la fecha completa (Día DD/MM) para mostrarla y ordenarla
+    val dates = matches.filter { it.id <= 100 }
+        .map { 
+            val parts = it.date.split(" ")
+            if (parts.size >= 2) "${parts[0]} ${parts[1]}" else it.date
+        }
+        .distinct()
+        .sortedBy { dateStr ->
+            // Ordenamos por el componente DD/MM (ej: "11/06")
+            val datePart = dateStr.split(" ").lastOrNull() ?: ""
+            val parts = datePart.split("/")
+            if (parts.size == 2) {
+                // Formato MMdd para ordenación simple (0611, 0612...)
+                parts[1] + parts[0]
+            } else {
+                dateStr
+            }
+        }
+    
     var selectedDate by remember { mutableStateOf(if (dates.isNotEmpty()) dates.first() else "") }
     val filteredMatches = matches.filter { it.date.startsWith(selectedDate) && it.id <= 100 }
 
@@ -148,14 +173,19 @@ fun DayFilteredFixture(matches: List<Match>, onScoreChange: (Int, Int?, Int?) ->
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange)
             }
         }
     }
 }
 
 @Composable
-fun GroupFilteredFixture(matches: List<Match>, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltiesChange: (Int, Int?, Int?) -> Unit) {
+fun GroupFilteredFixture(
+    matches: List<Match>, 
+    onScoreChange: (Int, Int?, Int?) -> Unit, 
+    onPenaltiesChange: (Int, Int?, Int?) -> Unit,
+    onStatusChange: (Int, String) -> Unit
+) {
     val groups = matches.filter { it.id <= 100 }.map { it.homeTeam.group }.distinct().sorted()
     var selectedGroup by remember { mutableStateOf(if (groups.isNotEmpty()) groups.first() else "") }
     val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && it.id <= 100 }
@@ -176,14 +206,19 @@ fun GroupFilteredFixture(matches: List<Match>, onScoreChange: (Int, Int?, Int?) 
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange)
             }
         }
     }
 }
 
 @Composable
-fun MatchCard(match: Match, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltiesChange: (Int, Int?, Int?) -> Unit) {
+fun MatchCard(
+    match: Match, 
+    onScoreChange: (Int, Int?, Int?) -> Unit, 
+    onPenaltiesChange: (Int, Int?, Int?) -> Unit,
+    onStatusChange: (Int, String) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -198,12 +233,22 @@ fun MatchCard(match: Match, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltie
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (match.id > 100) "ELIMINACIÓN" else "GRUPO ${match.homeTeam.group}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    Text(
+                        text = if (match.id > 100) "ELIMINACIÓN" else "GRUPO ${match.homeTeam.group}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (match.stadium.isNotEmpty()) {
+                        Text(
+                            text = "${match.stadium}, ${match.city}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = match.date.split(" ").last(),
@@ -211,7 +256,7 @@ fun MatchCard(match: Match, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltie
                         color = MaterialTheme.colorScheme.outline
                     )
                     
-                    if (match.homeScore != null || match.awayScore != null) {
+                    if (match.status == "Finished") {
                         Spacer(modifier = Modifier.width(8.dp))
                         TextButton(
                             onClick = { onScoreChange(match.id, null, null) },
@@ -232,6 +277,26 @@ fun MatchCard(match: Match, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltie
                                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                             )
                         }
+                    } else if (match.status == "Scheduled") {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = { onStatusChange(match.id, "Finished") },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(24.dp),
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(
+                                Icons.Default.Check, 
+                                contentDescription = "Finalizar", 
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "FINALIZAR", 
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
                     }
                 }
             }
@@ -246,20 +311,33 @@ fun MatchCard(match: Match, onScoreChange: (Int, Int?, Int?) -> Unit, onPenaltie
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    onScoreChange = { onScoreChange(match.id, it, match.awayScore) }
+                    onScoreChange = { if (match.status != "Finished") onScoreChange(match.id, it, match.awayScore) },
+                    enabled = match.status != "Finished"
                 )
                 
-                Text(
-                    text = "VS",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "VS",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    if (match.status == "Finished") {
+                        Text(
+                            text = "FINALIZADO",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 9.sp
+                        )
+                    }
+                }
                 
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    onScoreChange = { onScoreChange(match.id, match.homeScore, it) }
+                    onScoreChange = { if (match.status != "Finished") onScoreChange(match.id, match.homeScore, it) },
+                    enabled = match.status != "Finished"
                 )
             }
 
@@ -298,7 +376,7 @@ fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
 }
 
 @Composable
-fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit) {
+fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enabled: Boolean = true) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp)
@@ -316,11 +394,19 @@ fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit) {
         Text(team.name, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { if ((score ?: 0) > 0) onScoreChange((score ?: 0) - 1) }, modifier = Modifier.size(24.dp)) {
+            IconButton(
+                onClick = { if ((score ?: 0) > 0) onScoreChange((score ?: 0) - 1) }, 
+                modifier = Modifier.size(24.dp),
+                enabled = enabled
+            ) {
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp))
             }
             Text(text = score?.toString() ?: "0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp))
-            IconButton(onClick = { onScoreChange((score ?: 0) + 1) }, modifier = Modifier.size(24.dp)) {
+            IconButton(
+                onClick = { onScoreChange((score ?: 0) + 1) }, 
+                modifier = Modifier.size(24.dp),
+                enabled = enabled
+            ) {
                 Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp))
             }
         }
