@@ -21,13 +21,27 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("D:/Nextcloud/Ruben External Storage/Documentacion/llaves/loco_pedal")
+            storePassword = "k7NoPZjlvNREWm"
+            keyAlias = "pedal_alias"
+            keyPassword = "k7NoPZjlvNREWm"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
+            isCrunchPngs = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            // Usa la firma de debug por defecto
         }
     }
     compileOptions {

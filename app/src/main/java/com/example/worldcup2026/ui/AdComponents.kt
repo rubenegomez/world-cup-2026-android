@@ -4,11 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,20 +26,13 @@ import androidx.compose.ui.unit.sp
 fun SponsorCard(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
-                        )
-                    )
-                )
                 .padding(16.dp)
         ) {
             Row(
@@ -70,7 +66,8 @@ fun SponsorCard(modifier: Modifier = Modifier) {
                     Text(
                         "¡Viví el mundial con la mejor tecnología!",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
                     )
                 }
                 
@@ -78,9 +75,10 @@ fun SponsorCard(modifier: Modifier = Modifier) {
                     onClick = { /* Ir a URL de sponsor */ },
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.height(36.dp)
+                    modifier = Modifier.height(36.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("VER MÁS", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("VER MÁS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
             
@@ -92,50 +90,59 @@ fun SponsorCard(modifier: Modifier = Modifier) {
                     .padding(4.dp),
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 8.sp,
-                color = MaterialTheme.colorScheme.outline
+                color = Color.White.copy(alpha = 0.4f)
             )
         }
     }
 }
 
 @Composable
-fun RewardedSection(onWatchVideo: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+fun AdWatchingScreen(onComplete: () -> Unit) {
+    var progress by remember { mutableStateOf(0f) }
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        animationSpec = tween(durationMillis = 3000, easing = LinearEasing),
+        label = "AdProgress"
+    )
+
+    LaunchedEffect(Unit) {
+        progress = 1f
+        delay(3000)
+        onComplete()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.95f))
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                Icons.Default.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "ESTADÍSTICAS VIP",
+                "CARGANDO ANUNCIO VIP...",
                 style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
                 fontWeight = FontWeight.Black
             )
-            Text(
-                "Mira un video corto para desbloquear el análisis táctico avanzado de este partido.",
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            LinearProgressIndicator(
+                progress = { animatedProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = Color.White.copy(alpha = 0.1f),
             )
+            
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onWatchVideo,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("VER VIDEO (15s)")
-            }
+            Text(
+                "Obteniendo estadísticas tácticas avanzadas",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.6f)
+            )
         }
     }
 }
@@ -144,6 +151,9 @@ fun RewardedSection(onWatchVideo: () -> Unit) {
 fun VipStatsDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        titleContentColor = Color.White,
+        textContentColor = Color.White.copy(alpha = 0.8f),
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700))
@@ -161,15 +171,15 @@ fun VipStatsDialog(onDismiss: () -> Unit) {
                 StatRow("xG (Goles Esperados)", "1.85")
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    "Esta es una funcionalidad de demostración. En la versión final, estos datos vendrán de una API de deportes real.",
+                    "Esta es una funcionalidad de demostración (VIP). En la versión final, estos datos vendrán de una API de deportes real.",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
+                    color = Color.White.copy(alpha = 0.4f)
                 )
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("ENTENDIDO")
+            TextButton(onClick = onDismiss) {
+                Text("ENTENDIDO", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -181,7 +191,7 @@ fun StatRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.bodySmall)
-        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
+        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }

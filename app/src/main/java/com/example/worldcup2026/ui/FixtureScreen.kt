@@ -24,7 +24,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
@@ -38,7 +37,8 @@ fun FixtureScreen(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit = { _, _, _ -> },
     onStatusChange: (Int, String) -> Unit = { _, _ -> },
     onShowVipStats: () -> Unit = {},
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit = { _, _, _, _ -> }
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit = { _, _, _, _ -> },
+    showAds: Boolean = true
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
@@ -46,14 +46,15 @@ fun FixtureScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(
             selectedTabIndex = selectedTab,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary,
+            containerColor = Color.Transparent,
+            contentColor = Color.White,
             indicator = { tabPositions ->
                 TabRowDefaults.SecondaryIndicator(
                     Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                     color = MaterialTheme.colorScheme.primary
                 )
-            }
+            },
+            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -63,7 +64,8 @@ fun FixtureScreen(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selectedTab == index) Color.White else Color.White.copy(alpha = 0.6f)
                         ) 
                     }
                 )
@@ -72,9 +74,9 @@ fun FixtureScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when (selectedTab) {
-                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
+                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
+                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
             }
         }
     }
@@ -87,7 +89,8 @@ fun KnockoutBracket(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: () -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
+    showAds: Boolean
 ) {
     val rounds = listOf("DIECISEISAVOS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL")
     var selectedRound by remember { mutableStateOf(rounds[0]) }
@@ -107,7 +110,7 @@ fun KnockoutBracket(
         ScrollableTabRow(
             selectedTabIndex = rounds.indexOf(selectedRound),
             edgePadding = 16.dp,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            containerColor = Color.White.copy(alpha = 0.05f),
             divider = {},
             indicator = {}
         ) {
@@ -116,7 +119,11 @@ fun KnockoutBracket(
                     selected = selectedRound == round,
                     onClick = { selectedRound = round },
                     text = {
-                        Text(text = round, style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            text = round, 
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (selectedRound == round) Color.White else Color.White.copy(alpha = 0.5f)
+                        )
                     }
                 )
             }
@@ -129,8 +136,9 @@ fun KnockoutBracket(
         ) {
             itemsIndexed(filteredMatches) { index, match ->
                 MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                if ((index + 1) % 5 == 0) {
-                    SponsorCard(modifier = Modifier.padding(vertical = 8.dp))
+                if (showAds && (index + 1) % 4 == 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SponsorCard()
                 }
             }
         }
@@ -144,9 +152,9 @@ fun DayFilteredFixture(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: () -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
+    showAds: Boolean
 ) {
-    // Extraemos la fecha completa (Día DD/MM) para mostrarla y ordenarla
     val dates = matches.filter { it.id <= 100 }
         .map { 
             val parts = it.date.split(" ")
@@ -154,15 +162,9 @@ fun DayFilteredFixture(
         }
         .distinct()
         .sortedBy { dateStr ->
-            // Ordenamos por el componente DD/MM (ej: "11/06")
             val datePart = dateStr.split(" ").lastOrNull() ?: ""
             val parts = datePart.split("/")
-            if (parts.size == 2) {
-                // Formato MMdd para ordenación simple (0611, 0612...)
-                parts[1] + parts[0]
-            } else {
-                dateStr
-            }
+            if (parts.size == 2) parts[1] + parts[0] else dateStr
         }
     
     var selectedDate by remember { mutableStateOf(if (dates.isNotEmpty()) dates.first() else "") }
@@ -175,7 +177,16 @@ fun DayFilteredFixture(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(dates) { date ->
-                FilterChip(selected = selectedDate == date, onClick = { selectedDate = date }, label = { Text(date) })
+                FilterChip(
+                    selected = selectedDate == date, 
+                    onClick = { selectedDate = date }, 
+                    label = { Text(date, color = Color.White) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = Color.White.copy(alpha = 0.1f)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(borderColor = Color.White.copy(alpha = 0.2f), enabled = true, selected = selectedDate == date)
+                )
             }
         }
         LazyColumn(
@@ -185,9 +196,9 @@ fun DayFilteredFixture(
         ) {
             itemsIndexed(filteredMatches) { index, match ->
                 MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                // En la vista por día, como hay pocos partidos, mostramos el sponsor cada 3 partidos
-                if ((index + 1) % 3 == 0) {
-                    SponsorCard(modifier = Modifier.padding(vertical = 8.dp))
+                if (showAds && (index + 1) % 4 == 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SponsorCard()
                 }
             }
         }
@@ -201,7 +212,8 @@ fun GroupFilteredFixture(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: () -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
+    onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
+    showAds: Boolean
 ) {
     val groups = matches.filter { it.id <= 100 }.map { it.homeTeam.group }.distinct().sorted()
     var selectedGroup by remember { mutableStateOf(if (groups.isNotEmpty()) groups.first() else "") }
@@ -214,7 +226,16 @@ fun GroupFilteredFixture(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(groups) { group ->
-                FilterChip(selected = selectedGroup == group, onClick = { selectedGroup = group }, label = { Text("GRUPO $group") })
+                FilterChip(
+                    selected = selectedGroup == group, 
+                    onClick = { selectedGroup = group }, 
+                    label = { Text("GRUPO $group", color = Color.White) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = Color.White.copy(alpha = 0.1f)
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(borderColor = Color.White.copy(alpha = 0.2f), enabled = true, selected = selectedGroup == group)
+                )
             }
         }
         LazyColumn(
@@ -224,8 +245,9 @@ fun GroupFilteredFixture(
         ) {
             itemsIndexed(filteredMatches) { index, match ->
                 MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                if ((index + 1) % 5 == 0) {
-                    SponsorCard(modifier = Modifier.padding(vertical = 8.dp))
+                if (showAds && (index + 1) % 4 == 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SponsorCard()
                 }
             }
         }
@@ -242,9 +264,10 @@ fun MatchCard(
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -257,7 +280,12 @@ fun MatchCard(
             ) {
                 Column {
                     Text(
-                        text = if (match.id > 100) "ELIMINACIÓN" else "GRUPO ${match.homeTeam.group}",
+                        text = when {
+                            match.id == 131 -> "GRAN FINAL"
+                            match.id == 132 -> "TERCER PUESTO"
+                            match.id > 100 -> "ELIMINACIÓN"
+                            else -> "GRUPO ${match.homeTeam.group}"
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
@@ -266,7 +294,7 @@ fun MatchCard(
                         Text(
                             text = "${match.stadium}, ${match.city}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = Color.White.copy(alpha = 0.5f),
                             fontSize = 10.sp
                         )
                     }
@@ -275,32 +303,19 @@ fun MatchCard(
                     Text(
                         text = match.date.split(" ").last(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                     
                     if (match.status == "Finished") {
                         Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(
+                        IconButton(
                             onClick = { 
                                 onScoreChange(match.id, null, null)
                                 onPredictionChange(match.id, null, null, null)
                             },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(24.dp)
+                            modifier = Modifier.size(24.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Delete, 
-                                contentDescription = "Limpiar", 
-                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "LIMPIAR", 
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                            )
+                            Icon(Icons.Default.Delete, contentDescription = "Limpiar", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                         }
                     } else if (match.status == "Scheduled") {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -310,17 +325,9 @@ fun MatchCard(
                             modifier = Modifier.height(24.dp),
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(
-                                Icons.Default.Check, 
-                                contentDescription = "Finalizar", 
-                                modifier = Modifier.size(14.dp)
-                            )
+                            Icon(Icons.Default.Check, contentDescription = "Finalizar", modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "FINALIZAR", 
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Black
-                            )
+                            Text("FINALIZAR", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
                         }
                     }
                 }
@@ -345,7 +352,7 @@ fun MatchCard(
                         text = "VS",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        color = Color.White.copy(alpha = 0.2f)
                     )
                     if (match.status == "Finished") {
                         Text(
@@ -372,7 +379,7 @@ fun MatchCard(
                     onClick = { onShowVipStats() },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), contentColor = Color.White)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -382,20 +389,20 @@ fun MatchCard(
 
             // SECCIÓN PRODE (Predicción)
             Spacer(modifier = Modifier.height(16.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 0.5.dp)
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(12.dp))
             
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
                     .padding(12.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("MI PRONÓSTICO (PRODE)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
+                    Text("MI PRONÓSTICO (PRODE)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -405,7 +412,6 @@ fun MatchCard(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Botones L E V (Solo marcan ganador, no ponen goles)
                         PredictionChip(label = "L", selected = match.predictedWinner == "L") {
                             onPredictionChange(match.id, "L", match.predictedHomeScore, match.predictedAwayScore)
                         }
@@ -416,56 +422,74 @@ fun MatchCard(
                             onPredictionChange(match.id, "V", match.predictedHomeScore, match.predictedAwayScore)
                         }
                         
-                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp))
+                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))
                         
-                        PredictionInput(value = match.predictedHomeScore, onValueChange = { onPredictionChange(match.id, match.predictedWinner, it, match.predictedAwayScore) })
-                        Text(" - ", fontWeight = FontWeight.Bold)
-                        PredictionInput(value = match.predictedAwayScore, onValueChange = { onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, it) })
+                        PredictionInput(
+                            value = match.predictedHomeScore, 
+                            onValueChange = { h -> 
+                                val a = if (h != null && match.predictedAwayScore == null) 0 else match.predictedAwayScore
+                                onPredictionChange(match.id, match.predictedWinner, h, a) 
+                            }
+                        )
+                        Text(" - ", fontWeight = FontWeight.Bold, color = Color.White)
+                        PredictionInput(
+                            value = match.predictedAwayScore, 
+                            onValueChange = { a -> 
+                                val h = if (a != null && match.predictedHomeScore == null) 0 else match.predictedHomeScore
+                                onPredictionChange(match.id, match.predictedWinner, h, a) 
+                            }
+                        )
                     }
                 } else {
-                    // Si ya terminó, mostramos el resultado de la predicción
-                    val realWinner = when {
-                        match.homeScore!! > match.awayScore!! -> "L"
-                        match.homeScore!! < match.awayScore!! -> "V"
-                        else -> "E"
+                    val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore) {
+                        val h = match.homeScore ?: 0
+                        val a = match.awayScore ?: 0
+                        val ph = match.predictedHomeScore ?: 0
+                        val pa = match.predictedAwayScore ?: 0
+                        
+                        val realWinner = when {
+                            h > a -> "L"
+                            h < a -> "V"
+                            else -> "E"
+                        }
+                        
+                        val winnerPoints = if (match.predictedWinner == realWinner) 1 else 0
+                        val scorePoints = if (h == ph && a == pa) 2 else 0
+                        winnerPoints + scorePoints
                     }
-                    
-                    val winnerPoints = if (match.predictedWinner == realWinner) 1 else 0
-                    val scorePoints = if (match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) 2 else 0
-                    val totalPoints = winnerPoints + scorePoints
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                "Ganador: ${match.predictedWinner ?: "-"} | Marcador: ${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
+                        Text(
+                            "Ganador: ${match.predictedWinner ?: "-"} | Marcador: ${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(if (totalPoints > 0) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f))
+                                .background(if (pointsData > 0) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                if (totalPoints > 0) "+$totalPoints PUNTOS" else "0 PUNTOS",
+                                if (pointsData > 0) "+$pointsData PUNTOS" else "0 PUNTOS",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = if (totalPoints > 0) Color(0xFF2E7D32) else Color.Red
+                                color = if (pointsData > 0) Color(0xFF81C784) else Color.Red.copy(alpha = 0.8f)
                             )
                         }
                     }
                 }
             }
+
             if (match.id > 100 && match.homeScore != null && match.homeScore == match.awayScore) {
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
+                Text("TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -473,7 +497,7 @@ fun MatchCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     PenaltyCounter(match.homePenalties ?: 0) { onPenaltiesChange(match.id, it, match.awayPenalties) }
-                    Text("-", fontWeight = FontWeight.Bold)
+                    Text("-", fontWeight = FontWeight.Bold, color = Color.White)
                     PenaltyCounter(match.awayPenalties ?: 0) { onPenaltiesChange(match.id, match.homePenalties, it) }
                 }
             }
@@ -485,11 +509,11 @@ fun MatchCard(
 fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = { if (score > 0) onScoreChange(score - 1) }, modifier = Modifier.size(24.dp)) {
-            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
         }
-        Text(text = score.toString(), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+        Text(text = score.toString(), fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
         IconButton(onClick = { onScoreChange(score + 1) }, modifier = Modifier.size(24.dp)) {
-            Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
         }
     }
 }
@@ -506,11 +530,11 @@ fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enable
                 .crossfade(true)
                 .build(),
             contentDescription = null,
-            modifier = Modifier.size(54.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.size(54.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)),
             contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.height(6.dp))
-        Text(team.name, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(team.name, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(
@@ -518,15 +542,15 @@ fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enable
                 modifier = Modifier.size(24.dp),
                 enabled = enabled
             ) {
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f))
             }
-            Text(text = score?.toString() ?: "0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp))
+            Text(text = score?.toString() ?: "0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
             IconButton(
                 onClick = { onScoreChange((score ?: 0) + 1) }, 
                 modifier = Modifier.size(24.dp),
                 enabled = enabled
             ) {
-                Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f))
             }
         }
     }
@@ -536,9 +560,9 @@ fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enable
 fun PredictionInput(value: Int?, onValueChange: (Int?) -> Unit) {
     Surface(
         modifier = Modifier.size(width = 40.dp, height = 40.dp),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White.copy(alpha = 0.1f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
     ) {
         Box(contentAlignment = Alignment.Center) {
             val textValue = value?.toString() ?: ""
@@ -551,7 +575,7 @@ fun PredictionInput(value: Int?, onValueChange: (Int?) -> Unit) {
                 textStyle = MaterialTheme.typography.titleMedium.copy(
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color.White
                 ),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
@@ -570,15 +594,15 @@ fun PredictionChip(label: String, selected: Boolean, onClick: () -> Unit) {
             .size(32.dp)
             .clickable { onClick() },
         shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)) else null
+        color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
+        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)) else null
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
         }
     }

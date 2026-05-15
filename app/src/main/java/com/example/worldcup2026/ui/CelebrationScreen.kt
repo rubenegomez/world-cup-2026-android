@@ -36,20 +36,21 @@ import kotlin.random.Random
 fun CelebrationScreen(champion: Team, onDismiss: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
     
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
+    // Vibración de pantalla (Simula salto de la hinchada)
+    val vibrationY by infiniteTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(150, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         )
     )
 
-    val rotate by infiniteTransition.animateFloat(
-        initialValue = -3f,
-        targetValue = 3f,
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.98f,
+        targetValue = 1.02f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2500, easing = LinearEasing),
+            animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         )
     )
@@ -57,22 +58,15 @@ fun CelebrationScreen(champion: Team, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(Color.Black)
+            .graphicsLayer { translationY = vibrationY },
         contentAlignment = Alignment.Center
     ) {
-        // Confetti Effect
-        ConfettiLayer()
+        // Smoke Effects (blurred gradients)
+        SmokeEffect()
 
-        // Botón cerrar arriba a la derecha por si el de abajo no se ve
-        IconButton(
-            onClick = onDismiss,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-                .background(Color.White.copy(alpha = 0.2f), CircleShape)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
-        }
+        // Confetti Effect (Massive white paper rain)
+        ConfettiLayer()
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -83,10 +77,12 @@ fun CelebrationScreen(champion: Team, onDismiss: () -> Unit) {
         ) {
             Text(
                 text = "¡CAMPEÓN DEL MUNDO!",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    letterSpacing = 2.sp,
+                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 8f)
+                ),
                 color = Color.Yellow,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.graphicsLayer { rotationZ = rotate }
+                fontWeight = FontWeight.Black
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -96,16 +92,19 @@ fun CelebrationScreen(champion: Team, onDismiss: () -> Unit) {
                 // Glow effect
                 Box(
                     modifier = Modifier
-                        .size(180.dp)
-                        .background(Color.Yellow.copy(alpha = 0.15f), CircleShape)
-                        .scale(scale * 1.8f)
+                        .size(200.dp)
+                        .background(
+                            Brush.radialGradient(listOf(Color.Yellow.copy(alpha = 0.3f), Color.Transparent)),
+                            CircleShape
+                        )
+                        .scale(scale * 2.5f)
                 )
                 
                 androidx.compose.foundation.Image(
                     painter = painterResource(id = R.drawable.trophy),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(240.dp)
+                        .size(260.dp)
                         .scale(scale)
                 )
             }
@@ -120,8 +119,9 @@ fun CelebrationScreen(champion: Team, onDismiss: () -> Unit) {
                     .build(),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape),
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.1f)),
                 contentScale = ContentScale.Crop
             )
 
@@ -140,26 +140,75 @@ fun CelebrationScreen(champion: Team, onDismiss: () -> Unit) {
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Yellow, contentColor = Color.Black),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
             ) {
-                Text("CERRAR FESTEJO", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                Text("CERRAR FESTEJO", fontWeight = FontWeight.Black, fontSize = 20.sp)
             }
             
             Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        // Close button top end
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+        ) {
+            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+        }
+    }
+}
+
+@Composable
+fun SmokeEffect() {
+    val infiniteTransition = rememberInfiniteTransition()
+    val smokeAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        repeat(3) { i ->
+            Box(
+                modifier = Modifier
+                    .size(400.dp)
+                    .offset(x = (i * 100 - 100).dp, y = (i * 200).dp)
+                    .graphicsLayer { 
+                        alpha = smokeAlpha
+                        scaleX = 1.5f
+                        scaleY = 1.2f
+                    }
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                listOf(Color.Blue, Color.Yellow, Color.White).random().copy(alpha = 0.4f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
         }
     }
 }
 
 @Composable
 fun ConfettiLayer() {
-    val particles = remember { List(60) { ConfettiParticle() } }
+    // Aumentamos a 150 partículas para efecto masivo
+    val particles = remember { List(150) { ConfettiParticle() } }
     
     particles.forEach { particle ->
         val transition = rememberInfiniteTransition()
         val yPos by transition.animateFloat(
             initialValue = -100f,
-            targetValue = 2000f,
+            targetValue = 2500f,
             animationSpec = infiniteRepeatable(
                 animation = tween(particle.duration, delayMillis = particle.delay, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
@@ -177,27 +226,31 @@ fun ConfettiLayer() {
         Box(
             modifier = Modifier
                 .offset(x = xOffset.dp, y = yPos.dp)
-                .size(particle.size.dp)
+                .size(particle.size.dp, (particle.size * 1.5).dp)
                 .background(particle.color)
                 .graphicsLayer { 
-                    rotationZ = yPos * 0.5f 
-                    alpha = 0.8f
+                    rotationZ = yPos * particle.rotationSpeed 
+                    alpha = 0.9f
                 }
         )
     }
 }
 
 class ConfettiParticle {
-    val xStart = Random.nextInt(0, 500).toFloat()
-    val drift = Random.nextInt(-100, 100).toFloat()
-    val duration = Random.nextInt(3500, 7000)
-    val delay = Random.nextInt(0, 4000)
-    val size = Random.nextInt(4, 12)
-    val color = listOf(
-        Color(0xFFFFD700), // Gold
-        Color(0xFFFFFFFF), // White
-        Color(0xFF4CAF50), // Green
-        Color(0xFF2196F3), // Blue
-        Color(0xFFF44336)  // Red
-    ).random()
+    val xStart = Random.nextInt(-100, 600).toFloat()
+    val drift = Random.nextInt(-150, 150).toFloat()
+    val duration = Random.nextInt(2000, 5000) // Más rápido
+    val delay = Random.nextInt(0, 5000)
+    val size = Random.nextInt(4, 10)
+    val rotationSpeed = Random.nextFloat() * 2f
+    val color = if (Random.nextFloat() > 0.3f) {
+        Color.White // Predomina el blanco como en el video
+    } else {
+        listOf(
+            Color(0xFFFFD700), // Oro
+            Color(0xFF2196F3), // Azul
+            Color(0xFF4CAF50), // Verde
+            Color(0xFFF44336)  // Rojo
+        ).random()
+    }
 }

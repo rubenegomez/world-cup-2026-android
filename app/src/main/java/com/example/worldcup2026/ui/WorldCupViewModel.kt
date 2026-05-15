@@ -60,11 +60,26 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             val match = currentState.matches.find { it.id == matchId } ?: return@launch
             
-            val newStatus = if (homeScore == null && awayScore == null) "Scheduled" else match.status
+            val isClearing = homeScore == null && awayScore == null
+            val newStatus = if (isClearing) "Scheduled" else match.status
+            
+            if (isClearing) {
+                repository.saveMatchPrediction(matchId, null, null, null)
+            }
+            
             repository.saveMatchScore(matchId, homeScore, awayScore, match.homePenalties, match.awayPenalties, newStatus)
             
             val updatedList = currentState.matches.map {
-                if (it.id == matchId) it.copy(homeScore = homeScore, awayScore = awayScore, status = newStatus) else it
+                if (it.id == matchId) {
+                    it.copy(
+                        homeScore = homeScore, 
+                        awayScore = awayScore, 
+                        status = newStatus,
+                        predictedWinner = if (isClearing) null else it.predictedWinner,
+                        predictedHomeScore = if (isClearing) null else it.predictedHomeScore,
+                        predictedAwayScore = if (isClearing) null else it.predictedAwayScore
+                    )
+                } else it
             }
             
             val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList)
@@ -77,16 +92,46 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             repository.saveMatchStatus(matchId, status)
+            
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) {
                     val home = if (status == "Finished") (it.homeScore ?: 0) else it.homeScore
                     val away = if (status == "Finished") (it.awayScore ?: 0) else it.awayScore
-                    it.copy(status = status, homeScore = home, awayScore = away)
+                    val updatedMatch = it.copy(status = status, homeScore = home, awayScore = away)
+                    if (status == "Finished") {
+                        checkProdeAndReward(updatedMatch)
+                    }
+                    updatedMatch
                 } else it
             }
             val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
+        }
+    }
+
+    private fun checkProdeAndReward(match: Match) {
+        val realWinner = when {
+            (match.homeScore ?: 0) > (match.awayScore ?: 0) -> "L"
+            (match.homeScore ?: 0) < (match.awayScore ?: 0) -> "V"
+            else -> "E"
+        }
+        
+        var points = 0
+        if (match.predictedWinner == realWinner) points += 1
+        if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
+            match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) {
+            points += 2
+        }
+        
+        if (points > 0) {
+            val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+            val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
+            val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
+            
+            // 1 punto = 12 horas | 3 puntos = 36 horas
+            val addedTime = points * 12 * 60 * 60 * 1000L
+            prefs.edit().putLong("ad_free_until", baseTime + addedTime).apply()
         }
     }
 
@@ -109,9 +154,11 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun updateMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
-            repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict)
+            val finalWinner = if (homePredict == null && awayPredict == null) null else winner
+            
+            repository.saveMatchPrediction(matchId, finalWinner, homePredict, awayPredict)
             val updatedList = currentState.matches.map {
-                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
+                if (it.id == matchId) it.copy(predictedWinner = finalWinner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
             }
             _uiState.value = currentState.copy(matches = updatedList)
         }

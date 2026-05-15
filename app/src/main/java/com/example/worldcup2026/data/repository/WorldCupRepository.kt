@@ -83,10 +83,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         }
 
         // FINAL (131)
-        addMatchWithPersistence(matches, savedMatches, Match(131, createPlaceholderTeam("Ganador Semi 1"), createPlaceholderTeam("Ganador Semi 2"), null, null, null, null, "2026-07-19 NY/NJ", "Scheduled"))
+        addMatchWithPersistence(matches, savedMatches, Match(131, createPlaceholderTeam("Ganador Semi 1"), createPlaceholderTeam("Ganador Semi 2"), null, null, null, null, "2026-07-19", "Scheduled", "MetLife Stadium", "East Rutherford, NJ"))
 
         // TERCER PUESTO (132)
-        addMatchWithPersistence(matches, savedMatches, Match(132, createPlaceholderTeam("Perdedor Semi 1"), createPlaceholderTeam("Perdedor Semi 2"), null, null, null, null, "2026-07-18 Miami", "Scheduled"))
+        addMatchWithPersistence(matches, savedMatches, Match(132, createPlaceholderTeam("Perdedor Semi 1"), createPlaceholderTeam("Perdedor Semi 2"), null, null, null, null, "2026-07-18", "Scheduled", "Hard Rock Stadium", "Miami Gardens, FL"))
 
         return matches
     }
