@@ -17,7 +17,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -153,6 +153,52 @@ fun AboutScreen() {
                         url = "https://ellocodelpedal.duckdns.org/index.html",
                         context = context
                     )
+                }
+            }
+        }
+
+        // Sección de Depuración / Ajustes Prode
+        item {
+            AboutSectionHeader("HERRAMIENTAS DE DESARROLLADOR", Icons.Default.Build)
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val prefs = remember { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
+            val adFreeUntil = remember { mutableStateOf(prefs.getLong("ad_free_until", 0)) }
+            val isAdFree = adFreeUntil.value > System.currentTimeMillis()
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (isAdFree) "⏱️ ESTADO: Sin anuncios (Prode activo)" else "📺 ESTADO: Anuncios activados (cada 4 partidos)",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isAdFree) Color(0xFF81C784) else Color.White
+                    )
+                    if (isAdFree) {
+                        val hoursLeft = ((adFreeUntil.value - System.currentTimeMillis()) / (1000 * 60 * 60)).coerceAtLeast(0)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Restan aproximadamente $hoursLeft horas sin anuncios.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            prefs.edit().putLong("ad_free_until", 0).apply()
+                            adFreeUntil.value = 0
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("FORZAR ACTIVACIÓN DE ANUNCIOS 📺", fontWeight = FontWeight.Black, color = Color.White, fontSize = 11.sp)
+                    }
                 }
             }
         }

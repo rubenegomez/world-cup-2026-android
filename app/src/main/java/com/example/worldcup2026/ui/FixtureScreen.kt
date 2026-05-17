@@ -442,20 +442,23 @@ fun MatchCard(
                     }
                 } else {
                     val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore) {
-                        val h = match.homeScore ?: 0
-                        val a = match.awayScore ?: 0
-                        val ph = match.predictedHomeScore ?: 0
-                        val pa = match.predictedAwayScore ?: 0
-                        
-                        val realWinner = when {
-                            h > a -> "L"
-                            h < a -> "V"
-                            else -> "E"
+                        if (match.predictedWinner == null && match.predictedHomeScore == null && match.predictedAwayScore == null) {
+                            0
+                        } else {
+                            val h = match.homeScore ?: 0
+                            val a = match.awayScore ?: 0
+                            
+                            val realWinner = when {
+                                h > a -> "L"
+                                h < a -> "V"
+                                else -> "E"
+                            }
+                            
+                            val winnerPoints = if (match.predictedWinner == realWinner) 1 else 0
+                            val scorePoints = if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
+                                h == match.predictedHomeScore && a == match.predictedAwayScore) 2 else 0
+                            winnerPoints + scorePoints
                         }
-                        
-                        val winnerPoints = if (match.predictedWinner == realWinner) 1 else 0
-                        val scorePoints = if (h == ph && a == pa) 2 else 0
-                        winnerPoints + scorePoints
                     }
                     
                     Row(
