@@ -413,13 +413,16 @@ fun MatchCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         PredictionChip(label = "L", selected = match.predictedWinner == "L") {
-                            onPredictionChange(match.id, "L", match.predictedHomeScore, match.predictedAwayScore)
+                            val nextWinner = if (match.predictedWinner == "L") null else "L"
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore)
                         }
                         PredictionChip(label = "E", selected = match.predictedWinner == "E") {
-                            onPredictionChange(match.id, "E", match.predictedHomeScore, match.predictedAwayScore)
+                            val nextWinner = if (match.predictedWinner == "E") null else "E"
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore)
                         }
                         PredictionChip(label = "V", selected = match.predictedWinner == "V") {
-                            onPredictionChange(match.id, "V", match.predictedHomeScore, match.predictedAwayScore)
+                            val nextWinner = if (match.predictedWinner == "V") null else "V"
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore)
                         }
                         
                         VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))

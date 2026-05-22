@@ -154,11 +154,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun updateMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
-            val finalWinner = if (homePredict == null && awayPredict == null) null else winner
-            
-            repository.saveMatchPrediction(matchId, finalWinner, homePredict, awayPredict)
+            repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict)
             val updatedList = currentState.matches.map {
-                if (it.id == matchId) it.copy(predictedWinner = finalWinner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
+                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
             }
             _uiState.value = currentState.copy(matches = updatedList)
         }
