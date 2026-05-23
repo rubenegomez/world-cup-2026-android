@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "123456789012",
-    "project_id": "world-cup-2026-android",
-    "storage_bucket": "world-cup-2026-android.appspot.com"
+    "project_number": "1087567707485",
+    "project_id": "worldcup-2026-fe6cc",
+    "storage_bucket": "worldcup-2026-fe6cc.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:abcdef1234567890",
+        "mobilesdk_app_id": "1:1087567707485:android:7f542f7d70ae39d66f7cb4",
         "android_client_info": {
           "package_name": "com.example.worldcup2026"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyFakeKey-PlaceholderForCompilation"
+          "current_key": "AIzaSyA7uZ_Jmt3qt2sbPcVvH9SUuRV42s2Ho9M"
         }
       ],
       "services": {
