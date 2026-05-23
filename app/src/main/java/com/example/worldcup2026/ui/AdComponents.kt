@@ -509,17 +509,25 @@ fun VipWidgetWebView(htmlContent: String, modifier: Modifier = Modifier) {
     androidx.compose.ui.viewinterop.AndroidView(
         factory = { context ->
             android.webkit.WebView(context).apply {
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    databaseEnabled = true
+                    allowFileAccess = true
+                    allowContentAccess = true
+                    useWideViewPort = true
+                    loadWithOverviewMode = true
+                    mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S906E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
+                }
                 webViewClient = android.webkit.WebViewClient()
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.useWideViewPort = true
-                settings.loadWithOverviewMode = true
+                webChromeClient = android.webkit.WebChromeClient()
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
             }
         },
         update = { webView ->
             webView.loadDataWithBaseURL(
-                "https://widgets.api-sports.io",
+                "https://widgets.api-sports.io/",
                 htmlContent,
                 "text/html",
                 "UTF-8",
