@@ -443,7 +443,7 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                     131 -> 863234
                     132 -> 863233
                     1 -> 863172
-                    else -> null
+                    else -> 863234 // Fallback de demostración para cualquier otro partido
                 }
                 
                 if (apiId != null) {
