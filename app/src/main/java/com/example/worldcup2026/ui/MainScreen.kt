@@ -44,6 +44,10 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
         }
     }
 
+    LaunchedEffect(context) {
+        AdManager.loadInterstitialAd(context)
+    }
+
     if (showSplash) {
         SplashScreen(onTimeout = { showSplash = false })
     } else {
@@ -88,40 +92,45 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                         )
                     },
                     bottomBar = {
-                        NavigationBar(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.15f),
-                            contentColor = androidx.compose.ui.graphics.Color.White
-                        ) {
-                            NavigationBarItem(
-                                selected = selectedScreen == 0,
-                                onClick = { selectedScreen = 0 },
-                                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-                                label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                        Column {
+                            if (isAdsEnabled) {
+                                AdmobBanner()
+                            }
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.15f),
+                                contentColor = androidx.compose.ui.graphics.Color.White
+                            ) {
+                                NavigationBarItem(
+                                    selected = selectedScreen == 0,
+                                    onClick = { selectedScreen = 0 },
+                                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
+                                    label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    )
                                 )
-                            )
-                            NavigationBarItem(
-                                selected = selectedScreen == 1,
-                                onClick = { selectedScreen = 1 },
-                                icon = { Icon(Icons.Default.Info, contentDescription = null) },
-                                label = { Text("Posiciones", style = MaterialTheme.typography.labelSmall) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                NavigationBarItem(
+                                    selected = selectedScreen == 1,
+                                    onClick = { selectedScreen = 1 },
+                                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                    label = { Text("Posiciones", style = MaterialTheme.typography.labelSmall) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    )
                                 )
-                            )
-                            NavigationBarItem(
-                                selected = selectedScreen == 2,
-                                onClick = { selectedScreen = 2 },
-                                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                label = { Text("Créditos", style = MaterialTheme.typography.labelSmall) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                NavigationBarItem(
+                                    selected = selectedScreen == 2,
+                                    onClick = { selectedScreen = 2 },
+                                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                    label = { Text("Créditos", style = MaterialTheme.typography.labelSmall) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 ) { paddingValues ->
@@ -147,8 +156,10 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                         },
                                         onShowVipStats = { match ->
                                             selectedMatchForVip = match
-                                            isWatchingAd = true
                                             viewModel.downloadVipStats(match.id)
+                                            AdManager.showInterstitialAd(context) {
+                                                showVipDialog = true
+                                            }
                                         },
                                         onPredictionChange = { id, winner, home, away ->
                                             viewModel.updateMatchPrediction(id, winner, home, away)
