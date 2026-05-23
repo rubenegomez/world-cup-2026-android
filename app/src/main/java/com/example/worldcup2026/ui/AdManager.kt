@@ -2,6 +2,9 @@ package com.example.worldcup2026.ui
 
 import android.app.Activity
 import android.content.Context
+import android.widget.Toast
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -19,7 +22,6 @@ object AdManager {
     private var mInterstitialAd: InterstitialAd? = null
     private var isLoading = false
 
-    // Carga un anuncio intersticial de forma asíncrona para que esté listo cuando se requiera
     fun loadInterstitialAd(context: Context) {
         if (mInterstitialAd != null || isLoading) return
         isLoading = true
@@ -33,6 +35,13 @@ object AdManager {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
                     mInterstitialAd = null
                     isLoading = false
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(
+                            context.applicationContext,
+                            "AdMob error al cargar Interstitial: ${adError.message} (Código: ${adError.code})",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
 
                 override fun onAdLoaded(interstitialAd: InterstitialAd) {
@@ -43,7 +52,6 @@ object AdManager {
         )
     }
 
-    // Muestra el anuncio intersticial si está cargado; si no, ejecuta directamente la acción de retorno
     fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
         val activity = context as? Activity
         val ad = mInterstitialAd
@@ -53,34 +61,59 @@ object AdManager {
                 override fun onAdDismissedFullScreenContent() {
                     mInterstitialAd = null
                     onComplete()
-                    // Cargar el siguiente de manera preventiva
                     loadInterstitialAd(context)
                 }
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     mInterstitialAd = null
                     onComplete()
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(
+                            context.applicationContext,
+                            "AdMob error al mostrar Interstitial: ${adError.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
             }
             ad.show(activity)
         } else {
-            // Si no está listo, intentamos cargarlo y procedemos directamente para no bloquear la UX
             loadInterstitialAd(context)
             onComplete()
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(
+                    context.applicationContext,
+                    "Interstitial no listo, intentando cargar de nuevo...",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 }
 
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     AndroidView(
         modifier = modifier
             .fillMaxWidth()
             .height(50.dp),
-        factory = { context ->
-            AdView(context).apply {
+        factory = { ctx ->
+            AdView(ctx).apply {
                 setAdSize(AdSize.BANNER)
                 adUnitId = "ca-app-pub-3940256099942544/6300978111"
+                adListener = object : AdListener() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        super.onAdFailedToLoad(adError)
+                        Handler(Looper.getMainLooper()).post {
+                            Toast.makeText(
+                                context.applicationContext,
+                                "AdMob error al cargar Banner: ${adError.message} (Código: ${adError.code})",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                }
                 loadAd(AdRequest.Builder().build())
             }
         }
