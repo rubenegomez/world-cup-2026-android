@@ -173,6 +173,75 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         ))
     }
 
+    suspend fun fetchAndSaveVipStats(matchId: Int): List<String> {
+        val apiId = when (matchId) {
+            131 -> 863234 // Argentina vs Francia Final 2022
+            132 -> 863233 // Croacia vs Marruecos 3er puesto 2022
+            1 -> 863172   // México vs Polonia 2022
+            else -> null
+        } ?: return emptyList()
+
+        try {
+            val apiService = com.example.worldcup2026.data.api.NetworkModule.apiService
+            val statsResponse = apiService.getFixtureStatistics(apiId).response
+            
+            var homePoss: Int? = null
+            var awayPoss: Int? = null
+            var homeShots: Int? = null
+            var awayShots: Int? = null
+
+            if (statsResponse.size >= 2) {
+                // Team A Stats
+                statsResponse[0].statistics.forEach { stat ->
+                    when (stat.type) {
+                        "Ball Possession" -> homePoss = (stat.value as? String)?.replace("%", "")?.toIntOrNull() ?: (stat.value as? Double)?.toInt()
+                        "Shots on Goal" -> homeShots = (stat.value as? Double)?.toInt() ?: (stat.value as? String)?.toIntOrNull()
+                    }
+                }
+                // Team B Stats
+                statsResponse[1].statistics.forEach { stat ->
+                    when (stat.type) {
+                        "Ball Possession" -> awayPoss = (stat.value as? String)?.replace("%", "")?.toIntOrNull() ?: (stat.value as? Double)?.toInt()
+                        "Shots on Goal" -> awayShots = (stat.value as? Double)?.toInt() ?: (stat.value as? String)?.toIntOrNull()
+                    }
+                }
+            }
+
+            if (homePoss != null && awayPoss != null) {
+                saveMatchVipStats(matchId, homePoss!!, awayPoss!!, homeShots ?: 0, awayShots ?: 0)
+            }
+
+            // Goleadores reales desde la API
+            val eventsResponse = apiService.getFixtureEvents(apiId).response
+            val scorers = eventsResponse
+                .filter { it.type == "Goal" }
+                .map { "⚽ ${it.team.name}: ${it.player.name} (${it.time.elapsed}')" }
+            return scorers
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return emptyList()
+    }
+
+    suspend fun saveMatchVipStats(matchId: Int, homePossession: Int, awayPossession: Int, homeShots: Int, awayShots: Int) {
+        val saved = matchDao.getAllMatches().first().find { it.id == matchId }
+        matchDao.insertMatch(MatchEntity(
+            matchId,
+            saved?.homeScore,
+            saved?.awayScore,
+            saved?.homePenalties,
+            saved?.awayPenalties,
+            saved?.status ?: "Scheduled",
+            predictedWinner = saved?.predictedWinner,
+            predictedHomeScore = saved?.predictedHomeScore,
+            predictedAwayScore = saved?.predictedAwayScore,
+            homePossession = homePossession,
+            awayPossession = awayPossession,
+            homeShots = homeShots,
+            awayShots = awayShots
+        ))
+    }
+
     suspend fun getAllTeams(): List<Team> {
         return getMockGroups().flatMap { it.teams }
     }

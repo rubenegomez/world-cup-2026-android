@@ -162,6 +162,13 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun downloadVipStats(matchId: Int) {
+        viewModelScope.launch {
+            repository.fetchAndSaveVipStats(matchId)
+            loadData()
+        }
+    }
+
     private fun groupMatchesPlusKnockout(all: List<Match>, knockout: List<Match>): List<Match> {
         val groupOnes = all.filter { it.id <= 100 }
         return groupOnes + knockout

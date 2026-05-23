@@ -1,14 +1,53 @@
 package com.example.worldcup2026.data.api
 
-import com.example.worldcup2026.data.model.Match
-import com.example.worldcup2026.data.model.Team
 import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface WorldCupApiService {
-    @GET("teams")
-    suspend fun getTeams(@Query("league") leagueId: Int = 1, @Query("season") season: Int = 2026): List<Team>
+    @GET("fixtures/statistics")
+    suspend fun getFixtureStatistics(
+        @Query("fixture") fixtureId: Int
+    ): ApiResponse<TeamStatsDto>
 
-    @GET("fixtures")
-    suspend fun getMatches(@Query("league") leagueId: Int = 1, @Query("season") season: Int = 2026): List<Match>
+    @GET("fixtures/events")
+    suspend fun getFixtureEvents(
+        @Query("fixture") fixtureId: Int,
+        @Query("type") type: String = "Goal"
+    ): ApiResponse<EventDto>
 }
+
+data class ApiResponse<T>(
+    val response: List<T>
+)
+
+data class TeamStatsDto(
+    val team: TeamDto,
+    val statistics: List<StatDto>
+)
+
+data class TeamDto(
+    val id: Int,
+    val name: String
+)
+
+data class StatDto(
+    val type: String,
+    val value: Any?
+)
+
+data class EventDto(
+    val time: TimeDto,
+    val team: TeamDto,
+    val player: PlayerDto,
+    val type: String,
+    val detail: String
+)
+
+data class TimeDto(
+    val elapsed: Int
+)
+
+data class PlayerDto(
+    val id: Int?,
+    val name: String
+)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -432,20 +433,61 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    "ENTENDIDO",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
+                val apiId = when (match.id) {
+                    131 -> 863234
+                    132 -> 863233
+                    1 -> 863172
+                    else -> null
+                }
+                
+                if (apiId != null) {
+                    var showWidgetDialog by remember { mutableStateOf(false) }
+                    
+                    Button(
+                        onClick = { showWidgetDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "VER WIDGET EN VIVO (VIP)",
+                            color = Color.Black,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.sp
+                        )
+                    }
+                    
+                    if (showWidgetDialog) {
+                        VipWidgetDialog(fixtureId = apiId, onDismiss = { showWidgetDialog = false })
+                    }
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        "ENTENDIDO",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
             }
         }
     )
@@ -460,4 +502,101 @@ fun StatRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
         Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White)
     }
+}
+
+@Composable
+fun VipWidgetWebView(htmlContent: String, modifier: Modifier = Modifier) {
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { context ->
+            android.webkit.WebView(context).apply {
+                webViewClient = android.webkit.WebViewClient()
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            }
+        },
+        update = { webView ->
+            webView.loadDataWithBaseURL(
+                "https://widgets.api-sports.io",
+                htmlContent,
+                "text/html",
+                "UTF-8",
+                null
+            )
+        },
+        modifier = modifier
+    )
+}
+
+@Composable
+fun VipWidgetDialog(fixtureId: Int, onDismiss: () -> Unit) {
+    val htmlContent = remember(fixtureId) {
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body {
+                    background-color: #121212;
+                    color: #ffffff;
+                    margin: 0;
+                    padding: 8px;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="wg-api-football-match"
+                 data-host="v3.football.api-sports.io"
+                 data-key="13f1fe9cefbb89f9b748728c80582fa4"
+                 data-fixture="$fixtureId"
+                 data-theme="dark"
+                 data-show-errors="true"
+                 class="api_football_loader">
+            </div>
+            <script type="module" src="https://widgets.api-sports.io/2.0.3/widgets.js"></script>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121212),
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "WIDGET INTERACTIVO VIP",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFFFFD700)
+                )
+                IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                }
+            }
+        },
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(350.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.2f))
+            ) {
+                VipWidgetWebView(
+                    htmlContent = htmlContent,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        },
+        confirmButton = {}
+    )
 }
