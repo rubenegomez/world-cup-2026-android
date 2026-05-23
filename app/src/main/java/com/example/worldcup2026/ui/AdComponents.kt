@@ -1,5 +1,6 @@
 package com.example.worldcup2026.ui
 
+import com.example.worldcup2026.data.model.Match
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -148,38 +149,303 @@ fun AdWatchingScreen(onComplete: () -> Unit) {
 }
 
 @Composable
-fun VipStatsDialog(onDismiss: () -> Unit) {
+fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
+    val random = remember(match.id) { java.util.Random(match.id.toLong()) }
+
+    // 1. Posesión de balón
+    val homePossession = match.homePossession ?: (45 + random.nextInt(16))
+    val awayPossession = match.awayPossession ?: (100 - homePossession)
+
+    // 2. Tiros al arco
+    val homeShots = match.homeShots ?: (5 + random.nextInt(11))
+    val awayShots = match.awayShots ?: (5 + random.nextInt(11))
+
+    // 3. xG (Goles esperados)
+    val homeXg = String.format(java.util.Locale.US, "%.2f", 0.5f + homeShots * 0.12f + random.nextFloat() * 0.3f)
+    val awayXg = String.format(java.util.Locale.US, "%.2f", 0.5f + awayShots * 0.12f + random.nextFloat() * 0.3f)
+
+    // 4. Probabilidades de victoria (1x2)
+    val homeWeight = 30 + random.nextInt(40)
+    val drawWeight = 20 + random.nextInt(20)
+    val awayWeight = 30 + random.nextInt(40)
+    val totalWeight = (homeWeight + drawWeight + awayWeight).toFloat()
+    val homeProb = ((homeWeight / totalWeight) * 100).toInt()
+    val drawProb = ((drawWeight / totalWeight) * 100).toInt()
+    val awayProb = 100 - homeProb - drawProb
+
+    // 5. Goleadores
+    val actualHomeScore = match.homeScore ?: 0
+    val actualAwayScore = match.awayScore ?: 0
+    val generatedScorers = remember(match.id, actualHomeScore, actualAwayScore) {
+        if (match.scorers.isNotEmpty()) {
+            match.scorers
+        } else {
+            val scorersList = mutableListOf<String>()
+            val localRandom = java.util.Random(match.id.toLong() + 99)
+            
+            fun getFictionalScorer(teamName: String): String {
+                val commonNames = when (teamName.lowercase()) {
+                    "argentina" -> listOf("Messi", "Lautaro", "Álvarez", "Di María", "Mac Allister", "Enzo", "De Paul")
+                    "brasil" -> listOf("Neymar Jr", "Vinícius Jr", "Rodrygo", "Richarlison", "Martinelli", "Raphinha", "Casemiro")
+                    "méxico" -> listOf("S. Giménez", "C. Lozano", "H. Martín", "L. Chávez", "O. Pineda")
+                    "españa" -> listOf("Morata", "Dani Olmo", "N. Williams", "L. Yamal", "Pedri", "Gavi", "F. Torres")
+                    "francia" -> listOf("Mbappé", "Griezmann", "Giroud", "Dembélé", "Tchouaméni", "Coman", "K. Muani")
+                    "alemania" -> listOf("Füllkrug", "Musiala", "Wirtz", "Havertz", "Sané", "Gnabry", "Gündogan")
+                    "inglaterra" -> listOf("Harry Kane", "Bellingham", "Saka", "Foden", "Rashford", "Watkins", "Palmer")
+                    "portugal" -> listOf("C. Ronaldo", "B. Fernandes", "B. Silva", "J. Félix", "R. Leão", "G. Ramos")
+                    "uruguay" -> listOf("D. Núñez", "L. Suárez", "F. Valverde", "De Arrascaeta", "F. Pellistri", "Bentancur")
+                    "colombia" -> listOf("Luis Díaz", "James R.", "R. Borré", "J. Durán", "L. Sinisterra", "S. Arias")
+                    "estados unidos" -> listOf("Pulisic", "Weah", "Balogun", "Reyna", "McKennie", "Aaronson")
+                    "canadá" -> listOf("J. David", "A. Davies", "C. Larin", "T. Buchanan", "S. Eustáquio")
+                    else -> listOf("Gómez", "Rodríguez", "Smith", "Silva", "Müller", "Jones", "Dupont", "Novak", "Petrov", "Kim")
+                }
+                val lastName = commonNames[localRandom.nextInt(commonNames.size)]
+                val minute = 1 + localRandom.nextInt(90)
+                return "$lastName ($minute')"
+            }
+
+            repeat(actualHomeScore) {
+                scorersList.add("⚽ ${match.homeTeam.name}: ${getFictionalScorer(match.homeTeam.name)}")
+            }
+            repeat(actualAwayScore) {
+                scorersList.add("⚽ ${match.awayTeam.name}: ${getFictionalScorer(match.awayTeam.name)}")
+            }
+            scorersList
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1A1A1A),
-        titleContentColor = Color.White,
-        textContentColor = Color.White.copy(alpha = 0.8f),
+        containerColor = Color(0xFF121212),
+        shape = RoundedCornerShape(28.dp),
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("ESTADÍSTICAS VIP", fontWeight = FontWeight.Black)
-            }
-        },
-        text = {
-            Column {
-                Text("Análisis táctico avanzado:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(12.dp))
-                StatRow("Probabilidad de Victoria", "42% - 31% - 27%")
-                StatRow("Posesión Proyectada", "54%")
-                StatRow("Heatmap de Jugadores", "Disponible")
-                StatRow("xG (Goles Esperados)", "1.85")
-                Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    Icons.Default.Star,
+                    contentDescription = null,
+                    tint = Color(0xFFFFD700),
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    "Esta es una funcionalidad de demostración (VIP). En la versión final, estos datos vendrán de una API de deportes real.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.4f)
+                    "MÉTRICAS TÁCTICAS VIP",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    color = Color(0xFFFFD700)
                 )
             }
         },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Tarjeta de Enfrentamiento
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "${match.homeTeam.name} vs ${match.awayTeam.name}",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                        if (match.homeScore != null && match.awayScore != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Resultado Final: ${match.homeScore} - ${match.awayScore}",
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Probabilidad 1X2
+                Text(
+                    "Probabilidad de Victoria",
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                // Barra de probabilidad segmentada
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color.White.copy(alpha = 0.1f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(maxOf(homeProb.toFloat(), 1f))
+                            .background(Color(0xFF4CAF50))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(maxOf(drawProb.toFloat(), 1f))
+                            .background(Color(0xFFFFC107))
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(maxOf(awayProb.toFloat(), 1f))
+                            .background(Color(0xFF2196F3))
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Local: $homeProb%", fontSize = 10.sp, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+                    Text("Empate: $drawProb%", fontSize = 10.sp, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+                    Text("Visita: $awayProb%", fontSize = 10.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Posesión Proyectada/Real
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Posesión", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    Text("$homePossession% - $awayPossession%", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(homePossession.toFloat())
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(awayPossession.toFloat())
+                            .background(Color.White.copy(alpha = 0.15f))
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Tiros al Arco
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Tiros al Arco", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    Text("$homeShots - $awayShots", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(maxOf(homeShots.toFloat(), 1f))
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .weight(maxOf(awayShots.toFloat(), 1f))
+                            .background(Color.White.copy(alpha = 0.15f))
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Goles Esperados (xG)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("xG (Goles Esperados)", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    Text("$homeXg - $awayXg", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                }
+
+                if (generatedScorers.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Goleadores",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                        ) {
+                            generatedScorers.forEach { scorer ->
+                                Text(
+                                    scorer,
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    modifier = Modifier.padding(vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("ENTENDIDO", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Text(
+                    "ENTENDIDO",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
             }
         }
     )

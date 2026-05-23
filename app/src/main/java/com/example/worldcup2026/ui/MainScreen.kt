@@ -1,5 +1,6 @@
 package com.example.worldcup2026.ui
 
+import com.example.worldcup2026.data.model.Match
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,8 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     var showVipDialog by remember { mutableStateOf(false) }
     var showCelebration by remember { mutableStateOf(false) }
     var showSplash by remember { mutableStateOf(true) }
+    
+    var selectedMatchForVip by remember { mutableStateOf<Match?>(null) }
     
     val adFreeUntil = remember { prefs.getLong("ad_free_until", 0) }
     val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
@@ -56,7 +59,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
             
             // Capa de oscurecimiento para legibilidad
             Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f)))
-
+ 
             if (uiState is WorldCupUiState.Success && (uiState as WorldCupUiState.Success).champion != null && showCelebration) {
                 // Pantalla de Celebración EXCLUYENTE
                 val state = uiState as WorldCupUiState.Success
@@ -142,7 +145,8 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                         onStatusChange = { id, status ->
                                             viewModel.updateMatchStatus(id, status)
                                         },
-                                        onShowVipStats = {
+                                        onShowVipStats = { match ->
+                                            selectedMatchForVip = match
                                             isWatchingAd = true
                                         },
                                         onPredictionChange = { id, winner, home, away ->
@@ -153,9 +157,15 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                     1 -> StandingsScreen(matches = state.matches)
                                     2 -> AboutScreen()
                                 }
-
-                                if (showVipDialog) {
-                                    VipStatsDialog(onDismiss = { showVipDialog = false })
+ 
+                                if (showVipDialog && selectedMatchForVip != null) {
+                                    VipStatsDialog(
+                                        match = selectedMatchForVip!!,
+                                        onDismiss = { 
+                                            showVipDialog = false
+                                            selectedMatchForVip = null
+                                        }
+                                    )
                                 }
                             }
                             is WorldCupUiState.Error -> {

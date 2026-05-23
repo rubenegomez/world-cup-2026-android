@@ -29,19 +29,26 @@ import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FixtureScreen(
     matches: List<Match>,
     onScoreChange: (Int, Int?, Int?) -> Unit,
     onPenaltiesChange: (Int, Int?, Int?) -> Unit = { _, _, _ -> },
     onStatusChange: (Int, String) -> Unit = { _, _ -> },
-    onShowVipStats: () -> Unit = {},
+    onShowVipStats: (Match) -> Unit = {},
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit = { _, _, _, _ -> },
     showAds: Boolean = true
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
+    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    val coroutineScope = rememberCoroutineScope()
+    val selectedTab = pagerState.currentPage
 
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(
@@ -49,17 +56,23 @@ fun FixtureScreen(
             containerColor = Color.Transparent,
             contentColor = Color.White,
             indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                if (selectedTab < tabPositions.size) {
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             },
             divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
-                    onClick = { selectedTab = index },
+                    onClick = { 
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    },
                     text = { 
                         Text(
                             text = title,
@@ -72,8 +85,11 @@ fun FixtureScreen(
             }
         }
 
-        Box(modifier = Modifier.weight(1f)) {
-            when (selectedTab) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            when (page) {
                 0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
                 1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
                 2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
@@ -88,7 +104,7 @@ fun KnockoutBracket(
     onScoreChange: (Int, Int?, Int?) -> Unit,
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
-    onShowVipStats: () -> Unit,
+    onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
@@ -151,7 +167,7 @@ fun DayFilteredFixture(
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
-    onShowVipStats: () -> Unit,
+    onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
@@ -211,7 +227,7 @@ fun GroupFilteredFixture(
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
-    onShowVipStats: () -> Unit,
+    onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
@@ -260,7 +276,7 @@ fun MatchCard(
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
-    onShowVipStats: () -> Unit,
+    onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit
 ) {
     Card(
@@ -372,11 +388,11 @@ fun MatchCard(
                     enabled = match.status != "Finished"
                 )
             }
-
+ 
             if (match.status == "Finished") {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { onShowVipStats() },
+                    onClick = { onShowVipStats(match) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), contentColor = Color.White)
