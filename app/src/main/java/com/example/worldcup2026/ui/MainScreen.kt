@@ -32,6 +32,16 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     val adFreeUntil = remember { prefs.getLong("ad_free_until", 0) }
     val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
     
+    LaunchedEffect(selectedScreen) {
+        val screenName = when (selectedScreen) {
+            0 -> "Fixture"
+            1 -> "Posiciones"
+            2 -> "Creditos"
+            else -> "Desconocido"
+        }
+        com.example.worldcup2026.data.util.AnalyticsManager.logScreenView(screenName)
+    }
+
     LaunchedEffect(uiState) {
         val state = uiState as? WorldCupUiState.Success ?: return@LaunchedEffect
         if (state.champion != null) {

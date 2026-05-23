@@ -10,6 +10,7 @@ import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
 import com.example.worldcup2026.data.repository.WorldCupRepository
 import com.example.worldcup2026.data.util.KnockoutCalculator
+import com.example.worldcup2026.data.util.AnalyticsManager
 import kotlinx.coroutines.launch
 
 sealed class WorldCupUiState {
@@ -60,6 +61,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             val match = currentState.matches.find { it.id == matchId } ?: return@launch
             
+            AnalyticsManager.logMatchAction("score_updated", matchId, "$homeScore-$awayScore")
+            
             val isClearing = homeScore == null && awayScore == null
             val newStatus = if (isClearing) "Scheduled" else match.status
             
@@ -91,6 +94,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun updateMatchStatus(matchId: Int, status: String) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
+            
+            AnalyticsManager.logMatchAction("status_updated", matchId, status)
             repository.saveMatchStatus(matchId, status)
             
             val updatedList = currentState.matches.map {
@@ -154,6 +159,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun updateMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
+            
+            AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict")
             repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict)
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
@@ -164,6 +171,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     fun downloadVipStats(matchId: Int) {
         viewModelScope.launch {
+            AnalyticsManager.logMatchAction("vip_stats_opened", matchId)
             repository.fetchAndSaveVipStats(matchId)
             loadData()
         }
