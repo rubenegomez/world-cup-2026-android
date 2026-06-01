@@ -9,3 +9,4 @@ Este documento sirve para realizar el seguimiento del desarrollo de **world-cup-
 | Estado | Tarea / Característica | Componente | Fecha de Cierre | Notas / Detalles |
 | :---: | :--- | :---: | :---: | :--- |
 | **[x]** | Pancarta de cuenta regresiva (CountdownBanner) con notificaciones y sonido personalizado | UI / Notificaciones | 2026-06-01 | Implementado banner premium en Compose, NotificationHelper, solicitud de permisos y sonido raw. |
+| **[x]** | Auto-enfoque del fixture según el día actual del Mundial 2026 | UI / Navegación | 2026-06-01 | La app se abre en la pestaña Eliminación o selecciona el día de hoy dentro de la fase de grupos de manera automática. |

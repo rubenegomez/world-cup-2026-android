@@ -46,7 +46,23 @@ fun FixtureScreen(
     showAds: Boolean = true
 ) {
     val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
-    val pagerState = rememberPagerState(pageCount = { tabs.size })
+    
+    // Determinar la pestaña inicial según la fecha del sistema
+    val initialPage = remember(matches) {
+        try {
+            val today = java.time.LocalDate.now()
+            val startOfKnockouts = java.time.LocalDate.of(2026, 6, 27) // Primer partido de eliminación directa
+            if (today.isAfter(startOfKnockouts) || today.isEqual(startOfKnockouts)) {
+                2 // Pestaña ELIMINACIÓN
+            } else {
+                0 // Pestaña POR DÍA
+            }
+        } catch (e: Exception) {
+            0
+        }
+    }
+    
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
     val selectedTab = pagerState.currentPage
 
@@ -181,7 +197,21 @@ fun DayFilteredFixture(
             if (parts.size == 2) parts[1] + parts[0] else dateStr
         }
     
-    var selectedDate by remember { mutableStateOf(if (dates.isNotEmpty()) dates.first() else "") }
+    val todayStr = remember {
+        try {
+            val localDate = java.time.LocalDate.now()
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM")
+            localDate.format(formatter)
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    val initialDate = remember(dates) {
+        dates.find { it.contains(todayStr) } ?: (if (dates.isNotEmpty()) dates.first() else "")
+    }
+    
+    var selectedDate by remember { mutableStateOf(initialDate) }
     val filteredMatches = matches.filter { it.date.startsWith(selectedDate) && it.id <= 100 }
 
     Column {
