@@ -51,6 +51,8 @@ fun FixtureScreen(
     val selectedTab = pagerState.currentPage
 
     Column(modifier = Modifier.fillMaxSize()) {
+        CountdownBanner(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
@@ -152,10 +154,6 @@ fun KnockoutBracket(
         ) {
             itemsIndexed(filteredMatches) { index, match ->
                 MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                if (showAds && (index + 1) % 4 == 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SponsorCard()
-                }
             }
         }
     }
@@ -212,10 +210,6 @@ fun DayFilteredFixture(
         ) {
             itemsIndexed(filteredMatches) { index, match ->
                 MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                if (showAds && (index + 1) % 4 == 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SponsorCard()
-                }
             }
         }
     }
@@ -261,10 +255,6 @@ fun GroupFilteredFixture(
         ) {
             itemsIndexed(filteredMatches) { index, match ->
                 MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
-                if (showAds && (index + 1) % 4 == 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SponsorCard()
-                }
             }
         }
     }

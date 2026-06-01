@@ -439,12 +439,7 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                     .padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val apiId = when (match.id) {
-                    131 -> 863234
-                    132 -> 863233
-                    1 -> 863172
-                    else -> 863234 // Fallback de demostración para cualquier otro partido
-                }
+                val apiId = com.example.worldcup2026.data.RemoteConfigManager.getApiId(match.id)
                 
                 if (apiId != null) {
                     var showWidgetDialog by remember { mutableStateOf(false) }
@@ -505,106 +500,46 @@ fun StatRow(label: String, value: String) {
 }
 
 @Composable
-fun VipWidgetWebView(htmlContent: String, modifier: Modifier = Modifier) {
-    androidx.compose.ui.viewinterop.AndroidView(
-        factory = { context ->
-            android.webkit.WebView(context).apply {
-                settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    databaseEnabled = true
-                    allowFileAccess = true
-                    allowContentAccess = true
-                    useWideViewPort = true
-                    loadWithOverviewMode = true
-                    mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    userAgentString = "Mozilla/5.0 (Linux; Android 13; SM-S906E) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Mobile Safari/537.36"
-                }
-                webViewClient = android.webkit.WebViewClient()
-                webChromeClient = android.webkit.WebChromeClient()
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            }
-        },
-        update = { webView ->
-            webView.loadDataWithBaseURL(
-                "https://widgets.api-sports.io/",
-                htmlContent,
-                "text/html",
-                "UTF-8",
-                null
-            )
-        },
-        modifier = modifier
-    )
-}
-
-@Composable
 fun VipWidgetDialog(fixtureId: Int, onDismiss: () -> Unit) {
-    val htmlContent = remember(fixtureId) {
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body {
-                    background-color: #121212;
-                    color: #ffffff;
-                    margin: 0;
-                    padding: 8px;
-                }
-            </style>
-        </head>
-        <body>
-            <div id="wg-api-football-match"
-                 data-host="v3.football.api-sports.io"
-                 data-key="13f1fe9cefbb89f9b748728c80582fa4"
-                 data-fixture="$fixtureId"
-                 data-theme="dark"
-                 data-show-errors="true"
-                 class="api_football_loader">
-            </div>
-            <script type="module" src="https://widgets.api-sports.io/2.0.3/widgets.js"></script>
-        </body>
-        </html>
-        """.trimIndent()
-    }
-
-    AlertDialog(
+    androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF121212),
-        shape = RoundedCornerShape(24.dp),
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 32.dp),
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = Color(0xFF121212)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp)
             ) {
-                Text(
-                    "WIDGET INTERACTIVO VIP",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = Color(0xFFFFD700)
-                )
-                IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "ESTADÍSTICAS VIP",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = Color(0xFFFFD700)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    VipStatsScreen(fixtureId = fixtureId)
                 }
             }
-        },
-        text = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(350.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.Black.copy(alpha = 0.2f))
-            ) {
-                VipWidgetWebView(
-                    htmlContent = htmlContent,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        },
-        confirmButton = {}
-    )
+        }
+    }
 }

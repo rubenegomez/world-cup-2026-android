@@ -25,7 +25,7 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("D:/Nextcloud/Ruben External Storage/Documentacion/llaves/loco_pedal")
+            storeFile = file("D:/Nextcloud/Nueva carpeta/Documentacion/llaves/loco_pedal")
             storePassword = "k7NoPZjlvNREWm"
             keyAlias = "pedal_alias"
             keyPassword = "k7NoPZjlvNREWm"
@@ -55,6 +55,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.11"
@@ -71,6 +72,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-config-ktx")
 
     // Google AdMob
     implementation("com.google.android.gms:play-services-ads:23.0.0")

@@ -72,7 +72,7 @@ fun AboutScreen() {
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
-                            "VERSIÓN 1.2.0 (BUILD 2026)", 
+                            "VERSIÓN ${com.example.worldcup2026.BuildConfig.VERSION_NAME} (BUILD ${com.example.worldcup2026.BuildConfig.VERSION_CODE})", 
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold
@@ -87,9 +87,9 @@ fun AboutScreen() {
             AboutSectionHeader("EQUIPO DE DESARROLLO", Icons.Default.Person)
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    AuthorItem("Director de Proyecto", "Rubén")
-                    Divider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                    AuthorItem("Arquitectura e IA", "Antigravity")
+                    AuthorItem("Director de Proyecto", "Ruben Ernesto Gomez")
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                    AuthorItem("Arquitectura e IA", "Antigravity 2.0")
                 }
             }
         }
@@ -157,51 +157,7 @@ fun AboutScreen() {
             }
         }
 
-        // Sección de Depuración / Ajustes Prode
-        item {
-            AboutSectionHeader("HERRAMIENTAS DE DESARROLLADOR", Icons.Default.Build)
-            val context = androidx.compose.ui.platform.LocalContext.current
-            val prefs = remember { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
-            val adFreeUntil = remember { mutableStateOf(prefs.getLong("ad_free_until", 0)) }
-            val isAdFree = adFreeUntil.value > System.currentTimeMillis()
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.15f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = if (isAdFree) "⏱️ ESTADO: Sin anuncios (Prode activo)" else "📺 ESTADO: Anuncios activados (cada 4 partidos)",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isAdFree) Color(0xFF81C784) else Color.White
-                    )
-                    if (isAdFree) {
-                        val hoursLeft = ((adFreeUntil.value - System.currentTimeMillis()) / (1000 * 60 * 60)).coerceAtLeast(0)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Restan aproximadamente $hoursLeft horas sin anuncios.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.6f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            prefs.edit().putLong("ad_free_until", 0).apply()
-                            adFreeUntil.value = 0
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("FORZAR ACTIVACIÓN DE ANUNCIOS 📺", fontWeight = FontWeight.Black, color = Color.White, fontSize = 11.sp)
-                    }
-                }
-            }
-        }
+
 
         // Licencias de Software
         item {

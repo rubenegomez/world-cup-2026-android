@@ -45,10 +45,8 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     LaunchedEffect(uiState) {
         val state = uiState as? WorldCupUiState.Success ?: return@LaunchedEffect
         if (state.champion != null) {
-            val hasShown = prefs.getBoolean("has_shown_celebration_${state.champion.id}", false)
-            if (!hasShown) {
-                showCelebration = true
-            }
+            // Siempre mostramos el festejo si hay un campeón
+            showCelebration = true
         } else {
             showCelebration = false
         }
