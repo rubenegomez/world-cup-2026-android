@@ -233,23 +233,23 @@
     "homeScore": 1,
     "awayScore": 1,
     "status": "Live",
-    "clock": "69'",
-    "homePossession": 59,
-    "awayPossession": 41,
-    "homeShots": 3,
+    "clock": "83'",
+    "homePossession": 54,
+    "awayPossession": 45,
+    "homeShots": 4,
     "awayShots": 2,
-    "homeFouls": 12,
+    "homeFouls": 14,
     "awayFouls": 12,
     "homeCorners": 4,
     "awayCorners": 0,
     "homeSaves": 1,
-    "awaySaves": 2,
+    "awaySaves": 3,
     "homeYellowCards": 2,
     "awayYellowCards": 0,
     "homeRedCards": 0,
     "awayRedCards": 0,
-    "homePasses": "365/409 (0.9)",
-    "awayPasses": "244/287 (0.9)",
+    "homePasses": "411/465 (0.9)",
+    "awayPasses": "331/383 (0.9)",
     "scorers": [
       "⚽ Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break) (21')",
       "⚽ Brasil: Vinícius Júnior (Asistencia: Bruno Guimarães) (32')"
@@ -264,7 +264,10 @@
       "🔄 [61'] Brasil: 🟢 Matheus Cunha 🔴 Lucas Paquetá",
       "🔄 [62'] Brasil: 🟢 Luiz Henrique 🔴 Igor Thiago",
       "🔄 [65'] Marruecos: 🟢 Samir El Mourabet 🔴 Azzedine Ounahi",
-      "🔄 [65'] Marruecos: 🟢 Chemsdine Talbi 🔴 Brahim Díaz"
+      "🔄 [65'] Marruecos: 🟢 Chemsdine Talbi 🔴 Brahim Díaz",
+      "🔄 [80'] Marruecos: 🟢 Anass Salah-Eddine 🔴 Noussair Mazraoui",
+      "🔄 [80'] Marruecos: 🟢 Ayoube Amaimouni-Echghouyab 🔴 Bilal El Khannouss",
+      "🔄 [80'] Brasil: 🟢 Danilo Santos 🔴 Bruno Guimarães"
     ]
   },
   {
