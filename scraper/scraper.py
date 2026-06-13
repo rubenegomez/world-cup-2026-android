@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import sys
+import re
 
 # Traducción de nombres de selecciones de ESPN (inglés) a la base de datos de la app (español)
 TEAM_TRANSLATION = {
@@ -69,6 +70,77 @@ def fetch_match_details(event_id):
     except Exception as e:
         print(f"Error cargando detalle del evento {event_id}: {e}")
     return None
+
+def clean_and_translate_event(ke_type, ke_text, team_trans, ke_clock):
+    ke_type_lower = ke_type.lower()
+    
+    if "goal" in ke_type_lower:
+        emoji = "⚽"
+        # Regex para buscar "Jugador (Equipo)"
+        player_match = re.search(r"(?:Goal!.*?\.\s*)?([^()]+)\s*\(([^()]+)\)", ke_text)
+        if player_match:
+            player_name = player_match.group(1).strip()
+            if "Goal!" in player_name:
+                parts = player_name.split(".")
+                player_name = parts[-1].strip()
+            
+            # Buscar asistencia
+            assistant_match = re.search(r"[Aa]ssisted by ([^.]+)", ke_text)
+            if assistant_match:
+                assistant_name = assistant_match.group(1).strip()
+                return f"{emoji} [{ke_clock}] {team_trans}: {player_name} (Asistencia: {assistant_name})"
+            else:
+                return f"{emoji} [{ke_clock}] {team_trans}: {player_name}"
+        else:
+            return f"{emoji} [{ke_clock}] {team_trans}: Gol"
+
+    elif "yellow card" in ke_type_lower:
+        emoji = "🟨"
+        player_match = re.search(r"([^()]+)\s*\(([^()]+)\)\s*is shown the yellow card", ke_text)
+        if player_match:
+            player_name = player_match.group(1).strip()
+            return f"{emoji} [{ke_clock}] {team_trans}: {player_name}"
+        else:
+            return f"{emoji} [{ke_clock}] {team_trans}: Tarjeta Amarilla"
+
+    elif "red card" in ke_type_lower:
+        emoji = "🟥"
+        player_match = re.search(r"([^()]+)\s*\(([^()]+)\)\s*is shown the red card", ke_text)
+        if player_match:
+            player_name = player_match.group(1).strip()
+            return f"{emoji} [{ke_clock}] {team_trans}: {player_name}"
+        else:
+            return f"{emoji} [{ke_clock}] {team_trans}: Tarjeta Roja"
+
+    elif "substitution" in ke_type_lower:
+        emoji = "🔄"
+        # Ejemplo: "Substitution, South Africa. Thalente Mbatha replaces Lyle Foster."
+        sub_match = re.search(r"Substitution,\s*[^.]+\.\s*(.+?)\s+replaces\s+([^.]+?)(?:\s+because|\.|$)", ke_text)
+        if sub_match:
+            player_in = sub_match.group(1).strip()
+            player_out = sub_match.group(2).strip()
+            return f"{emoji} [{ke_clock}] {team_trans}: Entra {player_in}, sale {player_out}"
+        else:
+            return f"{emoji} [{ke_clock}] {team_trans}: Cambio"
+            
+    return None
+
+def clean_scorer_text(ke_text, team_trans, ke_clock):
+    emoji = "⚽"
+    player_match = re.search(r"(?:Goal!.*?\.\s*)?([^()]+)\s*\(([^()]+)\)", ke_text)
+    if player_match:
+        player_name = player_match.group(1).strip()
+        if "Goal!" in player_name:
+            parts = player_name.split(".")
+            player_name = parts[-1].strip()
+        
+        assistant_match = re.search(r"[Aa]ssisted by ([^.]+)", ke_text)
+        if assistant_match:
+            assistant_name = assistant_match.group(1).strip()
+            return f"{emoji} {team_trans}: {player_name} (Asistencia: {assistant_name}) ({ke_clock})"
+        else:
+            return f"{emoji} {team_trans}: {player_name} ({ke_clock})"
+    return f"{emoji} {team_trans}: Gol ({ke_clock})"
 
 def main():
     print("Iniciando actualizador de resultados de la Copa del Mundo 2026...")
@@ -191,22 +263,15 @@ def main():
                     
                     team_trans = translate_team(ke_team)
                     
-                    # Formatear el texto de la incidencia para la app
-                    emoji = "⚽"
+                    # Generar texto de goleador si es gol
                     if "goal" in ke_type.lower():
-                        emoji = "⚽"
-                        # Añadir a la lista de goleadores simples (para la tarjeta de partido)
-                        scorers.append(f"⚽ {team_trans}: {ke_text.split('!')[-1].strip()} ({ke_clock})")
-                    elif "yellow card" in ke_type.lower():
-                        emoji = "🟨"
-                    elif "red card" in ke_type.lower():
-                        emoji = "🟥"
-                    elif "substitution" in ke_type.lower():
-                        emoji = "🔄"
-                    else:
-                        continue # Evitamos Kickoff u otros eventos genéricos
+                        scorer_clean = clean_scorer_text(ke_text, team_trans, ke_clock)
+                        scorers.append(scorer_clean)
                         
-                    events_list.append(f"{emoji} [{ke_clock}] {team_trans}: {ke_text}")
+                    # Formatear y traducir la incidencia para la app
+                    translated_evt = clean_and_translate_event(ke_type, ke_text, team_trans, ke_clock)
+                    if translated_evt:
+                        events_list.append(translated_evt)
                     
                 # 2. Extraer Estadísticas (boxscore)
                 boxscore = details.get("boxscore", {})
