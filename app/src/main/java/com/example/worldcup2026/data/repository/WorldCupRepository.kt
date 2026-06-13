@@ -203,12 +203,17 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     "passes:${liveMatch.homePasses ?: ""},${liveMatch.awayPasses ?: ""}"
                 } else null
 
+                val scorersStr = if (liveMatch.scorers.isEmpty()) null else liveMatch.scorers.joinToString("|")
+                val eventsStr = if (liveMatch.events.isEmpty()) null else liveMatch.events.joinToString("|")
+
                 if (saved == null || 
                     saved.homeScore != liveMatch.homeScore || 
                     saved.awayScore != liveMatch.awayScore || 
                     saved.status != liveMatch.status ||
                     saved.homePossession != liveMatch.homePossession ||
-                    saved.vipStats != vipStatsStr
+                    saved.vipStats != vipStatsStr ||
+                    saved.scorers != scorersStr ||
+                    saved.events != eventsStr
                 ) {
                     matchDao.insertMatch(MatchEntity(
                         id = liveMatch.matchId,
@@ -224,8 +229,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         awayPossession = liveMatch.awayPossession,
                         homeShots = liveMatch.homeShots,
                         awayShots = liveMatch.awayShots,
-                        scorers = if (liveMatch.scorers.isEmpty()) null else liveMatch.scorers.joinToString("|"),
-                        events = if (liveMatch.events.isEmpty()) null else liveMatch.events.joinToString("|"),
+                        scorers = scorersStr,
+                        events = eventsStr,
                         vipStats = vipStatsStr
                     ))
                 }

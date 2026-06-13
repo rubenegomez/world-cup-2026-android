@@ -119,7 +119,7 @@ def clean_and_translate_event(ke_type, ke_text, team_trans, ke_clock):
         if sub_match:
             player_in = sub_match.group(1).strip()
             player_out = sub_match.group(2).strip()
-            return f"{emoji} [{ke_clock}] {team_trans}: Entra {player_in}, sale {player_out}"
+            return f"{emoji} [{ke_clock}] {team_trans}: 🟢 {player_in} 🔴 {player_out}"
         else:
             return f"{emoji} [{ke_clock}] {team_trans}: Cambio"
             

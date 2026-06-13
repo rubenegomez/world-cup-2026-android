@@ -106,7 +106,7 @@ function cleanAndTranslateEvent(keType, keText, teamTrans, keClock) {
         if (subMatch) {
             const playerIn = subMatch[1].trim();
             const playerOut = subMatch[2].trim();
-            return `${emoji} [${keClock}] ${teamTrans}: Entra ${playerIn}, sale ${playerOut}`;
+            return `${emoji} [${keClock}] ${teamTrans}: 🟢 ${playerIn} 🔴 ${playerOut}`;
         } else {
             return `${emoji} [${keClock}] ${teamTrans}: Cambio`;
         }
