@@ -12,6 +12,7 @@ import com.example.worldcup2026.data.repository.WorldCupRepository
 import com.example.worldcup2026.data.util.KnockoutCalculator
 import com.example.worldcup2026.data.util.AnalyticsManager
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 sealed class WorldCupUiState {
     object Loading : WorldCupUiState()
@@ -31,6 +32,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     data class RewardDialogInfo(val round: Int, val points: Int, val hours: Int)
     private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
     val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
+    
+    private var autoSyncJob: kotlinx.coroutines.Job? = null
 
     init {
         val database = WorldCupDatabase.getDatabase(application)
@@ -53,6 +56,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                         val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                         _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                         checkRoundRewards(allMatches)
+                        startAutoSync(allMatches)
                     }
                 }
 
@@ -61,6 +65,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                 _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                 checkRoundRewards(allMatches)
+                startAutoSync(allMatches)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
@@ -78,6 +83,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                     _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                     checkRoundRewards(allMatches)
+                    startAutoSync(allMatches)
                 }
                 onComplete(success)
             } catch (e: Exception) {
@@ -289,5 +295,33 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private fun groupMatchesPlusKnockout(all: List<Match>, knockout: List<Match>): List<Match> {
         val groupOnes = all.filter { it.id <= 100 }
         return groupOnes + knockout
+    }
+
+    private fun startAutoSync(matches: List<Match>) {
+        autoSyncJob?.cancel()
+        val hasLiveMatches = matches.any { it.status == "Live" }
+        if (hasLiveMatches) {
+            autoSyncJob = viewModelScope.launch {
+                while (true) {
+                    delay(60000) // Cada 60 segundos
+                    try {
+                        val success = repository.syncMatchesWithLiveJson(com.example.worldcup2026.data.api.NetworkModule.DEFAULT_JSON_URL)
+                        if (success) {
+                            val updatedMatches = repository.getMatches()
+                            val finalMatches = KnockoutCalculator.calculateKnockoutMatches(updatedMatches)
+                            val allMatches = groupMatchesPlusKnockout(updatedMatches, finalMatches)
+                            _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        autoSyncJob?.cancel()
     }
 }
