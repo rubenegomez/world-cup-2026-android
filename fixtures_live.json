@@ -225,30 +225,32 @@
   },
   {
     "matchId": 13,
-    "homeScore": 0,
+    "homeScore": 1,
     "awayScore": 1,
     "status": "Live",
-    "homePossession": 55,
-    "awayPossession": 44,
-    "homeShots": 0,
-    "awayShots": 1,
-    "homeFouls": 3,
+    "homePossession": 52,
+    "awayPossession": 47,
+    "homeShots": 1,
+    "awayShots": 2,
+    "homeFouls": 4,
     "awayFouls": 5,
     "homeCorners": 1,
     "awayCorners": 0,
-    "homeSaves": 0,
+    "homeSaves": 1,
     "awaySaves": 0,
     "homeYellowCards": 0,
     "awayYellowCards": 0,
     "homeRedCards": 0,
     "awayRedCards": 0,
-    "homePasses": "137/155 (0.9)",
-    "awayPasses": "109/124 (0.9)",
+    "homePasses": "143/165 (0.9)",
+    "awayPasses": "133/150 (0.9)",
     "scorers": [
-      "⚽ Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break) (21')"
+      "⚽ Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break) (21')",
+      "⚽ Brasil: Vinícius Júnior (32')"
     ],
     "events": [
-      "⚽ [21'] Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break)"
+      "⚽ [21'] Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break)",
+      "⚽ [32'] Brasil: Vinícius Júnior"
     ]
   },
   {
