@@ -43,5 +43,7 @@ data class Match(
     val awayPossession: Int? = null,
     val homeShots: Int? = null,
     val awayShots: Int? = null,
-    val scorers: List<String> = emptyList()
+    val scorers: List<String> = emptyList(),
+    val events: List<String> = emptyList(),
+    val vipStats: String? = null
 )

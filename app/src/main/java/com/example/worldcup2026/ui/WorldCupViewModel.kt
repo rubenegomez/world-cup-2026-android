@@ -25,19 +25,42 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = mutableStateOf<WorldCupUiState>(WorldCupUiState.Loading)
     val uiState: State<WorldCupUiState> = _uiState
 
+    private val _adFreeUntil = mutableStateOf(0L)
+    val adFreeUntil: State<Long> = _adFreeUntil
+
+    data class RewardDialogInfo(val round: Int, val points: Int, val hours: Int)
+    private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
+    val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
+
     init {
         val database = WorldCupDatabase.getDatabase(application)
         repository = WorldCupRepository(database.matchDao())
+        val prefs = application.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
         loadData()
+        checkPendingRewardDialog()
     }
 
     private fun loadData() {
         viewModelScope.launch {
             try {
+                // Sincronización automática con el JSON remoto de GitHub en segundo plano
+                launch {
+                    val success = repository.syncMatchesWithLiveJson(com.example.worldcup2026.data.api.NetworkModule.DEFAULT_JSON_URL)
+                    if (success) {
+                        val matches = repository.getMatches()
+                        val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
+                        val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
+                        _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                        checkRoundRewards(allMatches)
+                    }
+                }
+
                 val matches = repository.getMatches()
                 val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
                 val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                 _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                checkRoundRewards(allMatches)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
@@ -88,6 +111,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
+            checkRoundRewards(allMatches)
         }
     }
 
@@ -102,42 +126,108 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 if (it.id == matchId) {
                     val home = if (status == "Finished") (it.homeScore ?: 0) else it.homeScore
                     val away = if (status == "Finished") (it.awayScore ?: 0) else it.awayScore
-                    val updatedMatch = it.copy(status = status, homeScore = home, awayScore = away)
-                    if (status == "Finished") {
-                        checkProdeAndReward(updatedMatch)
-                    }
-                    updatedMatch
+                    it.copy(status = status, homeScore = home, awayScore = away)
                 } else it
             }
             val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
+            checkRoundRewards(allMatches)
         }
     }
 
-    private fun checkProdeAndReward(match: Match) {
+    private fun getMatchRound(matchId: Int): Int {
+        if (matchId <= 0) return 0
+        if (matchId <= 72) {
+            val relativeId = (matchId - 1) % 6
+            return when (relativeId) {
+                0, 1 -> 1 // Fecha 1
+                2, 3 -> 2 // Fecha 2
+                else -> 3 // Fecha 3
+            }
+        }
+        return when {
+            matchId in 101..116 -> 4 // 16avos
+            matchId in 117..124 -> 5 // Octavos
+            matchId in 125..128 -> 6 // Cuartos
+            matchId in 129..130 -> 7 // Semis
+            matchId == 131 || matchId == 132 -> 8 // Final y 3er puesto
+            else -> 9
+        }
+    }
+
+    private fun calculatePointsForMatch(match: Match): Int {
+        if (match.status != "Finished") return 0
         val realWinner = when {
             (match.homeScore ?: 0) > (match.awayScore ?: 0) -> "L"
             (match.homeScore ?: 0) < (match.awayScore ?: 0) -> "V"
             else -> "E"
         }
-        
         var points = 0
         if (match.predictedWinner == realWinner) points += 1
         if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
             match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) {
             points += 2
         }
-        
-        if (points > 0) {
-            val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        return points
+    }
+
+    private fun checkRoundRewards(matches: List<Match>) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val matchesByRound = matches.groupBy { getMatchRound(it.id) }
+        var adFreeTimeToAdd = 0L
+        val editor = prefs.edit()
+
+        for (round in 1..8) {
+            val roundMatches = matchesByRound[round] ?: continue
+            val key = "round_rewarded_$round"
+            if (prefs.getBoolean(key, false)) continue
+
+            val allFinished = roundMatches.all { it.status == "Finished" }
+            if (allFinished && roundMatches.isNotEmpty()) {
+                var roundPoints = 0
+                roundMatches.forEach { match ->
+                    roundPoints += calculatePointsForMatch(match)
+                }
+                
+                // Premiar: 12 horas por punto
+                if (roundPoints > 0) {
+                    adFreeTimeToAdd += roundPoints * 12 * 60 * 60 * 1000L
+                }
+                editor.putBoolean(key, true)
+                editor.putBoolean("round_reward_shown_$round", false)
+                editor.putInt("round_points_$round", roundPoints)
+            }
+        }
+
+        if (adFreeTimeToAdd > 0L) {
             val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
             val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
-            
-            // 1 punto = 12 horas | 3 puntos = 36 horas
-            val addedTime = points * 12 * 60 * 60 * 1000L
-            prefs.edit().putLong("ad_free_until", baseTime + addedTime).apply()
+            editor.putLong("ad_free_until", baseTime + adFreeTimeToAdd)
         }
+        editor.apply()
+        _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
+        checkPendingRewardDialog()
+    }
+
+    private fun checkPendingRewardDialog() {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        for (round in 1..8) {
+            val rewarded = prefs.getBoolean("round_rewarded_$round", false)
+            val shown = prefs.getBoolean("round_reward_shown_$round", true)
+            if (rewarded && !shown) {
+                val points = prefs.getInt("round_points_$round", 0)
+                _pendingRewardDialog.value = RewardDialogInfo(round, points, points * 12)
+                break
+            }
+        }
+    }
+
+    fun dismissRewardDialog(round: Int) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("round_reward_shown_$round", true).apply()
+        _pendingRewardDialog.value = null
+        checkPendingRewardDialog()
     }
 
     fun updateMatchPenalties(matchId: Int, homePenalties: Int?, awayPenalties: Int?) {
@@ -153,6 +243,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
+            checkRoundRewards(allMatches)
         }
     }
 
@@ -172,7 +263,6 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun downloadVipStats(matchId: Int) {
         viewModelScope.launch {
             AnalyticsManager.logMatchAction("vip_stats_opened", matchId)
-            repository.fetchAndSaveVipStats(matchId)
             loadData()
         }
     }

@@ -4,6 +4,8 @@ import com.example.worldcup2026.data.model.Match
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
@@ -152,6 +154,27 @@ fun AdWatchingScreen(onComplete: () -> Unit) {
 @Composable
 fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
     val random = remember(match.id) { java.util.Random(match.id.toLong()) }
+
+    // Parsear estadísticas VIP reales
+    val statsMap = remember(match.vipStats) {
+        match.vipStats?.split("|")?.associate {
+            val parts = it.split(":")
+            if (parts.size >= 2) parts[0] to parts[1] else "" to ""
+        } ?: emptyMap()
+    }
+
+    val homeFouls = statsMap["fouls"]?.split(",")?.getOrNull(0) ?: "0"
+    val awayFouls = statsMap["fouls"]?.split(",")?.getOrNull(1) ?: "0"
+    val homeCorners = statsMap["corners"]?.split(",")?.getOrNull(0) ?: "0"
+    val awayCorners = statsMap["corners"]?.split(",")?.getOrNull(1) ?: "0"
+    val homeSaves = statsMap["saves"]?.split(",")?.getOrNull(0) ?: "0"
+    val awaySaves = statsMap["saves"]?.split(",")?.getOrNull(1) ?: "0"
+    val homeYellow = statsMap["yellow"]?.split(",")?.getOrNull(0) ?: "0"
+    val awayYellow = statsMap["yellow"]?.split(",")?.getOrNull(1) ?: "0"
+    val homeRed = statsMap["red"]?.split(",")?.getOrNull(0) ?: "0"
+    val awayRed = statsMap["red"]?.split(",")?.getOrNull(1) ?: "0"
+    val homePasses = statsMap["passes"]?.split(",")?.getOrNull(0) ?: "- / - (-)"
+    val awayPasses = statsMap["passes"]?.split(",")?.getOrNull(1) ?: "- / - (-)"
 
     // 1. Posesión de balón
     val homePossession = match.homePossession ?: (45 + random.nextInt(16))
@@ -430,6 +453,36 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                         }
                     }
                 }
+
+                if (statsMap.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Detalles Tácticos",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            StatRow("Faltas Cometidas", "$homeFouls - $awayFouls")
+                            StatRow("Tiros de Esquina", "$homeCorners - $awayCorners")
+                            StatRow("Atajadas del Portero", "$homeSaves - $awaySaves")
+                            StatRow("Tarjetas Amarillas", "$homeYellow - $awayYellow")
+                            StatRow("Tarjetas Rojas", "$homeRed - $awayRed")
+                            StatRow("Pases Completados", "$homePasses vs $awayPasses")
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -439,13 +492,12 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                     .padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val apiId = com.example.worldcup2026.data.RemoteConfigManager.getApiId(match.id)
-                
-                if (apiId != null) {
-                    var showWidgetDialog by remember { mutableStateOf(false) }
+                val showLiveWidgetButton = true
+                if (showLiveWidgetButton) {
+                    var showEventsDialog by remember { mutableStateOf(false) }
                     
                     Button(
-                        onClick = { showWidgetDialog = true },
+                        onClick = { showEventsDialog = true },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
@@ -458,15 +510,15 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            "VER WIDGET EN VIVO (VIP)",
+                            "VER INCIDENCIAS EN VIVO",
                             color = Color.Black,
                             fontWeight = FontWeight.Black,
                             fontSize = 13.sp
                         )
                     }
                     
-                    if (showWidgetDialog) {
-                        VipWidgetDialog(fixtureId = apiId, onDismiss = { showWidgetDialog = false })
+                    if (showEventsDialog) {
+                        VipEventsDialog(match = match, onDismiss = { showEventsDialog = false })
                     }
                 }
 
@@ -489,6 +541,95 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
 }
 
 @Composable
+fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.7f),
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xFF121212)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "INCIDENCIAS EN VIVO",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = Color(0xFFFFD700)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                if (match.events.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "No hay incidencias registradas para este partido.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.5f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(match.events.size) { index ->
+                            val event = match.events[index]
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                            ) {
+                                Text(
+                                    text = event,
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("CERRAR", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun StatRow(label: String, value: String) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -499,47 +640,3 @@ fun StatRow(label: String, value: String) {
     }
 }
 
-@Composable
-fun VipWidgetDialog(fixtureId: Int, onDismiss: () -> Unit) {
-    androidx.compose.ui.window.Dialog(
-        onDismissRequest = onDismiss,
-        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 32.dp),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = Color(0xFF121212)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        "ESTADÍSTICAS VIP",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp,
-                        color = Color(0xFFFFD700)
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                ) {
-                    VipStatsScreen(fixtureId = fixtureId)
-                }
-            }
-        }
-    }
-}

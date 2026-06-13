@@ -19,5 +19,9 @@ data class MatchEntity(
     val homePossession: Int? = null,
     val awayPossession: Int? = null,
     val homeShots: Int? = null,
-    val awayShots: Int? = null
+    val awayShots: Int? = null,
+    // Datos en vivo adicionales
+    val scorers: String? = null,
+    val events: String? = null,
+    val vipStats: String? = null
 )

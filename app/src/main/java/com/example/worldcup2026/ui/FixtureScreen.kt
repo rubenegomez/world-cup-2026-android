@@ -409,6 +409,27 @@ fun MatchCard(
                 )
             }
  
+            if (match.status != "Scheduled" && match.scorers.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    match.scorers.forEach { scorer ->
+                        Text(
+                            text = scorer,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+
             if (match.status == "Finished") {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(

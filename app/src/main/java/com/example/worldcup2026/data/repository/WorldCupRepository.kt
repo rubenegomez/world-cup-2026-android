@@ -106,7 +106,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 homePossession = saved.homePossession,
                 awayPossession = saved.awayPossession,
                 homeShots = saved.homeShots,
-                awayShots = saved.awayShots
+                awayShots = saved.awayShots,
+                scorers = if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"),
+                events = if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|"),
+                vipStats = saved.vipStats
             ))
         } else {
             targetList.add(baseMatch)
@@ -129,7 +132,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             homePossession = saved?.homePossession,
             awayPossession = saved?.awayPossession,
             homeShots = saved?.homeShots,
-            awayShots = saved?.awayShots
+            awayShots = saved?.awayShots,
+            scorers = saved?.scorers,
+            events = saved?.events,
+            vipStats = saved?.vipStats
         ))
     }
 
@@ -148,7 +154,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             homePossession = saved?.homePossession,
             awayPossession = saved?.awayPossession,
             homeShots = saved?.homeShots,
-            awayShots = saved?.awayShots
+            awayShots = saved?.awayShots,
+            scorers = saved?.scorers,
+            events = saved?.events,
+            vipStats = saved?.vipStats
         ))
     }
 
@@ -169,58 +178,63 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             homePossession = saved?.homePossession,
             awayPossession = saved?.awayPossession,
             homeShots = saved?.homeShots,
-            awayShots = saved?.awayShots
+            awayShots = saved?.awayShots,
+            scorers = saved?.scorers,
+            events = saved?.events,
+            vipStats = saved?.vipStats
         ))
     }
 
-    suspend fun fetchAndSaveVipStats(matchId: Int): List<String> {
-        val apiId = when (matchId) {
-            131 -> 863234 // Argentina vs Francia Final 2022
-            132 -> 863233 // Croacia vs Marruecos 3er puesto 2022
-            1 -> 863172   // México vs Polonia 2022
-            else -> null
-        } ?: return emptyList()
-
+    suspend fun syncMatchesWithLiveJson(jsonUrl: String): Boolean {
         try {
-            val apiService = com.example.worldcup2026.data.api.NetworkModule.apiService
-            val statsResponse = apiService.getFixtureStatistics(apiId).response
+            val service = com.example.worldcup2026.data.api.NetworkModule.apiService
+            val matchesList = service.getLiveResults(jsonUrl)
             
-            var homePoss: Int? = null
-            var awayPoss: Int? = null
-            var homeShots: Int? = null
-            var awayShots: Int? = null
+            val savedMatches = matchDao.getAllMatches().first()
+            
+            matchesList.forEach { liveMatch ->
+                val saved = savedMatches.find { it.id == liveMatch.matchId }
+                val vipStatsStr = if (liveMatch.homeFouls != null) {
+                    "fouls:${liveMatch.homeFouls},${liveMatch.awayFouls}|" +
+                    "corners:${liveMatch.homeCorners},${liveMatch.awayCorners}|" +
+                    "saves:${liveMatch.homeSaves},${liveMatch.awaySaves}|" +
+                    "yellow:${liveMatch.homeYellowCards},${liveMatch.awayYellowCards}|" +
+                    "red:${liveMatch.homeRedCards},${liveMatch.awayRedCards}|" +
+                    "passes:${liveMatch.homePasses ?: ""},${liveMatch.awayPasses ?: ""}"
+                } else null
 
-            if (statsResponse.size >= 2) {
-                // Team A Stats
-                statsResponse[0].statistics.forEach { stat ->
-                    when (stat.type) {
-                        "Ball Possession" -> homePoss = (stat.value as? String)?.replace("%", "")?.toIntOrNull() ?: (stat.value as? Double)?.toInt()
-                        "Shots on Goal" -> homeShots = (stat.value as? Double)?.toInt() ?: (stat.value as? String)?.toIntOrNull()
-                    }
-                }
-                // Team B Stats
-                statsResponse[1].statistics.forEach { stat ->
-                    when (stat.type) {
-                        "Ball Possession" -> awayPoss = (stat.value as? String)?.replace("%", "")?.toIntOrNull() ?: (stat.value as? Double)?.toInt()
-                        "Shots on Goal" -> awayShots = (stat.value as? Double)?.toInt() ?: (stat.value as? String)?.toIntOrNull()
-                    }
+                if (saved == null || 
+                    saved.homeScore != liveMatch.homeScore || 
+                    saved.awayScore != liveMatch.awayScore || 
+                    saved.status != liveMatch.status ||
+                    saved.homePossession != liveMatch.homePossession ||
+                    saved.vipStats != vipStatsStr
+                ) {
+                    matchDao.insertMatch(MatchEntity(
+                        id = liveMatch.matchId,
+                        homeScore = liveMatch.homeScore,
+                        awayScore = liveMatch.awayScore,
+                        homePenalties = saved?.homePenalties,
+                        awayPenalties = saved?.awayPenalties,
+                        status = liveMatch.status,
+                        predictedWinner = saved?.predictedWinner,
+                        predictedHomeScore = saved?.predictedHomeScore,
+                        predictedAwayScore = saved?.predictedAwayScore,
+                        homePossession = liveMatch.homePossession,
+                        awayPossession = liveMatch.awayPossession,
+                        homeShots = liveMatch.homeShots,
+                        awayShots = liveMatch.awayShots,
+                        scorers = if (liveMatch.scorers.isEmpty()) null else liveMatch.scorers.joinToString("|"),
+                        events = if (liveMatch.events.isEmpty()) null else liveMatch.events.joinToString("|"),
+                        vipStats = vipStatsStr
+                    ))
                 }
             }
-
-            if (homePoss != null && awayPoss != null) {
-                saveMatchVipStats(matchId, homePoss!!, awayPoss!!, homeShots ?: 0, awayShots ?: 0)
-            }
-
-            // Goleadores reales desde la API
-            val eventsResponse = apiService.getFixtureEvents(apiId).response
-            val scorers = eventsResponse
-                .filter { it.type == "Goal" }
-                .map { "⚽ ${it.team.name}: ${it.player.name} (${it.time.elapsed}')" }
-            return scorers
+            return true
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return emptyList()
+        return false
     }
 
     suspend fun saveMatchVipStats(matchId: Int, homePossession: Int, awayPossession: Int, homeShots: Int, awayShots: Int) {
@@ -238,7 +252,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             homePossession = homePossession,
             awayPossession = awayPossession,
             homeShots = homeShots,
-            awayShots = awayShots
+            awayShots = awayShots,
+            scorers = saved?.scorers,
+            events = saved?.events,
+            vipStats = saved?.vipStats
         ))
     }
 

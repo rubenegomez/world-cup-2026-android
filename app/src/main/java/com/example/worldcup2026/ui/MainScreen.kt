@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worldcup2026.ui.CelebrationScreen
 
@@ -21,6 +22,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
     val uiState by viewModel.uiState
+    val pendingReward by viewModel.pendingRewardDialog
     var selectedScreen by remember { mutableIntStateOf(0) }
     var isWatchingAd by remember { mutableStateOf(false) }
     var showVipDialog by remember { mutableStateOf(false) }
@@ -29,7 +31,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     
     var selectedMatchForVip by remember { mutableStateOf<Match?>(null) }
     
-    val adFreeUntil = remember { prefs.getLong("ad_free_until", 0) }
+    val adFreeUntil by viewModel.adFreeUntil
     val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
     
     LaunchedEffect(selectedScreen) {
@@ -184,6 +186,104 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                         onDismiss = { 
                                             showVipDialog = false
                                             selectedMatchForVip = null
+                                        }
+                                    )
+                                }
+
+                                if (pendingReward != null) {
+                                    val reward = pendingReward!!
+                                    val roundName = when (reward.round) {
+                                        1 -> "Fecha 1 (Grupos)"
+                                        2 -> "Fecha 2 (Grupos)"
+                                        3 -> "Fecha 3 (Grupos)"
+                                        4 -> "Dieciseisavos de Final"
+                                        5 -> "Octavos de Final"
+                                        6 -> "Cuartos de Final"
+                                        7 -> "Semifinales"
+                                        8 -> "Final"
+                                        else -> "Fecha ${reward.round}"
+                                    }
+                                    
+                                    AlertDialog(
+                                        onDismissRequest = { viewModel.dismissRewardDialog(reward.round) },
+                                        containerColor = androidx.compose.ui.graphics.Color(0xFF1E1E1E),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Star,
+                                                contentDescription = null,
+                                                tint = androidx.compose.ui.graphics.Color(0xFFFFD700),
+                                                modifier = Modifier.size(40.dp)
+                                            )
+                                        },
+                                        title = {
+                                            Text(
+                                                text = "¡$roundName Finalizada!",
+                                                fontWeight = FontWeight.Black,
+                                                color = androidx.compose.ui.graphics.Color.White,
+                                                fontSize = 20.sp,
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                            )
+                                        },
+                                        text = {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                                            ) {
+                                                if (reward.points > 0) {
+                                                    Text(
+                                                        text = "Acertaste y sumaste",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(
+                                                        text = "${reward.points} PUNTOS",
+                                                        fontWeight = FontWeight.Black,
+                                                        fontSize = 24.sp,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = "¡Obtuviste ${reward.hours} horas sin publicidad como recompensa!",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = androidx.compose.ui.graphics.Color.White,
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = "No lograste sumar puntos en el Prode para esta fecha.",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = "¡Mucha suerte en la siguiente fecha! Sigues participando.",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = androidx.compose.ui.graphics.Color.White,
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        confirmButton = {
+                                            Button(
+                                                onClick = { viewModel.dismissRewardDialog(reward.round) },
+                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(
+                                                    text = if (reward.points > 0) "¡EXCELENTE!" else "ENTENDIDO",
+                                                    color = androidx.compose.ui.graphics.Color.White,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
                                         }
                                     )
                                 }

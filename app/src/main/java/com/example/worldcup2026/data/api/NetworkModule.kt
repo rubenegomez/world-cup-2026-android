@@ -1,33 +1,49 @@
 package com.example.worldcup2026.data.api
 
-import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
+import retrofit2.http.GET
+import retrofit2.http.Url
+
+interface LiveResultsService {
+    @GET
+    suspend fun getLiveResults(@Url url: String): List<LiveMatchDto>
+}
+
+data class LiveMatchDto(
+    val matchId: Int,
+    val homeScore: Int?,
+    val awayScore: Int?,
+    val status: String,
+    val homePossession: Int?,
+    val awayPossession: Int?,
+    val homeShots: Int?,
+    val awayShots: Int?,
+    val homeFouls: Int?,
+    val awayFouls: Int?,
+    val homeCorners: Int?,
+    val awayCorners: Int?,
+    val homeSaves: Int?,
+    val awaySaves: Int?,
+    val homeYellowCards: Int?,
+    val awayYellowCards: Int?,
+    val homeRedCards: Int?,
+    val awayRedCards: Int?,
+    val homePasses: String?,
+    val awayPasses: String?,
+    val scorers: List<String>,
+    val events: List<String>
+)
 
 object NetworkModule {
-    private const val BASE_URL = "https://v3.football.api-sports.io/"
-    private const val API_KEY = "13f1fe9cefbb89f9b748728c80582fa4"
+    // URL real de GitHub para descargar los resultados en vivo
+    const val DEFAULT_JSON_URL = "https://raw.githubusercontent.com/rubenegomez/world-cup-2026-android/main/fixtures_live.json"
 
-    private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("x-apisports-key", API_KEY)
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
-    }
-
-    val apiService: WorldCupApiService by lazy {
+    val apiService: LiveResultsService by lazy {
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
+            .baseUrl("https://raw.githubusercontent.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(WorldCupApiService::class.java)
+            .create(LiveResultsService::class.java)
     }
 }

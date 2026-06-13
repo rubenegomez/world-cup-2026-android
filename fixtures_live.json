@@ -1,0 +1,185 @@
+﻿[
+    {
+        "homeShots":  4,
+        "homePossession":  60,
+        "awayScore":  0,
+        "matchId":  1,
+        "awayPossession":  40,
+        "events":  [
+                       "âš½ [9\u0027] MÃ©xico: Goal! Mexico 1, South Africa 0. Julián Quiñones (Mexico) right footed shot from the centre of the box to the centre of the goal. Assisted by Érik Lira.",
+                       "ðŸŸ¨ [17\u0027] SudÃ¡frica: Teboho Mokoena (South Africa) is shown the yellow card for a bad foul.",
+                       "ðŸŸ¨ [23\u0027] MÃ©xico: Brian Gutiérrez (Mexico) is shown the yellow card for a bad foul.",
+                       "ðŸŸ¥ [49\u0027] SudÃ¡frica: Yaya Sithole (South Africa) is shown the red card.",
+                       "ðŸ„ [56\u0027] SudÃ¡frica: Substitution, South Africa. Thalente Mbatha replaces Lyle Foster.",
+                       "ðŸ„ [61\u0027] SudÃ¡frica: Substitution, South Africa. Themba Zwane replaces Jayden Adams.",
+                       "ðŸ„ [66\u0027] MÃ©xico: Substitution, Mexico. Luis Chávez replaces Brian Gutiérrez.",
+                       "ðŸ„ [66\u0027] MÃ©xico: Substitution, Mexico. Gilberto Mora replaces Álvaro Fidalgo.",
+                       "âš½ [67\u0027] MÃ©xico: Goal! Mexico 2, South Africa 0. Raúl Jiménez (Mexico) header from very close range to the bottom left corner. Assisted by Roberto Alvarado with a cross.",
+                       "ðŸŸ¨ [74\u0027] SudÃ¡frica: Nkosinathi Sibisi (South Africa) is shown the yellow card for a bad foul.",
+                       "ðŸ„ [76\u0027] MÃ©xico: Substitution, Mexico. Edson Álvarez replaces Érik Lira.",
+                       "ðŸ„ [76\u0027] MÃ©xico: Substitution, Mexico. Armando González replaces Raúl Jiménez.",
+                       "ðŸ„ [76\u0027] SudÃ¡frica: Substitution, South Africa. Evidence Makgopa replaces Iqraam Rayners.",
+                       "ðŸ„ [77\u0027] SudÃ¡frica: Substitution, South Africa. Oswin Appollis replaces Aubrey Modiba.",
+                       "ðŸ„ [79\u0027] MÃ©xico: Substitution, Mexico. Alexis Vega replaces Julián Quiñones.",
+                       "ðŸŸ¥ [84\u0027] SudÃ¡frica: Themba Zwane (South Africa) is shown the red card for violent conduct.",
+                       "ðŸŸ¥ [90\u0027+2\u0027] MÃ©xico: César Montes (Mexico) is shown the red card."
+                   ],
+        "awayShots":  2,
+        "homeScore":  2,
+        "status":  "Finished",
+        "scorers":  [
+                        "âš½ MÃ©xico: Mexico 1, South Africa 0. Julián Quiñones (Mexico) right footed shot from the centre of the box to the centre of the goal. Assisted by Érik Lira. (9\u0027)",
+                        "âš½ MÃ©xico: Mexico 2, South Africa 0. Raúl Jiménez (Mexico) header from very close range to the bottom left corner. Assisted by Roberto Alvarado with a cross. (67\u0027)"
+                    ]
+    },
+    {
+        "homeShots":  6,
+        "homePossession":  62,
+        "awayScore":  1,
+        "matchId":  2,
+        "awayPossession":  38,
+        "events":  [
+                       "âš½ [59\u0027] RepÃºblica Checa: Goal! Korea Republic 0, Czechia 1. Ladislav Krejcí (Czechia) header from very close range to the bottom right corner. Assisted by Vladimír Coufal.",
+                       "ðŸ„ [62\u0027] Corea del Sur: Substitution, Korea Republic. Hwang Hee-Chan replaces Lee Jae-Sung.",
+                       "ðŸ„ [64\u0027] RepÃºblica Checa: Substitution, Czechia. Adam Hlozek replaces Pavel Sulc.",
+                       "ðŸ„ [64\u0027] RepÃºblica Checa: Substitution, Czechia. Tomás Chory replaces Patrik Schick.",
+                       "ðŸ„ [64\u0027] RepÃºblica Checa: Substitution, Czechia. Michal Sadílek replaces Lukás Provod.",
+                       "âš½ [67\u0027] Corea del Sur: Goal! Korea Republic 1, Czechia 1. Hwang In-Beom (Korea Republic) right footed shot from the centre of the box to the bottom right corner. Assisted by Lee Kang-In.",
+                       "ðŸ„ [69\u0027] Corea del Sur: Substitution, Korea Republic. Eom Ji-Sung replaces Lee Tae-Seok.",
+                       "ðŸ„ [69\u0027] Corea del Sur: Substitution, Korea Republic. Oh Hyeon-Gyu replaces Son Heung-Min.",
+                       "âš½ [80\u0027] Corea del Sur: Goal! Korea Republic 2, Czechia 1. Oh Hyeon-Gyu (Korea Republic) left footed shot from very close range to the bottom left corner. Assisted by Hwang In-Beom.",
+                       "ðŸ„ [84\u0027] Corea del Sur: Substitution, Korea Republic. Kim Jin-Gyu replaces Hwang In-Beom.",
+                       "ðŸ„ [84\u0027] Corea del Sur: Substitution, Korea Republic. Park Jin-Seob replaces Paik Seung-Ho.",
+                       "ðŸ„ [84\u0027] RepÃºblica Checa: Substitution, Czechia. Mojmír Chytil replaces Alexandr Sojka.",
+                       "ðŸŸ¨ [90\u0027+6\u0027] Corea del Sur: Lee Gi-Hyuk (Korea Republic) is shown the yellow card for a bad foul."
+                   ],
+        "awayShots":  4,
+        "homeScore":  2,
+        "status":  "Finished",
+        "scorers":  [
+                        "âš½ RepÃºblica Checa: Korea Republic 0, Czechia 1. Ladislav Krejcí (Czechia) header from very close range to the bottom right corner. Assisted by Vladimír Coufal. (59\u0027)",
+                        "âš½ Corea del Sur: Korea Republic 1, Czechia 1. Hwang In-Beom (Korea Republic) right footed shot from the centre of the box to the bottom right corner. Assisted by Lee Kang-In. (67\u0027)",
+                        "âš½ Corea del Sur: Korea Republic 2, Czechia 1. Oh Hyeon-Gyu (Korea Republic) left footed shot from very close range to the bottom left corner. Assisted by Hwang In-Beom. (80\u0027)"
+                    ]
+    },
+    {
+        "homeShots":  4,
+        "homePossession":  61,
+        "awayScore":  1,
+        "matchId":  7,
+        "awayPossession":  39,
+        "events":  [
+                       "ðŸŸ¨ [11\u0027] CanadÃ¡: Alistair Johnston (Canada) is shown the yellow card for a bad foul.",
+                       "âš½ [21\u0027] Bosnia: Goal! Canada 0, Bosnia and Herzegovina 1. Jovo Lukic (Bosnia and Herzegovina) header from very close range to the centre of the goal. Assisted by Sead Kolasinac with a headed pass following a corner.",
+                       "ðŸŸ¨ [45\u0027] Bosnia: Ermedin Demirovic (Bosnia and Herzegovina) is shown the yellow card for a bad foul.",
+                       "ðŸŸ¨ [45\u0027+1\u0027] Bosnia: Jovo Lukic (Bosnia and Herzegovina) is shown the yellow card for a bad foul.",
+                       "ðŸŸ¨ [53\u0027] CanadÃ¡: Luc De Fougerolles (Canada) is shown the yellow card for a bad foul.",
+                       "ðŸ„ [61\u0027] CanadÃ¡: Substitution, Canada. Jacob Shaffelburg replaces Liam Millar.",
+                       "ðŸ„ [61\u0027] CanadÃ¡: Substitution, Canada. Promise David replaces Jonathan David.",
+                       "ðŸ„ [61\u0027] CanadÃ¡: Substitution, Canada. Ali Ahmed replaces Tajon Buchanan.",
+                       "ðŸ„ [62\u0027] Bosnia: Substitution, Bosnia and Herzegovina. Samed Bazdar replaces Jovo Lukic.",
+                       "ðŸ„ [62\u0027] Bosnia: Substitution, Bosnia and Herzegovina. Armin Gigovic replaces Ivan Basic.",
+                       "ðŸ„ [74\u0027] Bosnia: Substitution, Bosnia and Herzegovina. Ivan Sunjic replaces Esmir Bajraktarevic.",
+                       "ðŸ„ [74\u0027] Bosnia: Substitution, Bosnia and Herzegovina. Kerim Alajbegovic replaces Amar Memic.",
+                       "ðŸ„ [76\u0027] CanadÃ¡: Substitution, Canada. Cyle Larin replaces Tani Oluwaseyi.",
+                       "âš½ [78\u0027] CanadÃ¡: Goal! Canada 1, Bosnia and Herzegovina 1. Cyle Larin (Canada) right footed shot from the centre of the box to the bottom right corner. Assisted by Promise David.",
+                       "ðŸ„ [84\u0027] Bosnia: Substitution, Bosnia and Herzegovina. Dzenis Burnic replaces Sead Kolasinac because of an injury.",
+                       "ðŸ„ [90\u0027+1\u0027] CanadÃ¡: Substitution, Canada. Jonathan Osorio replaces Stephen Eustaquio.",
+                       "ðŸŸ¨ [90\u0027+3\u0027] Bosnia: Nikola Katic (Bosnia and Herzegovina) is shown the yellow card for a bad foul."
+                   ],
+        "awayShots":  3,
+        "homeScore":  1,
+        "status":  "Finished",
+        "scorers":  [
+                        "âš½ Bosnia: Canada 0, Bosnia and Herzegovina 1. Jovo Lukic (Bosnia and Herzegovina) header from very close range to the centre of the goal. Assisted by Sead Kolasinac with a headed pass following a corner. (21\u0027)",
+                        "âš½ CanadÃ¡: Canada 1, Bosnia and Herzegovina 1. Cyle Larin (Canada) right footed shot from the centre of the box to the bottom right corner. Assisted by Promise David. (78\u0027)"
+                    ]
+    },
+    {
+        "homeShots":  6,
+        "homePossession":  65,
+        "awayScore":  1,
+        "matchId":  19,
+        "awayPossession":  35,
+        "events":  [
+                       "âš½ [7\u0027] Estados Unidos: Own Goal by Damián Bobadilla, Paraguay. USA 1, Paraguay 0.",
+                       "ðŸŸ¨ [10\u0027] Paraguay: Juan José Cáceres (Paraguay) is shown the yellow card for a bad foul.",
+                       "âš½ [31\u0027] Estados Unidos: Goal! USA 2, Paraguay 0. Folarin Balogun (USA) right footed shot from the centre of the box to the bottom right corner. Assisted by Christian Pulisic.",
+                       "âš½ [45\u0027+5\u0027] Estados Unidos: Goal! USA 3, Paraguay 0. Folarin Balogun (USA) left footed shot from the centre of the box to the top left corner. Assisted by Malik Tillman.",
+                       "ðŸ„ [45\u0027] Paraguay: Substitution, Paraguay. Mauricio replaces Damián Bobadilla.",
+                       "ðŸ„ [45\u0027] Estados Unidos: Substitution, USA. Sebastian Berhalter replaces Christian Pulisic.",
+                       "ðŸŸ¨ [53\u0027] Paraguay: Miguel Almirón (Paraguay) is shown the yellow card.",
+                       "ðŸŸ¨ [59\u0027] Estados Unidos: Tyler Adams (USA) is shown the yellow card for a bad foul.",
+                       "ðŸ„ [62\u0027] Paraguay: Substitution, Paraguay. Álex Arce replaces Antonio Sanabria.",
+                       "ðŸ„ [72\u0027] Estados Unidos: Substitution, USA. Timothy Weah replaces Sergiño Dest.",
+                       "ðŸ„ [72\u0027] Estados Unidos: Substitution, USA. Ricardo Pepi replaces Folarin Balogun.",
+                       "âš½ [73\u0027] Paraguay: Goal! USA 3, Paraguay 1. Mauricio (Paraguay) left footed shot from the centre of the box to the bottom right corner. Assisted by Julio Enciso following a set piece situation.",
+                       "ðŸŸ¨ [79\u0027] Paraguay: Diego Gómez (Paraguay) is shown the yellow card for a bad foul.",
+                       "ðŸ„ [79\u0027] Paraguay: Substitution, Paraguay. Ramón Sosa replaces Miguel Almirón.",
+                       "ðŸ„ [79\u0027] Paraguay: Substitution, Paraguay. Gustavo Velázquez replaces Juan José Cáceres.",
+                       "ðŸ„ [80\u0027] Paraguay: Substitution, Paraguay. Alejandro Romero replaces Diego Gómez.",
+                       "ðŸ„ [82\u0027] Estados Unidos: Substitution, USA. Giovanni Reyna replaces Malik Tillman.",
+                       "ðŸŸ¨ [88\u0027] Paraguay: Álex Arce (Paraguay) is shown the yellow card for a bad foul.",
+                       "ðŸŸ¨ [90\u0027+3\u0027] Paraguay: Júnior Alonso (Paraguay) is shown the yellow card for a bad foul.",
+                       "âš½ [90\u0027+8\u0027] Estados Unidos: Goal! USA 4, Paraguay 1. Giovanni Reyna (USA) right footed shot from the centre of the box to the bottom left corner. Assisted by Alex Freeman."
+                   ],
+        "awayShots":  1,
+        "homeScore":  4,
+        "status":  "Finished",
+        "scorers":  [
+                        "âš½ Estados Unidos: Own Goal by Damián Bobadilla, Paraguay. USA 1, Paraguay 0. (7\u0027)",
+                        "âš½ Estados Unidos: USA 2, Paraguay 0. Folarin Balogun (USA) right footed shot from the centre of the box to the bottom right corner. Assisted by Christian Pulisic. (31\u0027)",
+                        "âš½ Estados Unidos: USA 3, Paraguay 0. Folarin Balogun (USA) left footed shot from the centre of the box to the top left corner. Assisted by Malik Tillman. (45\u0027+5\u0027)",
+                        "âš½ Paraguay: USA 3, Paraguay 1. Mauricio (Paraguay) left footed shot from the centre of the box to the bottom right corner. Assisted by Julio Enciso following a set piece situation. (73\u0027)",
+                        "âš½ Estados Unidos: USA 4, Paraguay 1. Giovanni Reyna (USA) right footed shot from the centre of the box to the bottom left corner. Assisted by Alex Freeman. (90\u0027+8\u0027)"
+                    ]
+    },
+    {
+        "homeShots":  null,
+        "homePossession":  null,
+        "awayScore":  null,
+        "matchId":  8,
+        "awayPossession":  null,
+        "events":  [
+
+                   ],
+        "awayShots":  null,
+        "homeScore":  null,
+        "status":  "Scheduled",
+        "scorers":  [
+
+                    ]
+    },
+    {
+        "homeShots":  null,
+        "homePossession":  null,
+        "awayScore":  null,
+        "matchId":  13,
+        "awayPossession":  null,
+        "events":  [
+
+                   ],
+        "awayShots":  null,
+        "homeScore":  null,
+        "status":  "Scheduled",
+        "scorers":  [
+
+                    ]
+    },
+    {
+        "homeShots":  null,
+        "homePossession":  null,
+        "awayScore":  null,
+        "matchId":  14,
+        "awayPossession":  null,
+        "events":  [
+
+                   ],
+        "awayShots":  null,
+        "homeScore":  null,
+        "status":  "Scheduled",
+        "scorers":  [
+
+                    ]
+    }
+]
