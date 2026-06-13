@@ -343,7 +343,12 @@ def main():
                         away_passes = passes_str
                         
         # Armamos el partido procesado
-        live_clock = event.get("status", {}).get("displayClock") if app_status == "Live" else None
+        live_clock = None
+        if app_status == "Live":
+            if status_name == "STATUS_HALFTIME":
+                live_clock = "Entretiempo"
+            else:
+                live_clock = event.get("status", {}).get("displayClock", "En Vivo")
         match_data = {
             "matchId": match_id,
             "homeScore": home_score_val,

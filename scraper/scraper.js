@@ -343,7 +343,14 @@ async function main() {
                 }
             }
             
-            const liveClock = appStatus === "Live" ? (event.status?.displayClock || "") : null;
+            let liveClock = null;
+            if (appStatus === "Live") {
+                if (statusName === "STATUS_HALFTIME") {
+                    liveClock = "Entretiempo";
+                } else {
+                    liveClock = event.status?.displayClock || "En Vivo";
+                }
+            }
             const matchData = {
                 matchId,
                 homeScore: homeScoreVal,
