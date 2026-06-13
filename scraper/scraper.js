@@ -343,11 +343,13 @@ async function main() {
                 }
             }
             
+            const liveClock = appStatus === "Live" ? (event.status?.displayClock || "") : null;
             const matchData = {
                 matchId,
                 homeScore: homeScoreVal,
                 awayScore: awayScoreVal,
                 status: appStatus,
+                clock: liveClock,
                 homePossession,
                 awayPossession,
                 homeShots,

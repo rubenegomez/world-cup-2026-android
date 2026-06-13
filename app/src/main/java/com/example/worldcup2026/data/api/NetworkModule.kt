@@ -32,7 +32,8 @@ data class LiveMatchDto(
     val homePasses: String?,
     val awayPasses: String?,
     val scorers: List<String>,
-    val events: List<String>
+    val events: List<String>,
+    val clock: String?
 )
 
 object NetworkModule {

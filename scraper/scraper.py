@@ -343,11 +343,13 @@ def main():
                         away_passes = passes_str
                         
         # Armamos el partido procesado
+        live_clock = event.get("status", {}).get("displayClock") if app_status == "Live" else None
         match_data = {
             "matchId": match_id,
             "homeScore": home_score_val,
             "awayScore": away_score_val,
             "status": app_status,
+            "clock": live_clock,
             "homePossession": home_possession,
             "awayPossession": away_possession,
             "homeShots": home_shots,

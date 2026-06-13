@@ -45,5 +45,6 @@ data class Match(
     val awayShots: Int? = null,
     val scorers: List<String> = emptyList(),
     val events: List<String> = emptyList(),
-    val vipStats: String? = null
+    val vipStats: String? = null,
+    val clock: String? = null
 )

@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [MatchEntity::class], version = 5, exportSchema = false)
+@Database(entities = [MatchEntity::class], version = 6, exportSchema = false)
 abstract class WorldCupDatabase : RoomDatabase() {
     abstract fun matchDao(): MatchDao
 
@@ -24,6 +24,12 @@ abstract class WorldCupDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE matches ADD COLUMN clock TEXT DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): WorldCupDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -31,7 +37,7 @@ abstract class WorldCupDatabase : RoomDatabase() {
                     WorldCupDatabase::class.java,
                     "world_cup_database"
                 )
-                .addMigrations(MIGRATION_4_5)
+                .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

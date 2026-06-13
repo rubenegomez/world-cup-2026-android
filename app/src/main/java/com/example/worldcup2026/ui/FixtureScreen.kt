@@ -326,24 +326,9 @@ fun MatchCard(
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
-                    if (match.stadium.isNotEmpty()) {
-                        Text(
-                            text = "${match.stadium}, ${match.city}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontSize = 10.sp
-                        )
-                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = match.date.split(" ").last(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                    
                     if (match.status == "Finished") {
-                        Spacer(modifier = Modifier.width(8.dp))
                         IconButton(
                             onClick = { 
                                 onScoreChange(match.id, null, null)
@@ -354,7 +339,6 @@ fun MatchCard(
                             Icon(Icons.Default.Delete, contentDescription = "Limpiar", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                         }
                     } else if (match.status == "Scheduled") {
-                        Spacer(modifier = Modifier.width(8.dp))
                         TextButton(
                             onClick = { onStatusChange(match.id, "Finished") },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
@@ -390,14 +374,45 @@ fun MatchCard(
                         fontWeight = FontWeight.Black,
                         color = Color.White.copy(alpha = 0.2f)
                     )
-                    if (match.status == "Finished") {
-                        Text(
-                            text = "FINALIZADO",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 9.sp
-                        )
+                    when (match.status) {
+                        "Finished" -> {
+                            Text(
+                                text = "FINALIZADO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 9.sp
+                            )
+                        }
+                        "Live" -> {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = if (!match.clock.isNullOrEmpty()) match.clock.uppercase() else "EN VIVO",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF81C784),
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        "Scheduled" -> {
+                            val timeStr = match.date.split(" ").lastOrNull() ?: ""
+                            if (timeStr.isNotEmpty()) {
+                                Text(
+                                    text = timeStr,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(top = 2.dp)
+                                )
+                            }
+                        }
                     }
                 }
                 
@@ -603,6 +618,20 @@ fun MatchCard(
                     Text("-", fontWeight = FontWeight.Bold, color = Color.White)
                     PenaltyCounter(match.awayPenalties ?: 0) { onPenaltiesChange(match.id, match.homePenalties, it) }
                 }
+            }
+
+            // Referencia sutil del Estadio al final de la tarjeta
+            if (match.stadium.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "📍 ${match.stadium.uppercase()} - ${match.city.uppercase()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

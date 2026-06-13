@@ -23,5 +23,6 @@ data class MatchEntity(
     // Datos en vivo adicionales
     val scorers: String? = null,
     val events: String? = null,
-    val vipStats: String? = null
+    val vipStats: String? = null,
+    val clock: String? = null
 )

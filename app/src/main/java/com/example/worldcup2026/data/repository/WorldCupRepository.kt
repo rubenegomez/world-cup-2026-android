@@ -109,7 +109,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 awayShots = saved.awayShots,
                 scorers = if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"),
                 events = if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|"),
-                vipStats = saved.vipStats
+                vipStats = saved.vipStats,
+                clock = saved.clock
             ))
         } else {
             targetList.add(baseMatch)
@@ -135,7 +136,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             awayShots = saved?.awayShots,
             scorers = saved?.scorers,
             events = saved?.events,
-            vipStats = saved?.vipStats
+            vipStats = saved?.vipStats,
+            clock = saved?.clock
         ))
     }
 
@@ -157,7 +159,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             awayShots = saved?.awayShots,
             scorers = saved?.scorers,
             events = saved?.events,
-            vipStats = saved?.vipStats
+            vipStats = saved?.vipStats,
+            clock = saved?.clock
         ))
     }
 
@@ -181,7 +184,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             awayShots = saved?.awayShots,
             scorers = saved?.scorers,
             events = saved?.events,
-            vipStats = saved?.vipStats
+            vipStats = saved?.vipStats,
+            clock = saved?.clock
         ))
     }
 
@@ -213,7 +217,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     saved.homePossession != liveMatch.homePossession ||
                     saved.vipStats != vipStatsStr ||
                     saved.scorers != scorersStr ||
-                    saved.events != eventsStr
+                    saved.events != eventsStr ||
+                    saved.clock != liveMatch.clock
                 ) {
                     matchDao.insertMatch(MatchEntity(
                         id = liveMatch.matchId,
@@ -231,7 +236,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         awayShots = liveMatch.awayShots,
                         scorers = scorersStr,
                         events = eventsStr,
-                        vipStats = vipStatsStr
+                        vipStats = vipStatsStr,
+                        clock = liveMatch.clock
                     ))
                 }
             }
@@ -260,7 +266,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             awayShots = awayShots,
             scorers = saved?.scorers,
             events = saved?.events,
-            vipStats = saved?.vipStats
+            vipStats = saved?.vipStats,
+            clock = saved?.clock
         ))
     }
 
