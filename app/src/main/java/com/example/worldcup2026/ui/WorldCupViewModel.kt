@@ -68,6 +68,25 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun syncLiveResults(onComplete: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val success = repository.syncMatchesWithLiveJson(com.example.worldcup2026.data.api.NetworkModule.DEFAULT_JSON_URL)
+                if (success) {
+                    val matches = repository.getMatches()
+                    val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
+                    val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
+                    _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                    checkRoundRewards(allMatches)
+                }
+                onComplete(success)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false)
+            }
+        }
+    }
+
     private fun getChampion(matches: List<Match>): Team? {
         val finalMatch = matches.find { it.id == 131 }
         if (finalMatch == null || finalMatch.status != "Finished") return null

@@ -28,6 +28,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     var showVipDialog by remember { mutableStateOf(false) }
     var showCelebration by remember { mutableStateOf(false) }
     var showSplash by remember { mutableStateOf(true) }
+    var isRefreshing by remember { mutableStateOf(false) }
     
     var selectedMatchForVip by remember { mutableStateOf<Match?>(null) }
     
@@ -98,7 +99,38 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                             title = { Text("MUNDIAL 2026", fontWeight = FontWeight.Black, color = androidx.compose.ui.graphics.Color.White) },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            )
+                            ),
+                            actions = {
+                                if (isRefreshing) {
+                                    Box(modifier = Modifier.padding(end = 16.dp)) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = androidx.compose.ui.graphics.Color.White
+                                        )
+                                    }
+                                } else {
+                                    IconButton(
+                                        onClick = {
+                                            isRefreshing = true
+                                            viewModel.syncLiveResults { success ->
+                                                isRefreshing = false
+                                                android.widget.Toast.makeText(
+                                                    context,
+                                                    if (success) "Resultados en vivo actualizados" else "Error al sincronizar resultados",
+                                                    android.widget.Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Refresh,
+                                            contentDescription = "Sincronizar resultados",
+                                            tint = androidx.compose.ui.graphics.Color.White
+                                        )
+                                    }
+                                }
+                            }
                         )
                     },
                     bottomBar = {
