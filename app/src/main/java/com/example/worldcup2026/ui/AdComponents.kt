@@ -474,12 +474,12 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                                 .fillMaxWidth()
                                 .padding(12.dp)
                         ) {
-                            StatRow("Faltas Cometidas", "$homeFouls - $awayFouls")
-                            StatRow("Tiros de Esquina", "$homeCorners - $awayCorners")
-                            StatRow("Atajadas del Portero", "$homeSaves - $awaySaves")
-                            StatRow("Tarjetas Amarillas", "$homeYellow - $awayYellow")
-                            StatRow("Tarjetas Rojas", "$homeRed - $awayRed")
-                            StatRow("Pases Completados", "$homePasses vs $awayPasses")
+                            StatRow(homeFouls, "Faltas Cometidas", awayFouls)
+                            StatRow(homeCorners, "Tiros de Esquina", awayCorners)
+                            StatRow(homeSaves, "Atajadas del Portero", awaySaves)
+                            StatRow(homeYellow, "Tarjetas Amarillas", awayYellow)
+                            StatRow(homeRed, "Tarjetas Rojas", awayRed)
+                            StatRow(homePasses, "Pases Completados", awayPasses)
                         }
                     }
                 }
@@ -540,6 +540,39 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
     )
 }
 
+data class ParsedEvent(
+    val emoji: String,
+    val minute: String,
+    val team: String,
+    val detail: String,
+    val isHome: Boolean
+)
+
+fun parseEventString(eventStr: String, homeTeamName: String): ParsedEvent {
+    try {
+        val emojiMatch = eventStr.firstOrNull()?.toString() ?: ""
+        val startBracket = eventStr.indexOf('[')
+        val endBracket = eventStr.indexOf(']')
+        val minute = if (startBracket != -1 && endBracket != -1) {
+            eventStr.substring(startBracket + 1, endBracket)
+        } else ""
+        
+        val firstColon = eventStr.indexOf(':', endBracket.coerceAtLeast(0))
+        val team = if (endBracket != -1 && firstColon != -1) {
+            eventStr.substring(endBracket + 1, firstColon).trim()
+        } else ""
+        
+        val detail = if (firstColon != -1) {
+            eventStr.substring(firstColon + 1).trim()
+        } else eventStr
+        
+        val isHome = team.lowercase().trim() == homeTeamName.lowercase().trim()
+        return ParsedEvent(emojiMatch, minute, team, detail, isHome)
+    } catch (e: Exception) {
+        return ParsedEvent("", "", "", eventStr, true)
+    }
+}
+
 @Composable
 fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
     androidx.compose.ui.window.Dialog(
@@ -563,7 +596,7 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        "INCIDENCIAS EN VIVO",
+                        "DETALLES EN VIVO",
                         fontWeight = FontWeight.Black,
                         fontSize = 16.sp,
                         color = Color(0xFFFFD700)
@@ -573,7 +606,43 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Encabezado Comparativo de Equipos (Local | INCIDENCIAS | Visitante)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White.copy(alpha = 0.05f), shape = RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = match.homeTeam.name.uppercase(),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start
+                    )
+                    Text(
+                        text = "INCIDENCIAS",
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFFFD700),
+                        fontSize = 10.sp,
+                        modifier = Modifier.width(90.dp),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = match.awayTeam.name.uppercase(),
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.End
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
                 
                 if (match.events.isEmpty()) {
                     Box(
@@ -594,21 +663,72 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(match.events.size) { index ->
                             val event = match.events[index]
-                            Card(
+                            val parsed = remember(event) { parseEventString(event, match.homeTeam.name) }
+                            
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = event,
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.9f),
-                                    modifier = Modifier.padding(12.dp)
-                                )
+                                // Lado Local (Alineado a la Izquierda)
+                                Box(
+                                    modifier = Modifier.weight(1f),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    if (parsed.isHome) {
+                                        Card(
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.06f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                EventIcon(parsed.emoji)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                FormatEventDetail(parsed.detail)
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Minuto en el Centro (Eje de línea de tiempo)
+                                Box(
+                                    modifier = Modifier.width(90.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (parsed.minute.isNotEmpty()) "${parsed.minute}'" else "",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD700)
+                                    )
+                                }
+                                
+                                // Lado Visitante (Alineado a la Derecha)
+                                Box(
+                                    modifier = Modifier.weight(1f),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    if (!parsed.isHome) {
+                                        Card(
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.06f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                FormatEventDetail(parsed.detail, textAlign = TextAlign.End)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                EventIcon(parsed.emoji)
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -630,13 +750,130 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun StatRow(label: String, value: String) {
+fun StatRow(homeValue: String, label: String, awayValue: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.White)
+        // Valor Local
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = homeValue,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        
+        // Métrica central
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White.copy(alpha = 0.5f),
+            modifier = Modifier.width(140.dp),
+            textAlign = TextAlign.Center
+        )
+        
+        // Valor Visitante
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = awayValue,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
     }
+}
+
+@Composable
+fun EventIcon(emoji: String, modifier: Modifier = Modifier) {
+    when (emoji) {
+        "🟨" -> {
+            Box(
+                modifier = modifier
+                    .size(width = 11.dp, height = 16.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFFFFD700)) // Amarillo tarjeta
+            )
+        }
+        "🟥" -> {
+            Box(
+                modifier = modifier
+                    .size(width = 11.dp, height = 16.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color(0xFFE53935)) // Rojo tarjeta
+            )
+        }
+        "🔄" -> {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
+                modifier = modifier
+            ) {
+                Text("▲", color = Color(0xFF4CAF50), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("▼", color = Color(0xFFE53935), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        else -> {
+            Text(emoji, fontSize = 14.sp, modifier = modifier)
+        }
+    }
+}
+
+@Composable
+fun FormatEventDetail(detail: String, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start) {
+    val annotatedString = remember(detail) {
+        androidx.compose.ui.text.buildAnnotatedString {
+            var currentIdx = 0
+            while (currentIdx < detail.length) {
+                val greenIdx = detail.indexOf("🟢", currentIdx)
+                val redIdx = detail.indexOf("🔴", currentIdx)
+                
+                val nextIdx = when {
+                    greenIdx != -1 && redIdx != -1 -> minOf(greenIdx, redIdx)
+                    greenIdx != -1 -> greenIdx
+                    redIdx != -1 -> redIdx
+                    else -> -1
+                }
+                
+                if (nextIdx == -1) {
+                    append(detail.substring(currentIdx))
+                    break
+                }
+                
+                append(detail.substring(currentIdx, nextIdx))
+                
+                if (nextIdx == greenIdx) {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF4CAF50), fontWeight = FontWeight.Black))
+                    append("▲ ")
+                    pop()
+                    currentIdx = greenIdx + 2
+                } else {
+                    pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFFE53935), fontWeight = FontWeight.Black))
+                    append("▼ ")
+                    pop()
+                    currentIdx = redIdx + 2
+                }
+            }
+        }
+    }
+    Text(
+        text = annotatedString,
+        fontSize = 11.sp,
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        textAlign = textAlign,
+        modifier = modifier
+    )
 }
 

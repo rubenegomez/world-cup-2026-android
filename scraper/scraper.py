@@ -214,7 +214,11 @@ def main():
         app_status = "Scheduled"
         if status_name == "STATUS_FULL_TIME" or status_name == "STATUS_FINAL":
             app_status = "Finished"
-        elif status_name == "STATUS_IN_PROGRESS" or "STATUS_HALFTIME" in status_name:
+        elif (status_name == "STATUS_IN_PROGRESS" or 
+              "HALF" in status_name or 
+              "HALFTIME" in status_name or 
+              "OVERTIME" in status_name or 
+              "SHOOTOUT" in status_name):
             app_status = "Live"
             
         # Puntuaciones

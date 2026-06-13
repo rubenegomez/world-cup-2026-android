@@ -211,7 +211,13 @@ async function main() {
             let appStatus = "Scheduled";
             if (statusName === "STATUS_FULL_TIME" || statusName === "STATUS_FINAL") {
                 appStatus = "Finished";
-            } else if (statusName === "STATUS_IN_PROGRESS" || statusName.includes("STATUS_HALFTIME")) {
+            } else if (
+                statusName === "STATUS_IN_PROGRESS" || 
+                statusName.includes("HALF") || 
+                statusName.includes("HALFTIME") || 
+                statusName.includes("OVERTIME") || 
+                statusName.includes("SHOOTOUT")
+            ) {
                 appStatus = "Live";
             }
             

@@ -189,7 +189,7 @@
     "status": "Finished",
     "homePossession": 32,
     "awayPossession": 68,
-    "homeShots": 4,
+    "homeShots": 3,
     "awayShots": 7,
     "homeFouls": 12,
     "awayFouls": 11,
@@ -204,7 +204,7 @@
     "homePasses": "200/279 (0.7)",
     "awayPasses": "526/578 (0.9)",
     "scorers": [
-      "⚽ Qatar: Boualem Khoukhi (Asistencia: Homam El Amin with a cross) (90'+4')"
+      "⚽ Qatar: Gol (90'+4')"
     ],
     "events": [
       "🟨 [16'] Qatar: Mahmoud Abunada",
@@ -220,32 +220,36 @@
       "🔄 [88'] Qatar: 🟢 Hassan Al Haydos 🔴 Edmílson Junior",
       "🔄 [89'] Suiza: 🟢 Ardon Jashari 🔴 Remo Freuler",
       "🔄 [89'] Suiza: 🟢 Miro Muheim 🔴 Ricardo Rodríguez",
-      "⚽ [90'+4'] Qatar: Boualem Khoukhi (Asistencia: Homam El Amin with a cross)"
+      "⚽ [90'+4'] Qatar: Gol"
     ]
   },
   {
     "matchId": 13,
-    "homeScore": null,
-    "awayScore": null,
-    "status": "Scheduled",
-    "homePossession": null,
-    "awayPossession": null,
-    "homeShots": null,
-    "awayShots": null,
-    "homeFouls": null,
-    "awayFouls": null,
-    "homeCorners": null,
-    "awayCorners": null,
-    "homeSaves": null,
-    "awaySaves": null,
-    "homeYellowCards": null,
-    "awayYellowCards": null,
-    "homeRedCards": null,
-    "awayRedCards": null,
-    "homePasses": null,
-    "awayPasses": null,
-    "scorers": [],
-    "events": []
+    "homeScore": 0,
+    "awayScore": 1,
+    "status": "Live",
+    "homePossession": 55,
+    "awayPossession": 44,
+    "homeShots": 0,
+    "awayShots": 1,
+    "homeFouls": 3,
+    "awayFouls": 5,
+    "homeCorners": 1,
+    "awayCorners": 0,
+    "homeSaves": 0,
+    "awaySaves": 0,
+    "homeYellowCards": 0,
+    "awayYellowCards": 0,
+    "homeRedCards": 0,
+    "awayRedCards": 0,
+    "homePasses": "137/155 (0.9)",
+    "awayPasses": "109/124 (0.9)",
+    "scorers": [
+      "⚽ Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break) (21')"
+    ],
+    "events": [
+      "⚽ [21'] Marruecos: Ismael Saibari (Asistencia: Brahim Díaz with a through ball following a fast break)"
+    ]
   },
   {
     "matchId": 14,

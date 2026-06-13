@@ -415,17 +415,57 @@ fun MatchCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    match.scorers.forEach { scorer ->
-                        Text(
-                            text = scorer,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center,
-                            fontSize = 11.sp
-                        )
+                    match.scorers.forEach { scorerStr ->
+                        val parsed = remember(scorerStr) { parseScorerString(scorerStr, match.homeTeam.name) }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Lado Local
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (parsed.isHome) {
+                                    Text(
+                                        text = parsed.detail,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            
+                            // Centro (Emoji Pelota)
+                            Box(
+                                modifier = Modifier.width(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚽", fontSize = 12.sp)
+                            }
+                            
+                            // Lado Visitante
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                if (!parsed.isHome) {
+                                    Text(
+                                        text = parsed.detail,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 11.sp,
+                                        textAlign = TextAlign.End,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -669,4 +709,29 @@ fun PredictionChip(label: String, selected: Boolean, onClick: () -> Unit) {
             )
         }
     }
+}
+
+data class ParsedScorer(
+    val team: String,
+    val detail: String,
+    val isHome: Boolean
+)
+
+fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
+    try {
+        var cleanStr = scorerStr.trim()
+        if (cleanStr.startsWith("⚽")) {
+            cleanStr = cleanStr.substring(1).trim()
+        }
+        val colonIdx = cleanStr.indexOf(':')
+        if (colonIdx != -1) {
+            val team = cleanStr.substring(0, colonIdx).trim()
+            val detail = cleanStr.substring(colonIdx + 1).trim()
+            val isHome = team.lowercase() == homeTeamName.lowercase()
+            return ParsedScorer(team, detail, isHome)
+        }
+    } catch (e: Exception) {
+        // Fallback
+    }
+    return ParsedScorer("", scorerStr, true)
 }
