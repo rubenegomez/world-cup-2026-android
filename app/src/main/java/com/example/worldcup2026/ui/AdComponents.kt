@@ -550,7 +550,10 @@ data class ParsedEvent(
 
 fun parseEventString(eventStr: String, homeTeamName: String): ParsedEvent {
     try {
-        val emojiMatch = eventStr.firstOrNull()?.toString() ?: ""
+        val emojiMatch = if (eventStr.isNotEmpty()) {
+            val firstCodePoint = eventStr.codePointAt(0)
+            String(Character.toChars(firstCodePoint))
+        } else ""
         val startBracket = eventStr.indexOf('[')
         val endBracket = eventStr.indexOf(']')
         val minute = if (startBracket != -1 && endBracket != -1) {
@@ -629,7 +632,7 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                         fontWeight = FontWeight.Black,
                         color = Color(0xFFFFD700),
                         fontSize = 10.sp,
-                        modifier = Modifier.width(90.dp),
+                        modifier = Modifier.width(50.dp),
                         textAlign = TextAlign.Center
                     )
                     Text(
@@ -697,7 +700,7 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                                 
                                 // Minuto en el Centro (Eje de línea de tiempo)
                                 Box(
-                                    modifier = Modifier.width(90.dp),
+                                    modifier = Modifier.width(50.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -797,7 +800,8 @@ fun StatRow(homeValue: String, label: String, awayValue: String) {
 
 @Composable
 fun EventIcon(emoji: String, modifier: Modifier = Modifier) {
-    when (emoji) {
+    val cleanEmoji = emoji.replace("\uFE0F", "")
+    when (cleanEmoji) {
         "🟨" -> {
             Box(
                 modifier = modifier
@@ -825,19 +829,28 @@ fun EventIcon(emoji: String, modifier: Modifier = Modifier) {
             }
         }
         else -> {
-            Text(emoji, fontSize = 14.sp, modifier = modifier)
+            Text(cleanEmoji, fontSize = 14.sp, modifier = modifier)
         }
     }
 }
 
 @Composable
 fun FormatEventDetail(detail: String, modifier: Modifier = Modifier, textAlign: TextAlign = TextAlign.Start) {
-    val annotatedString = remember(detail) {
+    val cleanText = remember(detail) {
+        detail
+            .replace("🟢\uFE0F", "▲")
+            .replace("🟢", "▲")
+            .replace("🔴\uFE0F", "▼")
+            .replace("🔴", "▼")
+            .replace("▲", "▲ ")
+            .replace("▼", "▼ ")
+    }
+    val annotatedString = remember(cleanText) {
         androidx.compose.ui.text.buildAnnotatedString {
             var currentIdx = 0
-            while (currentIdx < detail.length) {
-                val greenIdx = detail.indexOf("🟢", currentIdx)
-                val redIdx = detail.indexOf("🔴", currentIdx)
+            while (currentIdx < cleanText.length) {
+                val greenIdx = cleanText.indexOf("▲", currentIdx)
+                val redIdx = cleanText.indexOf("▼", currentIdx)
                 
                 val nextIdx = when {
                     greenIdx != -1 && redIdx != -1 -> minOf(greenIdx, redIdx)
@@ -847,11 +860,11 @@ fun FormatEventDetail(detail: String, modifier: Modifier = Modifier, textAlign: 
                 }
                 
                 if (nextIdx == -1) {
-                    append(detail.substring(currentIdx))
+                    append(cleanText.substring(currentIdx))
                     break
                 }
                 
-                append(detail.substring(currentIdx, nextIdx))
+                append(cleanText.substring(currentIdx, nextIdx))
                 
                 if (nextIdx == greenIdx) {
                     pushStyle(androidx.compose.ui.text.SpanStyle(color = Color(0xFF4CAF50), fontWeight = FontWeight.Black))
