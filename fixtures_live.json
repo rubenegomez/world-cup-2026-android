@@ -374,8 +374,8 @@
     "awayYellowCards": 0,
     "homeRedCards": 0,
     "awayRedCards": 0,
-    "homePasses": "551/635 (0.9)",
-    "awayPasses": "280/341 (0.8)",
+    "homePasses": "554/637 (0.9)",
+    "awayPasses": "282/343 (0.8)",
     "scorers": [
       "⚽ Alemania: Felix Nmecha (Asistencia: Florian Wirtz) (6')",
       "⚽ Curazao: Livano Comenencia (21')",
@@ -383,7 +383,7 @@
       "⚽ Alemania: Jamal Musiala (Asistencia: Joshua Kimmich with a through ball) (47')",
       "⚽ Alemania: Nathaniel Brown (Asistencia: Deniz Undav) (68')",
       "⚽ Alemania: Deniz Undav (Asistencia: Joshua Kimmich) (78')",
-      "⚽ Alemania: Kai Havertz (Asistencia: Deniz Undav following a fast break) (88')"
+      "⚽ Alemania: Kai Havertz (Asistencia: Deniz Undav with a through ball following a fast break) (88')"
     ],
     "events": [
       "⚽ [6'] Alemania: Felix Nmecha (Asistencia: Florian Wirtz)",
@@ -400,33 +400,53 @@
       "⚽ [78'] Alemania: Deniz Undav (Asistencia: Joshua Kimmich)",
       "🔄 [83'] Curazao: 🟢 Gervane Kastaneer 🔴 Tahith Chong",
       "🔄 [83'] Alemania: 🟢 Waldemar Anton 🔴 Joshua Kimmich",
-      "⚽ [88'] Alemania: Kai Havertz (Asistencia: Deniz Undav following a fast break)"
+      "⚽ [88'] Alemania: Kai Havertz (Asistencia: Deniz Undav with a through ball following a fast break)"
     ]
   },
   {
     "matchId": 31,
-    "homeScore": 0,
-    "awayScore": 0,
+    "homeScore": 2,
+    "awayScore": 1,
     "status": "Live",
-    "clock": "15'",
-    "homePossession": 57,
-    "awayPossession": 42,
-    "homeShots": 1,
-    "awayShots": 0,
-    "homeFouls": 2,
-    "awayFouls": 0,
-    "homeCorners": 1,
-    "awayCorners": 1,
-    "homeSaves": 0,
-    "awaySaves": 1,
-    "homeYellowCards": 0,
+    "clock": "88'",
+    "homePossession": 59,
+    "awayPossession": 40,
+    "homeShots": 6,
+    "awayShots": 2,
+    "homeFouls": 6,
+    "awayFouls": 7,
+    "homeCorners": 5,
+    "awayCorners": 4,
+    "homeSaves": 1,
+    "awaySaves": 4,
+    "homeYellowCards": 2,
     "awayYellowCards": 0,
     "homeRedCards": 0,
     "awayRedCards": 0,
-    "homePasses": "78/91 (0.9)",
-    "awayPasses": "56/62 (0.9)",
-    "scorers": [],
-    "events": []
+    "homePasses": "422/476 (0.9)",
+    "awayPasses": "260/308 (0.8)",
+    "scorers": [
+      "⚽ Países Bajos: Virgil van Dijk (Asistencia: Ryan Gravenberch with a cross following a set piece situation) (51')",
+      "⚽ Japón: Keito Nakamura (Asistencia: Takefusa Kubo) (57')",
+      "⚽ Países Bajos: Crysencio Summerville (Asistencia: Ryan Gravenberch) (64')"
+    ],
+    "events": [
+      "⚽ [51'] Países Bajos: Virgil van Dijk (Asistencia: Ryan Gravenberch with a cross following a set piece situation)",
+      "⚽ [57'] Japón: Keito Nakamura (Asistencia: Takefusa Kubo)",
+      "🟨 [61'] Países Bajos: Crysencio Summerville",
+      "⚽ [64'] Países Bajos: Crysencio Summerville (Asistencia: Ryan Gravenberch)",
+      "🔄 [66'] Japón: 🟢 Junya Ito 🔴 Daizen Maeda",
+      "🔄 [70'] Países Bajos: 🟢 Memphis Depay 🔴 Donyell Malen",
+      "🔄 [70'] Países Bajos: 🟢 Teun Koopmeiners 🔴 Crysencio Summerville",
+      "🔄 [70'] Países Bajos: 🟢 Quinten Timber 🔴 Tijjani Reijnders",
+      "🔄 [75'] Japón: 🟢 Yukinari Sugawara 🔴 Ritsu Doan",
+      "🔄 [75'] Japón: 🟢 Takehiro Tomiyasu 🔴 Tsuyoshi Watanabe",
+      "🔄 [75'] Japón: 🟢 Koki Ogawa 🔴 Takefusa Kubo",
+      "🔄 [81'] Países Bajos: 🟢 Nathan Aké 🔴 Ryan Gravenberch",
+      "🟨 [83'] Países Bajos: Memphis Depay",
+      "🔄 [84'] Japón: 🟢 Kento Shiogai 🔴 Ayase Ueda",
+      "🔄 [85'] Países Bajos: 🟢 Brian Brobbey 🔴 Cody Gakpo"
+    ]
   },
   {
     "matchId": 26,
