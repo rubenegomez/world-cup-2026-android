@@ -406,29 +406,30 @@
   {
     "matchId": 31,
     "homeScore": 2,
-    "awayScore": 1,
-    "status": "Live",
-    "clock": "88'",
+    "awayScore": 2,
+    "status": "Finished",
+    "clock": null,
     "homePossession": 59,
     "awayPossession": 40,
     "homeShots": 6,
-    "awayShots": 2,
-    "homeFouls": 6,
+    "awayShots": 3,
+    "homeFouls": 7,
     "awayFouls": 7,
     "homeCorners": 5,
     "awayCorners": 4,
     "homeSaves": 1,
     "awaySaves": 4,
-    "homeYellowCards": 2,
+    "homeYellowCards": 3,
     "awayYellowCards": 0,
     "homeRedCards": 0,
     "awayRedCards": 0,
-    "homePasses": "422/476 (0.9)",
-    "awayPasses": "260/308 (0.8)",
+    "homePasses": "464/525 (0.9)",
+    "awayPasses": "287/342 (0.8)",
     "scorers": [
       "⚽ Países Bajos: Virgil van Dijk (Asistencia: Ryan Gravenberch with a cross following a set piece situation) (51')",
       "⚽ Japón: Keito Nakamura (Asistencia: Takefusa Kubo) (57')",
-      "⚽ Países Bajos: Crysencio Summerville (Asistencia: Ryan Gravenberch) (64')"
+      "⚽ Países Bajos: Crysencio Summerville (Asistencia: Ryan Gravenberch) (64')",
+      "⚽ Japón: Daichi Kamada (Asistencia: Koki Ogawa following a corner) (88')"
     ],
     "events": [
       "⚽ [51'] Países Bajos: Virgil van Dijk (Asistencia: Ryan Gravenberch with a cross following a set piece situation)",
@@ -445,7 +446,9 @@
       "🔄 [81'] Países Bajos: 🟢 Nathan Aké 🔴 Ryan Gravenberch",
       "🟨 [83'] Países Bajos: Memphis Depay",
       "🔄 [84'] Japón: 🟢 Kento Shiogai 🔴 Ayase Ueda",
-      "🔄 [85'] Países Bajos: 🟢 Brian Brobbey 🔴 Cody Gakpo"
+      "🔄 [85'] Países Bajos: 🟢 Brian Brobbey 🔴 Cody Gakpo",
+      "⚽ [88'] Japón: Daichi Kamada (Asistencia: Koki Ogawa following a corner)",
+      "🟨 [90'+1'] Países Bajos: Micky van de Ven"
     ]
   },
   {
