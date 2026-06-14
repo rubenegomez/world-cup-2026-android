@@ -338,7 +338,7 @@ fun MatchCard(
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = "Limpiar", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                         }
-                    } else if (match.status == "Scheduled") {
+                    } else if (match.status == "Scheduled" || match.status == "Live") {
                         TextButton(
                             onClick = { onStatusChange(match.id, "Finished") },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
@@ -385,15 +385,16 @@ fun MatchCard(
                             )
                         }
                         "Live" -> {
+                            val isHalftime = match.clock?.lowercase()?.contains("entretiempo") == true
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                                color = if (isHalftime) Color(0xFFFF9800).copy(alpha = 0.2f) else Color(0xFF4CAF50).copy(alpha = 0.2f),
                                 modifier = Modifier.padding(top = 4.dp)
                             ) {
                                 Text(
-                                    text = if (!match.clock.isNullOrEmpty()) match.clock.uppercase() else "EN VIVO",
+                                    text = if (isHalftime) "ENTREETIEMPO" else "EN VIVO",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF81C784),
+                                    color = if (isHalftime) Color(0xFFFFB74D) else Color(0xFF81C784),
                                     fontWeight = FontWeight.Black,
                                     fontSize = 10.sp,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

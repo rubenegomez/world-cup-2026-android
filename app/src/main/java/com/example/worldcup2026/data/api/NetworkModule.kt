@@ -37,8 +37,8 @@ data class LiveMatchDto(
 )
 
 object NetworkModule {
-    // URL real de GitHub para descargar los resultados en vivo
-    const val DEFAULT_JSON_URL = "https://raw.githubusercontent.com/rubenegomez/world-cup-2026-android/main/fixtures_live.json"
+    // URL del servidor propio sin caché para resultados en vivo
+    const val DEFAULT_JSON_URL = "https://ellocodelpedal.duckdns.org/installers/fixtures_live.json"
 
     val apiService: LiveResultsService by lazy {
         Retrofit.Builder()
