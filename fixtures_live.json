@@ -499,8 +499,8 @@
     "awayScore": 1,
     "status": "Finished",
     "clock": null,
-    "homePossession": 49,
-    "awayPossession": 50,
+    "homePossession": 48,
+    "awayPossession": 51,
     "homeShots": 7,
     "awayShots": 2,
     "homeFouls": 10,
@@ -513,8 +513,8 @@
     "awayYellowCards": 1,
     "homeRedCards": 0,
     "awayRedCards": 0,
-    "homePasses": "279/355 (0.8)",
-    "awayPasses": "288/364 (0.8)",
+    "homePasses": "278/356 (0.8)",
+    "awayPasses": "292/371 (0.8)",
     "scorers": [
       "⚽ Suecia: Yasin Ayari (7')",
       "⚽ Suecia: Alexander Isak (Asistencia: Viktor Gyökeres following a fast break) (30')",
@@ -538,7 +538,7 @@
       "🔄 [84'] Túnez: 🟢 Firas Chaouat 🔴 Anis Ben Slimane",
       "🔄 [84'] Suecia: 🟢 Mattias Svanberg 🔴 Jesper Karlström",
       "⚽ [84'] Suecia: Mattias Svanberg (Asistencia: Alexander Isak following a set piece situation)",
-      "🔄 [90'+1'] Suecia: 🟢 Anthony Elanga 🔴 Alexander Isak",
+      "🔄 [90'] Suecia: 🟢 Anthony Elanga 🔴 Alexander Isak",
       "🔄 [90'+1'] Suecia: 🟢 Daniel Svensson 🔴 Alexander Bernhardsson",
       "⚽ [90'+6'] Suecia: Yasin Ayari (Asistencia: Lucas Bergvall)"
     ]
