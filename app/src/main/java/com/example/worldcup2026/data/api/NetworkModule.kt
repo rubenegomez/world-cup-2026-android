@@ -1,13 +1,24 @@
 package com.example.worldcup2026.data.api
 
+import com.example.worldcup2026.data.model.Group
+import com.example.worldcup2026.data.model.Match
+import com.example.worldcup2026.data.model.Team
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
-import retrofit2.http.Url
 
-interface LiveResultsService {
-    @GET
-    suspend fun getLiveResults(@Url url: String): List<LiveMatchDto>
+interface WorldCupApiService {
+    @GET("api/teams")
+    suspend fun getTeams(): List<Team>
+
+    @GET("api/groups")
+    suspend fun getGroups(): List<Group>
+
+    @GET("api/matches")
+    suspend fun getMatches(): List<Match>
+
+    @GET("api/matches/live")
+    suspend fun getLiveMatches(): List<LiveMatchDto>
 }
 
 data class LiveMatchDto(
@@ -37,14 +48,13 @@ data class LiveMatchDto(
 )
 
 object NetworkModule {
-    // URL del servidor propio sin caché para resultados en vivo
-    const val DEFAULT_JSON_URL = "https://ellocodelpedal.duckdns.org/installers/fixtures_live.json"
+    const val BASE_URL = "http://161.153.196.145:8000/"
 
-    val apiService: LiveResultsService by lazy {
+    val apiService: WorldCupApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://raw.githubusercontent.com/")
+            .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(LiveResultsService::class.java)
+            .create(WorldCupApiService::class.java)
     }
 }

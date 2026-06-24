@@ -49,7 +49,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             try {
                 // Sincronización automática con el JSON remoto de GitHub en segundo plano
                 launch {
-                    val success = repository.syncMatchesWithLiveJson(com.example.worldcup2026.data.api.NetworkModule.DEFAULT_JSON_URL)
+                    val success = repository.syncMatchesWithLiveJson()
                     if (success) {
                         val matches = repository.getMatches()
                         val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
@@ -76,7 +76,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun syncLiveResults(onComplete: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
             try {
-                val success = repository.syncMatchesWithLiveJson(com.example.worldcup2026.data.api.NetworkModule.DEFAULT_JSON_URL)
+                val success = repository.syncMatchesWithLiveJson()
                 if (success) {
                     val matches = repository.getMatches()
                     val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
@@ -305,7 +305,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 while (true) {
                     delay(60000) // Cada 60 segundos
                     try {
-                        val success = repository.syncMatchesWithLiveJson(com.example.worldcup2026.data.api.NetworkModule.DEFAULT_JSON_URL)
+                        val success = repository.syncMatchesWithLiveJson()
                         if (success) {
                             val updatedMatches = repository.getMatches()
                             val finalMatches = KnockoutCalculator.calculateKnockoutMatches(updatedMatches)
