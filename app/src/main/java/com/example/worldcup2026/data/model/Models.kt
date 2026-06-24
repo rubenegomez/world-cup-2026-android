@@ -3,7 +3,7 @@ package com.example.worldcup2026.data.model
 data class Team(
     val id: Int,
     val name: String,
-    val flagUrl: String,
+    val flagUrl: String?,
     val group: String,
     val players: List<Player> = emptyList()
 )
@@ -30,10 +30,10 @@ data class Match(
     val awayScore: Int?,
     val homePenalties: Int? = null,
     val awayPenalties: Int? = null,
-    val date: String,
+    val date: String?,
     val status: String,
-    val stadium: String = "",
-    val city: String = "",
+    val stadium: String? = "",
+    val city: String? = "",
     // Campos para el Prode
     val predictedWinner: String? = null, // "L", "E", "V"
     val predictedHomeScore: Int? = null,
