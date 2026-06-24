@@ -187,8 +187,9 @@ fun DayFilteredFixture(
 ) {
     val dates = matches.filter { it.id <= 100 }
         .map { 
-            val parts = it.date.split(" ")
-            if (parts.size >= 2) "${parts[0]} ${parts[1]}" else it.date
+            val safeDate = it.date ?: ""
+            val parts = safeDate.split(" ")
+            if (parts.size >= 2) "${parts[0]} ${parts[1]}" else safeDate
         }
         .distinct()
         .sortedBy { dateStr ->
@@ -212,7 +213,7 @@ fun DayFilteredFixture(
     }
     
     var selectedDate by remember { mutableStateOf(initialDate) }
-    val filteredMatches = matches.filter { it.date.startsWith(selectedDate) && it.id <= 100 }
+    val filteredMatches = matches.filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 100 }
 
     Column {
         LazyRow(
@@ -402,7 +403,7 @@ fun MatchCard(
                             }
                         }
                         "Scheduled" -> {
-                            val timeStr = match.date.split(" ").lastOrNull() ?: ""
+                            val timeStr = (match.date ?: "").split(" ").lastOrNull() ?: ""
                             if (timeStr.isNotEmpty()) {
                                 Text(
                                     text = timeStr,
@@ -622,10 +623,12 @@ fun MatchCard(
             }
 
             // Referencia sutil del Estadio al final de la tarjeta
-            if (match.stadium.isNotEmpty()) {
+            val safeStadium = match.stadium ?: ""
+            val safeCity = match.city ?: ""
+            if (safeStadium.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "📍 ${match.stadium.uppercase()} - ${match.city.uppercase()}",
+                    text = "📍 ${safeStadium.uppercase()} - ${safeCity.uppercase()}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 9.sp,
