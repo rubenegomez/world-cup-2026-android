@@ -48,7 +48,7 @@ data class LiveMatchDto(
 )
 
 object NetworkModule {
-    const val BASE_URL = "http://161.153.196.145:8000/"
+    const val BASE_URL = "http://ellocodelpedal.duckdns.org:8000/"
 
     val apiService: WorldCupApiService by lazy {
         Retrofit.Builder()

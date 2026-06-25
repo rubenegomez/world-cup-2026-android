@@ -189,19 +189,15 @@ fun DayFilteredFixture(
         .map { 
             val safeDate = it.date ?: ""
             val parts = safeDate.split(" ")
-            if (parts.size >= 2) "${parts[0]} ${parts[1]}" else safeDate
+            if (parts.isNotEmpty()) parts[0] else safeDate
         }
         .distinct()
-        .sortedBy { dateStr ->
-            val datePart = dateStr.split(" ").lastOrNull() ?: ""
-            val parts = datePart.split("/")
-            if (parts.size == 2) parts[1] + parts[0] else dateStr
-        }
+        .sortedBy { it }
     
     val todayStr = remember {
         try {
             val localDate = java.time.LocalDate.now()
-            val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM")
+            val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
             localDate.format(formatter)
         } catch (e: Exception) {
             ""
@@ -209,7 +205,7 @@ fun DayFilteredFixture(
     }
 
     val initialDate = remember(dates) {
-        dates.find { it.contains(todayStr) } ?: (if (dates.isNotEmpty()) dates.first() else "")
+        dates.find { it == todayStr } ?: (if (dates.isNotEmpty()) dates.first() else "")
     }
     
     var selectedDate by remember { mutableStateOf(initialDate) }
