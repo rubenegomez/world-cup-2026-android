@@ -126,17 +126,15 @@ fun KnockoutBracket(
     onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val rounds = listOf("DIECISEISAVOS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL")
-    var selectedRound by remember { mutableStateOf(rounds[0]) }
+    val rounds = remember { com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.map { it.name } }
+    var selectedRound by remember(rounds) { mutableStateOf(rounds.firstOrNull() ?: "") }
     
     val filteredMatches = matches.filter { match ->
-        when (selectedRound) {
-            "DIECISEISAVOS" -> match.id in 101..116
-            "OCTAVOS" -> match.id in 117..124
-            "CUARTOS" -> match.id in 125..128
-            "SEMIFINAL" -> match.id in 129..130
-            "FINAL" -> match.id in 131..132
-            else -> false
+        val config = com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.find { it.name == selectedRound }
+        if (config != null) {
+            match.id in config.startId..config.endId
+        } else {
+            false
         }
     }
 
@@ -175,6 +173,28 @@ fun KnockoutBracket(
     }
 }
 
+fun formatChipDate(dateStr: String): Pair<String, String> {
+    try {
+        val localDate = java.time.LocalDate.parse(dateStr)
+        val dayFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM")
+        val formattedDate = localDate.format(dayFormatter)
+        
+        val dayOfWeek = localDate.dayOfWeek
+        val dayName = when (dayOfWeek) {
+            java.time.DayOfWeek.MONDAY -> "Lunes"
+            java.time.DayOfWeek.TUESDAY -> "Martes"
+            java.time.DayOfWeek.WEDNESDAY -> "Miércoles"
+            java.time.DayOfWeek.THURSDAY -> "Jueves"
+            java.time.DayOfWeek.FRIDAY -> "Viernes"
+            java.time.DayOfWeek.SATURDAY -> "Sábado"
+            java.time.DayOfWeek.SUNDAY -> "Domingo"
+        }
+        return Pair(formattedDate, dayName)
+    } catch (e: Exception) {
+        return Pair(dateStr, "")
+    }
+}
+
 @Composable
 fun DayFilteredFixture(
     matches: List<Match>, 
@@ -209,7 +229,9 @@ fun DayFilteredFixture(
     }
     
     var selectedDate by remember { mutableStateOf(initialDate) }
-    val filteredMatches = matches.filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 100 }
+    val filteredMatches = matches
+        .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 100 }
+        .sortedBy { it.date ?: "" }
 
     Column {
         LazyRow(
@@ -218,10 +240,18 @@ fun DayFilteredFixture(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(dates) { date ->
+                val (formattedDate, dayName) = remember(date) { formatChipDate(date) }
                 FilterChip(
                     selected = selectedDate == date, 
                     onClick = { selectedDate = date }, 
-                    label = { Text(date, color = Color.White) },
+                    label = { 
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 2.dp)) {
+                            Text(text = formattedDate, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            if (dayName.isNotEmpty()) {
+                                Text(text = dayName, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp)
+                            }
+                        }
+                    },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         containerColor = Color.White.copy(alpha = 0.1f)

@@ -8,6 +8,31 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
 class WorldCupRepository(private val matchDao: MatchDao) {
+    private var cachedMatches: List<Match>? = null
+
+    private suspend fun getCachedMatch(matchId: Int): Match? {
+        if (cachedMatches == null) {
+            getMatches()
+        }
+        return cachedMatches?.find { it.id == matchId }
+    }
+
+    private fun parseRedCardsFromVipStats(vipStats: String?): Pair<Int, Int> {
+        if (vipStats.isNullOrEmpty()) return Pair(0, 0)
+        try {
+            val parts = vipStats.split("|")
+            val redPart = parts.find { it.startsWith("red:") } ?: return Pair(0, 0)
+            val values = redPart.substringAfter("red:").split(",")
+            if (values.size >= 2) {
+                val homeRed = values[0].toIntOrNull() ?: 0
+                val awayRed = values[1].toIntOrNull() ?: 0
+                return Pair(homeRed, awayRed)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return Pair(0, 0)
+    }
 
     suspend fun getMockGroups(): List<Group> {
         return com.example.worldcup2026.data.api.NetworkModule.apiService.getGroups()
@@ -30,6 +55,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             remoteMatches.forEach { match ->
                 addMatchWithPersistence(matches, savedMatches, match)
             }
+            cachedMatches = matches
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -135,7 +161,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         ))
     }
 
-    suspend fun syncMatchesWithLiveJson(): Boolean {
+    suspend fun syncMatchesWithLiveJson(context: android.content.Context): Boolean {
         try {
             val service = com.example.worldcup2026.data.api.NetworkModule.apiService
             val matchesList = service.getLiveMatches()
@@ -144,6 +170,53 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             
             matchesList.forEach { liveMatch ->
                 val saved = savedMatches.find { it.id == liveMatch.matchId }
+                
+                // --- DETECCION DE INCIDENCIAS EN VIVO ---
+                if (saved != null) {
+                    val matchInfo = getCachedMatch(liveMatch.matchId)
+                    val homeTeamName = matchInfo?.homeTeam?.name ?: "Local"
+                    val awayTeamName = matchInfo?.awayTeam?.name ?: "Visitante"
+
+                    // 1. Detección de Goles
+                    val oldHome = saved.homeScore ?: 0
+                    val newHome = liveMatch.homeScore ?: 0
+                    val oldAway = saved.awayScore ?: 0
+                    val newAway = liveMatch.awayScore ?: 0
+
+                    if (newHome > oldHome || newAway > oldAway) {
+                        val scoringTeam = if (newHome > oldHome) homeTeamName else awayTeamName
+                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
+                            context = context,
+                            title = "⚽ ¡GOOOOOL de $scoringTeam! ⚽",
+                            message = "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})"
+                        )
+                    }
+
+                    // 2. Detección de Tarjetas Rojas
+                    val (oldHomeRed, oldAwayRed) = parseRedCardsFromVipStats(saved.vipStats)
+                    val newHomeRed = liveMatch.homeRedCards ?: 0
+                    val newAwayRed = liveMatch.awayRedCards ?: 0
+
+                    if (newHomeRed > oldHomeRed || newAwayRed > oldAwayRed) {
+                        val penalizedTeam = if (newHomeRed > oldHomeRed) homeTeamName else awayTeamName
+                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
+                            context = context,
+                            title = "🟥 ¡Tarjeta Roja para $penalizedTeam! 🟥",
+                            message = "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})"
+                        )
+                    }
+
+                    // 3. Detección de fin de partido
+                    if (saved.status != "Finished" && liveMatch.status == "Finished") {
+                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
+                            context = context,
+                            title = "⏱️ ¡Final del partido! ⏱️",
+                            message = "Terminó: $homeTeamName $newHome - $newAway $awayTeamName"
+                        )
+                    }
+                }
+                // ----------------------------------------
+                
                 val vipStatsStr = if (liveMatch.homeFouls != null) {
                     "fouls:${liveMatch.homeFouls},${liveMatch.awayFouls}|" +
                     "corners:${liveMatch.homeCorners},${liveMatch.awayCorners}|" +

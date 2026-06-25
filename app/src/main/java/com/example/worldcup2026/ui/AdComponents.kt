@@ -2,6 +2,9 @@ package com.example.worldcup2026.ui
 
 import com.example.worldcup2026.data.model.Match
 import androidx.compose.foundation.background
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
@@ -151,6 +154,97 @@ fun AdWatchingScreen(onComplete: () -> Unit) {
     }
 }
 
+fun parsePasses(passesStr: String): Pair<String, String> {
+    if (passesStr.isEmpty() || !passesStr.contains("/")) return Pair("-", "-%")
+    try {
+        val totalAndPct = passesStr.trim().split(" ")
+        val accurateAndTotal = totalAndPct[0].split("/")
+        val accurate = accurateAndTotal.getOrNull(0) ?: "-"
+        val pct = totalAndPct.getOrNull(1)?.replace("(", "")?.replace(")", "") ?: "-%"
+        return Pair(accurate, pct)
+    } catch (e: Exception) {
+        return Pair("-", "-%")
+    }
+}
+
+@Composable
+fun FlashscoreStatRow(homeValue: String, label: String, awayValue: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Caja valor local
+        Box(
+            modifier = Modifier
+                .width(55.dp)
+                .background(Color(0xFF242424), shape = RoundedCornerShape(8.dp))
+                .padding(vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = homeValue,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Nombre de la estadística
+        Text(
+            text = label,
+            color = Color.White.copy(alpha = 0.8f),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+
+        // Caja valor visita
+        Box(
+            modifier = Modifier
+                .width(55.dp)
+                .background(Color(0xFF242424), shape = RoundedCornerShape(8.dp))
+                .padding(vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = awayValue,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = Color.White.copy(alpha = 0.5f),
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
     val random = remember(match.id) { java.util.Random(match.id.toLong()) }
@@ -173,31 +267,21 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
     val awayYellow = statsMap["yellow"]?.split(",")?.getOrNull(1) ?: "0"
     val homeRed = statsMap["red"]?.split(",")?.getOrNull(0) ?: "0"
     val awayRed = statsMap["red"]?.split(",")?.getOrNull(1) ?: "0"
-    val homePasses = statsMap["passes"]?.split(",")?.getOrNull(0) ?: "- / - (-)"
-    val awayPasses = statsMap["passes"]?.split(",")?.getOrNull(1) ?: "- / - (-)"
+    val homePassesRaw = statsMap["passes"]?.split(",")?.getOrNull(0) ?: ""
+    val awayPassesRaw = statsMap["passes"]?.split(",")?.getOrNull(1) ?: ""
 
-    // 1. Posesión de balón
+    val (homePasses, homePassesPct) = parsePasses(homePassesRaw)
+    val (awayPasses, awayPassesPct) = parsePasses(awayPassesRaw)
+
+    // Posesión de balón
     val homePossession = match.homePossession ?: (45 + random.nextInt(16))
     val awayPossession = match.awayPossession ?: (100 - homePossession)
 
-    // 2. Tiros al arco
+    // Tiros al arco
     val homeShots = match.homeShots ?: (5 + random.nextInt(11))
     val awayShots = match.awayShots ?: (5 + random.nextInt(11))
 
-    // 3. xG (Goles esperados)
-    val homeXg = String.format(java.util.Locale.US, "%.2f", 0.5f + homeShots * 0.12f + random.nextFloat() * 0.3f)
-    val awayXg = String.format(java.util.Locale.US, "%.2f", 0.5f + awayShots * 0.12f + random.nextFloat() * 0.3f)
-
-    // 4. Probabilidades de victoria (1x2)
-    val homeWeight = 30 + random.nextInt(40)
-    val drawWeight = 20 + random.nextInt(20)
-    val awayWeight = 30 + random.nextInt(40)
-    val totalWeight = (homeWeight + drawWeight + awayWeight).toFloat()
-    val homeProb = ((homeWeight / totalWeight) * 100).toInt()
-    val drawProb = ((drawWeight / totalWeight) * 100).toInt()
-    val awayProb = 100 - homeProb - drawProb
-
-    // 5. Goleadores
+    // Goleadores
     val actualHomeScore = match.homeScore ?: 0
     val actualAwayScore = match.awayScore ?: 0
     val generatedScorers = remember(match.id, actualHomeScore, actualAwayScore) {
@@ -240,246 +324,139 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF121212),
+        containerColor = Color(0xFF0F0F0F),
         shape = RoundedCornerShape(28.dp),
         title = {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    Icons.Default.Star,
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(match.homeTeam.flagUrl)
+                        .crossfade(true)
+                        .build(),
                     contentDescription = null,
-                    tint = Color(0xFFFFD700),
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(4.dp))
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                
                 Text(
-                    "MÉTRICAS TÁCTICAS VIP",
+                    "ESTADÍSTICA",
                     fontWeight = FontWeight.Black,
-                    fontSize = 18.sp,
-                    color = Color(0xFFFFD700)
+                    fontSize = 15.sp,
+                    color = Color.White,
+                    letterSpacing = 1.sp
+                )
+
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(match.awayTeam.flagUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp).clip(RoundedCornerShape(4.dp))
                 )
             }
         },
         text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Tarjeta de Enfrentamiento
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                item {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "${match.homeTeam.name} vs ${match.awayTeam.name}",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 12.sp
+                    )
+                    if (match.homeScore != null && match.awayScore != null) {
                         Text(
-                            "${match.homeTeam.name} vs ${match.awayTeam.name}",
-                            fontWeight = FontWeight.Bold,
+                            text = "${match.homeScore} x ${match.awayScore}",
+                            fontWeight = FontWeight.Black,
                             color = Color.White,
-                            fontSize = 14.sp
+                            fontSize = 22.sp,
+                            modifier = Modifier.padding(vertical = 4.dp)
                         )
-                        if (match.homeScore != null && match.awayScore != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                "Resultado Final: ${match.homeScore} - ${match.awayScore}",
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 13.sp
-                            )
-                        }
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Probabilidad 1X2
-                Text(
-                    "Probabilidad de Victoria",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.Start)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                
-                // Barra de probabilidad segmentada
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(maxOf(homeProb.toFloat(), 1f))
-                            .background(Color(0xFF4CAF50))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(maxOf(drawProb.toFloat(), 1f))
-                            .background(Color(0xFFFFC107))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(maxOf(awayProb.toFloat(), 1f))
-                            .background(Color(0xFF2196F3))
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Local: $homeProb%", fontSize = 10.sp, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
-                    Text("Empate: $drawProb%", fontSize = 10.sp, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-                    Text("Visita: $awayProb%", fontSize = 10.sp, color = Color(0xFF2196F3), fontWeight = FontWeight.Bold)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Posesión Proyectada/Real
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Posesión", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                    Text("$homePossession% - $awayPossession%", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(homePossession.toFloat())
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(awayPossession.toFloat())
-                            .background(Color.White.copy(alpha = 0.15f))
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Tiros al Arco
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Tiros al Arco", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                    Text("$homeShots - $awayShots", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(maxOf(homeShots.toFloat(), 1f))
-                            .background(MaterialTheme.colorScheme.primary)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .weight(maxOf(awayShots.toFloat(), 1f))
-                            .background(Color.White.copy(alpha = 0.15f))
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Goles Esperados (xG)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("xG (Goles Esperados)", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                    Text("$homeXg - $awayXg", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                // Lista de estadísticas estilo Flashscore
+                item {
+                    FlashscoreStatRow(homeValue = homeFouls, label = "Patadas (Faltas)", awayValue = awayFouls)
+                    FlashscoreStatRow(homeValue = homeShots.toString(), label = "Tiros a puerta", awayValue = awayShots.toString())
+                    FlashscoreStatRow(homeValue = "$homePossession%", label = "Posesión del balón", awayValue = "$awayPossession%")
+                    FlashscoreStatRow(homeValue = homePasses, label = "Pasa (Pases)", awayValue = awayPasses)
+                    FlashscoreStatRow(homeValue = homePassesPct, label = "Precisión de pase", awayValue = awayPassesPct)
+                    FlashscoreStatRow(homeValue = homeYellow, label = "Tarjetas amarillas", awayValue = awayYellow)
+                    FlashscoreStatRow(homeValue = homeRed, label = "Tarjetas rojas", awayValue = awayRed)
+                    FlashscoreStatRow(homeValue = "0", label = "Impedimentos", awayValue = "0")
+                    FlashscoreStatRow(homeValue = homeCorners, label = "Esquina (Corners)", awayValue = awayCorners)
+                    FlashscoreStatRow(homeValue = homeSaves, label = "Atajadas del portero", awayValue = awaySaves)
                 }
 
                 if (generatedScorers.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Goleadores",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Goleadores",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
                         ) {
-                            generatedScorers.forEach { scorer ->
-                                Text(
-                                    scorer,
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.9f),
-                                    modifier = Modifier.padding(vertical = 2.dp)
-                                )
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(10.dp)
+                            ) {
+                                generatedScorers.forEach { scorer ->
+                                    Text(
+                                        scorer,
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        modifier = Modifier.padding(vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
-                if (statsMap.isNotEmpty()) {
+                // Bloque de información adicional (Flashscore)
+                item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Detalles Tácticos",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp,
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f))
                     ) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp)
+                            modifier = Modifier.fillMaxWidth().padding(12.dp)
                         ) {
-                            StatRow(homeFouls, "Faltas Cometidas", awayFouls)
-                            StatRow(homeCorners, "Tiros de Esquina", awayCorners)
-                            StatRow(homeSaves, "Atajadas del Portero", awaySaves)
-                            StatRow(homeYellow, "Tarjetas Amarillas", awayYellow)
-                            StatRow(homeRed, "Tarjetas Rojas", awayRed)
-                            StatRow(homePasses, "Pases Completados", awayPasses)
+                            // Saque central (Fecha/Hora)
+                            val displayDate = match.date ?: "A definir"
+                            InfoRow(" Saque central", displayDate)
+                            
+                            // Transmisión
+                            InfoRow(" Transmisión", "CazeTV, TV Globo, SporTV")
+                            
+                            // Estadio
+                            val stadium = match.stadium ?: "Estadio a Definir"
+                            val city = match.city ?: ""
+                            val venue = if (city.isNotEmpty()) "$stadium, $city" else stadium
+                            InfoRow(" Estadio", venue)
+                            
+                            // Campeonato
+                            InfoRow(" Campeonato", "World Cup (World)")
                         }
                     }
                 }
@@ -487,39 +464,34 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
         },
         confirmButton = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val showLiveWidgetButton = true
-                if (showLiveWidgetButton) {
-                    var showEventsDialog by remember { mutableStateOf(false) }
-                    
-                    Button(
-                        onClick = { showEventsDialog = true },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            "VER INCIDENCIAS EN VIVO",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 13.sp
-                        )
-                    }
-                    
-                    if (showEventsDialog) {
-                        VipEventsDialog(match = match, onDismiss = { showEventsDialog = false })
-                    }
+                var showEventsDialog by remember { mutableStateOf(false) }
+                
+                Button(
+                    onClick = { showEventsDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "VER INCIDENCIAS EN VIVO",
+                        color = Color.Black,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp
+                    )
+                }
+                
+                if (showEventsDialog) {
+                    VipEventsDialog(match = match, onDismiss = { showEventsDialog = false })
                 }
 
                 Button(

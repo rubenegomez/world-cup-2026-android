@@ -59,5 +59,26 @@ object NotificationHelper {
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, builder.build())
+     }
+
+    fun showMatchIncidentNotification(context: Context, title: String, message: String) {
+        val soundUri = Uri.parse(
+            ContentResolver.SCHEME_ANDROID_RESOURCE + 
+            "://" + context.packageName + "/" + R.raw.world_cup_whistle
+        )
+
+        // ID único basado en el tiempo para que no se sobrescriban notificaciones de distintos eventos
+        val uniqueNotificationId = (System.currentTimeMillis() % 100000).toInt()
+
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setSound(soundUri)
+            .setAutoCancel(true)
+
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(uniqueNotificationId, builder.build())
     }
 }

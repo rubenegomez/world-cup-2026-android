@@ -31,8 +31,9 @@ fun CountdownBanner(modifier: Modifier = Modifier) {
     
     // 1. Definición de la fecha objetivo (Inauguración Mundial: 11 de Junio, 2026)
     val targetDateTime = remember {
+        val targetLocal = com.example.worldcup2026.data.util.TournamentConfig.COUNTDOWN_TARGET_DATE
         ZonedDateTime.of(
-            LocalDateTime.of(2026, 6, 11, 0, 0, 0),
+            targetLocal,
             ZoneId.systemDefault()
         ).toInstant()
     }
@@ -46,16 +47,11 @@ fun CountdownBanner(modifier: Modifier = Modifier) {
 
     // 2. Bucle del temporizador acoplado al ciclo de vida del Composable
     LaunchedEffect(key1 = targetDateTime) {
-        var notificationShown = false
         while (!isEventStarted) {
             try {
                 val now = Instant.now()
                 if (now.isAfter(targetDateTime) || now.equals(targetDateTime)) {
                     isEventStarted = true
-                    if (!notificationShown) {
-                        NotificationHelper.showStartNotification(context)
-                        notificationShown = true
-                    }
                 } else {
                     val duration = Duration.between(now, targetDateTime)
                     
@@ -73,10 +69,6 @@ fun CountdownBanner(modifier: Modifier = Modifier) {
             } catch (e: Exception) {
                 // Fallback seguro en caso de error del sistema de tiempo del dispositivo
                 isEventStarted = true
-                if (!notificationShown) {
-                    NotificationHelper.showStartNotification(context)
-                    notificationShown = true
-                }
             }
             delay(1000L) // Actualización cada segundo
         }
@@ -112,7 +104,7 @@ fun CountdownBanner(modifier: Modifier = Modifier) {
                 if (isEventStarted) {
                     // Estado: Evento Iniciado
                     Text(
-                        text = "⚽ ¡EL MUNDIAL HA COMENZADO! ⚽",
+                        text = com.example.worldcup2026.data.util.TournamentConfig.COUNTDOWN_STARTED_TEXT,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Black,
                             letterSpacing = 1.sp
@@ -122,7 +114,7 @@ fun CountdownBanner(modifier: Modifier = Modifier) {
                 } else {
                     // Estado: Cuenta Regresiva Activa
                     Text(
-                        text = "CAMINO AL MUNDIAL 2026",
+                        text = com.example.worldcup2026.data.util.TournamentConfig.COUNTDOWN_TITLE,
                         style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Black,
                             letterSpacing = 2.sp

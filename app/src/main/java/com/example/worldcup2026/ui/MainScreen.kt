@@ -96,7 +96,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     topBar = {
                         CenterAlignedTopAppBar(
-                            title = { Text("MUNDIAL 2026", fontWeight = FontWeight.Black, color = androidx.compose.ui.graphics.Color.White) },
+                            title = { Text(com.example.worldcup2026.data.util.TournamentConfig.TOURNAMENT_NAME, fontWeight = FontWeight.Black, color = androidx.compose.ui.graphics.Color.White) },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             ),
@@ -224,17 +224,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
 
                                 if (pendingReward != null) {
                                     val reward = pendingReward!!
-                                    val roundName = when (reward.round) {
-                                        1 -> "Fecha 1 (Grupos)"
-                                        2 -> "Fecha 2 (Grupos)"
-                                        3 -> "Fecha 3 (Grupos)"
-                                        4 -> "Dieciseisavos de Final"
-                                        5 -> "Octavos de Final"
-                                        6 -> "Cuartos de Final"
-                                        7 -> "Semifinales"
-                                        8 -> "Final"
-                                        else -> "Fecha ${reward.round}"
-                                    }
+                                    val roundName = com.example.worldcup2026.data.util.TournamentConfig.getRoundName(reward.round)
                                     
                                     AlertDialog(
                                         onDismissRequest = { viewModel.dismissRewardDialog(reward.round) },

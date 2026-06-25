@@ -49,7 +49,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             try {
                 // Sincronización automática con el JSON remoto de GitHub en segundo plano
                 launch {
-                    val success = repository.syncMatchesWithLiveJson()
+                    val success = repository.syncMatchesWithLiveJson(getApplication())
                     if (success) {
                         val matches = repository.getMatches()
                         val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
@@ -76,7 +76,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun syncLiveResults(onComplete: (Boolean) -> Unit = {}) {
         viewModelScope.launch {
             try {
-                val success = repository.syncMatchesWithLiveJson()
+                val success = repository.syncMatchesWithLiveJson(getApplication())
                 if (success) {
                     val matches = repository.getMatches()
                     val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
@@ -299,13 +299,13 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private fun startAutoSync(matches: List<Match>) {
         autoSyncJob?.cancel()
-        val hasLiveMatches = matches.any { it.status == "Live" }
+        val hasLiveMatches = matches.any { it.status.equals("LIVE", ignoreCase = true) }
         if (hasLiveMatches) {
             autoSyncJob = viewModelScope.launch {
                 while (true) {
                     delay(60000) // Cada 60 segundos
                     try {
-                        val success = repository.syncMatchesWithLiveJson()
+                        val success = repository.syncMatchesWithLiveJson(getApplication())
                         if (success) {
                             val updatedMatches = repository.getMatches()
                             val finalMatches = KnockoutCalculator.calculateKnockoutMatches(updatedMatches)
