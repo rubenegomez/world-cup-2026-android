@@ -31,4 +31,21 @@ Este documento sirve para realizar el seguimiento del desarrollo de **world-cup-
 ### 🌐 Distribución y Landing Page
 *   **Servicio de Descarga Directa**: Subir el APK de producción al servidor de Oracle Cloud y añadir un botón premium de descarga en `index.html` servido de forma nativa mediante Caddy.
 
+---
+
+## 🛠️ Tareas Planificadas (Próxima Sesión)
+
+- [ ] **Ajustes de UI y UX**:
+  - [ ] Corregir cartel "EN VIVO" normalizando mayúsculas (`match.status.uppercase()`) en `FixtureScreen.kt`.
+  - [ ] Mover audios `gooolll.mp3` y `silbato.mp3` de `drawable` a `raw` y configurar canales de sonido en `NotificationHelper.kt`.
+  - [ ] Reordenar transmisión de TV debajo del estadio en el diálogo VIP y ocultar si el partido finalizó.
+  - [ ] Ajustar el ancho de las incidencias del equipo visitante en el diálogo VIP (`weight` en `FormatEventDetail`) para evitar recortes.
+- [ ] **Notificaciones en Segundo Plano**:
+  - [ ] Implementar `WorkManager` con `SyncWorker` para sincronizar de fondo y notificar goles con la app cerrada.
+- [ ] **Posiciones**:
+  - [ ] Agregar pestaña de "Mejores Terceros" en `StandingsScreen.kt` calculando el ranking dinámico de los 12 terceros de grupos.
+- [ ] **Backend (Llaves)**:
+  - [ ] Crear script `seed_knockouts.py` y utilidad de actualización de cruces eliminatorios en el servidor.
+
+
 
