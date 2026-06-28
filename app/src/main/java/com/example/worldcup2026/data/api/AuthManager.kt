@@ -1,12 +1,15 @@
 package com.example.worldcup2026.data.api
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 class AuthManager(private val context: Context) {
 
@@ -30,5 +33,26 @@ class AuthManager(private val context: Context) {
             e.printStackTrace()
             null
         }
+    }
+
+    suspend fun getFirebaseIdToken(googleIdToken: String): String? = suspendCancellableCoroutine { continuation ->
+        val credential = GoogleAuthProvider.getCredential(googleIdToken, null)
+        FirebaseAuth.getInstance().signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    user?.getIdToken(true)?.addOnCompleteListener { tokenTask ->
+                        if (tokenTask.isSuccessful && continuation.isActive) {
+                            continuation.resume(tokenTask.result.token)
+                        } else if (continuation.isActive) {
+                            continuation.resume(null)
+                        }
+                    }
+                } else {
+                    if (continuation.isActive) {
+                        continuation.resume(null)
+                    }
+                }
+            }
     }
 }

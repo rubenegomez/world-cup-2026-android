@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worldcup2026.data.api.AuthManager
 import com.example.worldcup2026.data.local.LeagueEntity
 import com.example.worldcup2026.data.model.Match
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,17 +33,26 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         android.util.Log.d("ProdeSignIn", "Result code: ${result.resultCode}, data: ${result.data}")
-        val idToken = authManager.handleSignInResult(result.data)
-        android.util.Log.d("ProdeSignIn", "idToken: $idToken")
-        if (idToken != null) {
-            viewModel.handleSignIn(idToken)
+        val googleIdToken = authManager.handleSignInResult(result.data)
+        android.util.Log.d("ProdeSignIn", "googleIdToken: $googleIdToken")
+        if (googleIdToken != null) {
+            coroutineScope.launch {
+                val firebaseIdToken = authManager.getFirebaseIdToken(googleIdToken)
+                android.util.Log.d("ProdeSignIn", "firebaseIdToken: $firebaseIdToken")
+                if (firebaseIdToken != null) {
+                    viewModel.handleSignIn(firebaseIdToken)
+                } else {
+                    android.util.Log.e("ProdeSignIn", "firebaseIdToken es null")
+                }
+            }
         } else {
-            android.util.Log.e("ProdeSignIn", "idToken es null - revisar SHA1 en Firebase o Web Client ID")
+            android.util.Log.e("ProdeSignIn", "googleIdToken es null - revisar SHA1 en Firebase o Web Client ID")
         }
     }
 
