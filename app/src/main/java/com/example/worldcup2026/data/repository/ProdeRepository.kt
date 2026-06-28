@@ -15,11 +15,17 @@ import kotlinx.coroutines.flow.first
 class ProdeRepository(private val leagueDao: LeagueDao) {
     private val api = NetworkModule.prodeApiService
     
-    var authToken: String? = null
-        private set
+    companion object {
+        var authToken: String? = null
+    }
         
     var currentUser: UserDto? = null
         private set
+
+    fun logout() {
+        authToken = null
+        currentUser = null
+    }
 
     suspend fun authenticateWithFirebase(firebaseToken: String): Boolean {
         return try {

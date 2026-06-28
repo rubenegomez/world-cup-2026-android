@@ -20,13 +20,13 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
     private val _isAuthenticated = MutableStateFlow(false)
     val isAuthenticated = _isAuthenticated.asStateFlow()
     
+    private val _currentUser = MutableStateFlow<com.example.worldcup2026.data.api.UserDto?>(null)
+    val currentUser = _currentUser.asStateFlow()
+    
     val leagues = prodeRepository.getLocalLeagues()
     
     private val _allMatches = MutableStateFlow<List<com.example.worldcup2026.data.model.Match>>(emptyList())
     val allMatches = _allMatches.asStateFlow()
-
-    private val _predictions = MutableStateFlow<Map<Int, SubmitPredictionRequest>>(emptyMap())
-    val predictions = _predictions.asStateFlow()
 
     init {
         loadMatches()
@@ -38,20 +38,34 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updatePrediction(matchId: Int, homeScore: Int, awayScore: Int) {
-        val currentMap = _predictions.value.toMutableMap()
-        currentMap[matchId] = SubmitPredictionRequest(matchId, homeScore, awayScore)
-        _predictions.value = currentMap
-    }
-
     fun handleSignIn(idToken: String) {
         viewModelScope.launch {
             val success = prodeRepository.authenticateWithFirebase(idToken)
             if (success) {
                 _isAuthenticated.value = true
+                _currentUser.value = prodeRepository.currentUser
                 prodeRepository.fetchMyLeagues()
+                // Sincronizar pronósticos locales existentes con el servidor al iniciar sesión
+                launch {
+                    try {
+                        val matches = worldCupRepository.getMatches()
+                        val localPredictions = matches.filter { it.predictedHomeScore != null && it.predictedAwayScore != null }
+                            .map { SubmitPredictionRequest(it.id, it.predictedHomeScore ?: 0, it.predictedAwayScore ?: 0) }
+                        if (localPredictions.isNotEmpty()) {
+                            prodeRepository.submitPredictions(localPredictions)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
         }
+    }
+
+    fun signOut() {
+        prodeRepository.logout()
+        _isAuthenticated.value = false
+        _currentUser.value = null
     }
 
     fun createLeague(name: String) {
@@ -63,12 +77,6 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
     fun joinLeague(code: String) {
         viewModelScope.launch {
             prodeRepository.joinLeague(code)
-        }
-    }
-
-    fun syncPredictions(predictions: List<SubmitPredictionRequest>) {
-        viewModelScope.launch {
-            prodeRepository.submitPredictions(predictions)
         }
     }
 

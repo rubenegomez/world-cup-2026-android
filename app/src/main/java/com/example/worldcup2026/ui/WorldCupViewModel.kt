@@ -278,6 +278,27 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             
             AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict")
             repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict)
+            
+            // Sincronizar automáticamente con el servidor si está autenticado
+            if (com.example.worldcup2026.data.repository.ProdeRepository.authToken != null) {
+                launch {
+                    try {
+                        val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(
+                            com.example.worldcup2026.data.local.WorldCupDatabase.getDatabase(getApplication()).leagueDao()
+                        )
+                        prodeRepo.submitPredictions(listOf(
+                            com.example.worldcup2026.data.api.SubmitPredictionRequest(
+                                matchId = matchId,
+                                predictedHomeScore = homePredict ?: 0,
+                                predictedAwayScore = awayPredict ?: 0
+                            )
+                        ))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
             }

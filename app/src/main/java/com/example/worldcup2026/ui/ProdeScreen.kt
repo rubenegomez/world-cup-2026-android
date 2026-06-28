@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.draw.clip
 import com.example.worldcup2026.data.api.AuthManager
 import com.example.worldcup2026.data.local.LeagueEntity
 import com.example.worldcup2026.data.model.Match
@@ -99,8 +100,63 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
         } else {
             // Pantalla Principal del Prode
             var selectedTab by remember { mutableIntStateOf(0) }
+            val currentUser by viewModel.currentUser.collectAsState()
             
             Column(modifier = Modifier.fillMaxSize()) {
+                // Cabecera de Perfil del Usuario Logueado
+                currentUser?.let { user ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                coil.compose.AsyncImage(
+                                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                        .data(user.avatarUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(Color.White.copy(alpha = 0.1f)),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = user.fullName,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp
+                                    )
+                                    Text(
+                                        text = user.email,
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                            TextButton(
+                                onClick = { viewModel.signOut() },
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
+                            ) {
+                                Text("SALIR", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
@@ -114,85 +170,14 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
                         }
                     }
                 ) {
-                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Predicciones") })
-                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Ligas") })
-                    Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Ranking") })
+                    Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Ligas") })
+                    Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Ranking") })
                 }
                 
                 when (selectedTab) {
-                    0 -> MisPrediccionesTab(viewModel)
-                    1 -> MisLigasTab(viewModel, onLeagueClick = { selectedLeague = it })
-                    2 -> RankingTab(viewModel)
+                    0 -> MisLigasTab(viewModel, onLeagueClick = { selectedLeague = it })
+                    1 -> RankingTab(viewModel)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun MisPrediccionesTab(viewModel: ProdeViewModel) {
-    val matches by viewModel.allMatches.collectAsState()
-    val predictions by viewModel.predictions.collectAsState()
-    // Filtramos solo los partidos no jugados
-    val pendingMatches = matches.filter { it.status == "Scheduled" || it.status == "Timed" }
-    
-    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item {
-            Text("Ingresa tus pronósticos", color = Color.White, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        items(pendingMatches) { match ->
-            val pred = predictions[match.id]
-            val hScore = pred?.predictedHomeScore?.toString() ?: "-"
-            val aScore = pred?.predictedAwayScore?.toString() ?: "-"
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(match.homeTeam?.name ?: "TBD", color = Color.White, modifier = Modifier.weight(1f))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ScoreControl(
-                            score = pred?.predictedHomeScore,
-                            onScoreChange = { newScore ->
-                                viewModel.updatePrediction(
-                                    match.id,
-                                    newScore,
-                                    pred?.predictedAwayScore ?: 0
-                                )
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("vs", color = Color.Gray, fontSize = 12.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        ScoreControl(
-                            score = pred?.predictedAwayScore,
-                            onScoreChange = { newScore ->
-                                viewModel.updatePrediction(
-                                    match.id,
-                                    pred?.predictedHomeScore ?: 0,
-                                    newScore
-                                )
-                            }
-                        )
-                    }
-                    Text(match.awayTeam?.name ?: "TBD", color = Color.White, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
-                }
-            }
-        }
-        item {
-            Button(
-                onClick = {
-                    viewModel.syncPredictions(predictions.values.toList())
-                },
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Guardar Predicciones", color = Color.White)
             }
         }
     }
@@ -309,44 +294,6 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
 fun RankingTab(viewModel: ProdeViewModel) {
     Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
         Text("Selecciona una liga para ver el ranking", color = Color.Gray)
-    }
-}
-
-@Composable
-fun ScoreControl(
-    score: Int?,
-    onScoreChange: (Int) -> Unit
-) {
-    val currentScore = score ?: 0
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(Color.DarkGray, androidx.compose.foundation.shape.CircleShape)
-                .clickable { if (currentScore > 0) onScoreChange(currentScore - 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("-", color = Color.White, fontWeight = FontWeight.Bold)
-        }
-        
-        Text(
-            text = score?.toString() ?: "-",
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp).width(20.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-        
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(Color.DarkGray, androidx.compose.foundation.shape.CircleShape)
-                .clickable { onScoreChange(currentScore + 1) },
-            contentAlignment = Alignment.Center
-        ) {
-            Text("+", color = Color.White, fontWeight = FontWeight.Bold)
-        }
     }
 }
 
