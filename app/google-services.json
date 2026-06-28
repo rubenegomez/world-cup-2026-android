@@ -12,7 +12,28 @@
           "package_name": "com.example.worldcup2026"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1087567707485-etufkgm967kft0bqqrc2cf60pvpdb658.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.worldcup2026",
+            "certificate_hash": "459f6a9cffa3404d35d7cb9e1fadd703bafe71d1"
+          }
+        },
+        {
+          "client_id": "1087567707485-ibug6hvmvq9k8850uvbmt45t664eqtrg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.worldcup2026",
+            "certificate_hash": "01a99e78033934a1cb03842b463876451318eeaf"
+          }
+        },
+        {
+          "client_id": "1087567707485-cph5stfpb9fpolevdno6vvq8237kltfi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA7uZ_Jmt3qt2sbPcVvH9SUuRV42s2Ho9M"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1087567707485-cph5stfpb9fpolevdno6vvq8237kltfi.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
