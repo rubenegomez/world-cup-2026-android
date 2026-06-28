@@ -6,6 +6,10 @@ import com.example.worldcup2026.data.model.Team
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 
 interface WorldCupApiService {
     @GET("api/teams")
@@ -47,12 +51,42 @@ data class LiveMatchDto(
     val clock: String?
 )
 
+
+class NullTeamInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val response = chain.proceed(request)
+        if (request.url.encodedPath.contains("api/matches")) {
+            val bodyString = response.body?.string()
+            if (bodyString != null) {
+                // Reemplazamos los objetos nulos por el equipo TBD (ID 180 para que concuerde) usando Regex para ignorar espacios
+                val homeRegex = "\"homeTeam\"\\s*:\\s*null".toRegex()
+                val awayRegex = "\"awayTeam\"\\s*:\\s*null".toRegex()
+                
+                val fixedBody = bodyString
+                    .replace(homeRegex, "\"homeTeam\":{\"id\":180,\"name\":\"Por definirse\",\"flagUrl\":\"\",\"group\":\"TBD\",\"players\":[]}")
+                    .replace(awayRegex, "\"awayTeam\":{\"id\":180,\"name\":\"Por definirse\",\"flagUrl\":\"\",\"group\":\"TBD\",\"players\":[]}")
+                
+                return response.newBuilder()
+                    .body(fixedBody.toResponseBody(response.body?.contentType()))
+                    .build()
+            }
+        }
+        return response
+    }
+}
+
 object NetworkModule {
     const val BASE_URL = "http://ellocodelpedal.duckdns.org:8000/"
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(NullTeamInterceptor())
+        .build()
 
     val apiService: WorldCupApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(WorldCupApiService::class.java)
