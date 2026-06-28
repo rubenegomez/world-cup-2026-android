@@ -36,9 +36,13 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
     val signInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        android.util.Log.d("ProdeSignIn", "Result code: ${result.resultCode}, data: ${result.data}")
         val idToken = authManager.handleSignInResult(result.data)
+        android.util.Log.d("ProdeSignIn", "idToken: $idToken")
         if (idToken != null) {
             viewModel.handleSignIn(idToken)
+        } else {
+            android.util.Log.e("ProdeSignIn", "idToken es null - revisar SHA1 en Firebase o Web Client ID")
         }
     }
 
@@ -55,8 +59,17 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
                 
                 Button(
                     onClick = {
-                        val signInIntent = authManager.getGoogleSignInClient().signInIntent
-                        signInLauncher.launch(signInIntent)
+                        try {
+                            android.util.Log.d("ProdeSignIn", "Lanzando Google Sign-In...")
+                            val client = authManager.getGoogleSignInClient()
+                            // Forzar re-login para obtener un token fresco
+                            client.signOut().addOnCompleteListener {
+                                val signInIntent = client.signInIntent
+                                signInLauncher.launch(signInIntent)
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("ProdeSignIn", "Error al lanzar sign-in", e)
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
