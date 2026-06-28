@@ -8,7 +8,7 @@ import retrofit2.http.Path
 
 // --- DTOs ---
 
-data class FirebaseTokenRequest(val token: String)
+data class FirebaseTokenRequest(val idToken: String)
 
 data class AuthResponse(
     val token: String,
