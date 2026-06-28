@@ -11,35 +11,67 @@ import androidx.core.app.NotificationCompat
 import com.example.worldcup2026.R
 
 object NotificationHelper {
-    private const val CHANNEL_ID = "world_cup_2026_notifications"
-    private const val CHANNEL_NAME = "Mundial 2026 Countdown"
-    private const val CHANNEL_DESC = "Notificaciones para el inicio del Mundial 2026"
+    private const val CHANNEL_GENERAL_ID = "world_cup_2026_notifications"
+    private const val CHANNEL_GOALS_ID = "world_cup_2026_goals"
+    private const val CHANNEL_INCIDENTS_ID = "world_cup_2026_incidents"
     private const val NOTIFICATION_ID = 2026
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val soundUri = Uri.parse(
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // 1. Canal General (Whistle / Countdown)
+            val soundGeneralUri = Uri.parse(
                 ContentResolver.SCHEME_ANDROID_RESOURCE + 
                 "://" + context.packageName + "/" + R.raw.world_cup_whistle
             )
-            
             val attributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
-
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
+            
+            val generalChannel = NotificationChannel(
+                CHANNEL_GENERAL_ID,
+                "Mundial 2026 General",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = CHANNEL_DESC
-                setSound(soundUri, attributes)
+                description = "Notificaciones generales y cuenta regresiva"
+                setSound(soundGeneralUri, attributes)
                 enableVibration(true)
             }
+            manager.createNotificationChannel(generalChannel)
 
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+            // 2. Canal de Goles (Goolll)
+            val soundGoalUri = Uri.parse(
+                ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                "://" + context.packageName + "/" + R.raw.gooolll
+            )
+            val goalChannel = NotificationChannel(
+                CHANNEL_GOALS_ID,
+                "Mundial 2026 Goles",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificaciones de goles en tiempo real"
+                setSound(soundGoalUri, attributes)
+                enableVibration(true)
+            }
+            manager.createNotificationChannel(goalChannel)
+
+            // 3. Canal de Incidentes (Silbato)
+            val soundIncidentUri = Uri.parse(
+                ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                "://" + context.packageName + "/" + R.raw.silbato
+            )
+            val incidentChannel = NotificationChannel(
+                CHANNEL_INCIDENTS_ID,
+                "Mundial 2026 Incidentes",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificaciones de tarjetas rojas, fin de partido y eventos"
+                setSound(soundIncidentUri, attributes)
+                enableVibration(true)
+            }
+            manager.createNotificationChannel(incidentChannel)
         }
     }
 
@@ -49,8 +81,8 @@ object NotificationHelper {
             "://" + context.packageName + "/" + R.raw.world_cup_whistle
         )
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Fallback simple para icono
+        val builder = NotificationCompat.Builder(context, CHANNEL_GENERAL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("⚽ ¡EL MUNDIAL HA COMENZADO! ⚽")
             .setContentText("El pitazo inicial ha sonado en México. ¡Que ruede el balón!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -59,18 +91,20 @@ object NotificationHelper {
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, builder.build())
-     }
+    }
 
-    fun showMatchIncidentNotification(context: Context, title: String, message: String) {
+    fun showMatchIncidentNotification(context: Context, title: String, message: String, isGoal: Boolean = false) {
+        val channelId = if (isGoal) CHANNEL_GOALS_ID else CHANNEL_INCIDENTS_ID
+        val soundRes = if (isGoal) R.raw.gooolll else R.raw.silbato
+        
         val soundUri = Uri.parse(
             ContentResolver.SCHEME_ANDROID_RESOURCE + 
-            "://" + context.packageName + "/" + R.raw.world_cup_whistle
+            "://" + context.packageName + "/" + soundRes
         )
 
-        // ID único basado en el tiempo para que no se sobrescriban notificaciones de distintos eventos
         val uniqueNotificationId = (System.currentTimeMillis() % 100000).toInt()
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)

@@ -91,4 +91,14 @@ object NetworkModule {
             .build()
             .create(WorldCupApiService::class.java)
     }
+
+    const val PRODE_BASE_URL = "https://ellocodelpedal.duckdns.org/"
+
+    val prodeApiService: ProdeApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(PRODE_BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ProdeApiService::class.java)
+    }
 }

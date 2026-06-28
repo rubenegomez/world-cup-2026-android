@@ -172,6 +172,16 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                         unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
                                     )
                                 )
+                                NavigationBarItem(
+                                    selected = selectedScreen == 3,
+                                    onClick = { selectedScreen = 3 },
+                                    icon = { Icon(Icons.Default.Star, contentDescription = null) },
+                                    label = { Text("Prode", style = MaterialTheme.typography.labelSmall) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    )
+                                )
                             }
                         }
                     }
@@ -210,6 +220,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                     )
                                     1 -> StandingsScreen(matches = state.matches)
                                     2 -> AboutScreen()
+                                    3 -> ProdeScreen()
                                 }
  
                                 if (showVipDialog && selectedMatchForVip != null) {

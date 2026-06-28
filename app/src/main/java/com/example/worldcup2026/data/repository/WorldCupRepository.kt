@@ -188,7 +188,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
                             title = "⚽ ¡GOOOOOL de $scoringTeam! ⚽",
-                            message = "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})"
+                            message = "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})",
+                            isGoal = true
                         )
                     }
 
@@ -202,7 +203,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
                             title = "🟥 ¡Tarjeta Roja para $penalizedTeam! 🟥",
-                            message = "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})"
+                            message = "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})",
+                            isGoal = false
                         )
                     }
 
@@ -211,7 +213,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
                             title = "⏱️ ¡Final del partido! ⏱️",
-                            message = "Terminó: $homeTeamName $newHome - $newAway $awayTeamName"
+                            message = "Terminó: $homeTeamName $newHome - $newAway $awayTeamName",
+                            isGoal = false
                         )
                     }
                 }

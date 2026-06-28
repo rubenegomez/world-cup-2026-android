@@ -446,14 +446,16 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                             val displayDate = match.date ?: "A definir"
                             InfoRow(" Saque central", displayDate)
                             
-                            // Transmisión
-                            InfoRow(" Transmisión", "CazeTV, TV Globo, SporTV")
-                            
                             // Estadio
                             val stadium = match.stadium ?: "Estadio a Definir"
                             val city = match.city ?: ""
                             val venue = if (city.isNotEmpty()) "$stadium, $city" else stadium
                             InfoRow(" Estadio", venue)
+
+                            // Transmisión (Solo si no finalizó)
+                            if (match.status.uppercase() != "FINISHED") {
+                                InfoRow(" Transmisión", "CazeTV, TV Globo, SporTV")
+                            }
                             
                             // Campeonato
                             InfoRow(" Campeonato", "World Cup (World)")
@@ -664,7 +666,7 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                                             ) {
                                                 EventIcon(parsed.emoji)
                                                 Spacer(modifier = Modifier.width(6.dp))
-                                                FormatEventDetail(parsed.detail)
+                                                FormatEventDetail(parsed.detail, modifier = Modifier.weight(1f, fill = false))
                                             }
                                         }
                                     }
@@ -697,7 +699,7 @@ fun VipEventsDialog(match: Match, onDismiss: () -> Unit) {
                                                 modifier = Modifier.padding(8.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                FormatEventDetail(parsed.detail, textAlign = TextAlign.End)
+                                                FormatEventDetail(parsed.detail, modifier = Modifier.weight(1f, fill = false), textAlign = TextAlign.End)
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 EventIcon(parsed.emoji)
                                             }

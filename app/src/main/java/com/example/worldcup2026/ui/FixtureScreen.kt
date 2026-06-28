@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -129,13 +130,31 @@ fun KnockoutBracket(
     val rounds = remember { com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.map { it.name } }
     var selectedRound by remember(rounds) { mutableStateOf(rounds.firstOrNull() ?: "") }
     
-    val filteredMatches = matches.filter { match ->
-        val config = com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.find { it.name == selectedRound }
-        if (config != null) {
-            match.id in config.startId..config.endId
-        } else {
-            false
-        }
+    val roundMatches = remember(matches, selectedRound) {
+        matches.filter { match ->
+            val config = com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.find { it.name == selectedRound }
+            if (config != null) {
+                match.id in config.startId..config.endId
+            } else {
+                false
+            }
+        }.sortedBy { it.date ?: "" }
+    }
+
+    val roundDates = remember(roundMatches) {
+        roundMatches.map { match ->
+            val safeDate = match.date ?: ""
+            val parts = safeDate.split(" ")
+            if (parts.isNotEmpty()) parts[0] else safeDate
+        }.distinct().sortedBy { it }
+    }
+
+    var selectedRoundDate by remember(roundDates) { 
+        mutableStateOf(roundDates.firstOrNull() ?: "") 
+    }
+
+    val filteredMatches = remember(roundMatches, selectedRoundDate) {
+        roundMatches.filter { (it.date ?: "").startsWith(selectedRoundDate) }
     }
 
     Column {
@@ -161,13 +180,67 @@ fun KnockoutBracket(
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+        if (roundDates.size > 1) {
+            val subListState = rememberLazyListState()
+            
+            LaunchedEffect(roundDates) {
+                val todayStr = try {
+                    java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                } catch (e: Exception) {
+                    ""
+                }
+                val index = roundDates.indexOf(todayStr)
+                if (index >= 0) {
+                    selectedRoundDate = todayStr
+                    subListState.scrollToItem(index)
+                }
+            }
+
+            LazyRow(
+                state = subListState,
+                modifier = Modifier.padding(vertical = 12.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(roundDates) { date ->
+                    val (formattedDate, dayName) = remember(date) { formatChipDate(date) }
+                    FilterChip(
+                        selected = selectedRoundDate == date,
+                        onClick = { selectedRoundDate = date },
+                        label = {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 2.dp)) {
+                                Text(text = formattedDate, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                if (dayName.isNotEmpty()) {
+                                    Text(text = dayName, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp)
+                                }
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = Color.White.copy(alpha = 0.08f)
+                        ),
+                        border = null,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+        } else {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (filteredMatches.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No hay partidos programados para esta fecha", color = Color.White.copy(alpha = 0.5f))
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                itemsIndexed(filteredMatches) { index, match ->
+                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                }
             }
         }
     }
@@ -233,8 +306,18 @@ fun DayFilteredFixture(
         .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 100 }
         .sortedBy { it.date ?: "" }
 
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(initialDate, dates) {
+        val index = dates.indexOf(initialDate)
+        if (index >= 0) {
+            listState.scrollToItem(index)
+        }
+    }
+
     Column {
         LazyRow(
+            state = listState,
             modifier = Modifier.padding(vertical = 12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -355,7 +438,7 @@ fun MatchCard(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (match.status == "Finished") {
+                    if (match.status.uppercase() == "FINISHED") {
                         IconButton(
                             onClick = { 
                                 onScoreChange(match.id, null, null)
@@ -365,7 +448,7 @@ fun MatchCard(
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = "Limpiar", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                         }
-                    } else if (match.status == "Scheduled" || match.status == "Live") {
+                    } else if (match.status.uppercase() == "SCHEDULED" || match.status.uppercase() == "LIVE" || match.status.uppercase() == "HALFTIME" || match.status.uppercase() == "ENTREETIEMPO" || match.status.uppercase() == "PAUSA" || match.status.uppercase() == "PAUSE") {
                         TextButton(
                             onClick = { onStatusChange(match.id, "Finished") },
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
@@ -390,8 +473,8 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    onScoreChange = { if (match.status != "Finished") onScoreChange(match.id, it, match.awayScore) },
-                    enabled = match.status != "Finished"
+                    onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, it, match.awayScore) },
+                    enabled = match.status.uppercase() != "FINISHED"
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -401,8 +484,9 @@ fun MatchCard(
                         fontWeight = FontWeight.Black,
                         color = Color.White.copy(alpha = 0.2f)
                     )
-                    when (match.status) {
-                        "Finished" -> {
+                    val statusUpper = match.status.uppercase()
+                    when (statusUpper) {
+                        "FINISHED" -> {
                             Text(
                                 text = "FINALIZADO",
                                 style = MaterialTheme.typography.labelSmall,
@@ -411,24 +495,40 @@ fun MatchCard(
                                 fontSize = 9.sp
                             )
                         }
-                        "Live" -> {
-                            val isHalftime = match.clock?.lowercase()?.contains("entretiempo") == true
+                        "LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE" -> {
+                            val clockLower = match.clock?.lowercase() ?: ""
+                            val isHalftime = statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" ||
+                                    clockLower.contains("entretiempo") || clockLower.contains("halftime") || clockLower.contains("medio tiempo")
+                            val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
+                                    clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
+                            
+                            val labelText = when {
+                                isHalftime -> "ENTREETIEMPO"
+                                isWaterBreak -> "PAUSA HIDRATACIÓN"
+                                else -> "EN VIVO"
+                            }
+                            val labelColor = when {
+                                isHalftime -> Color(0xFFFF9800)
+                                isWaterBreak -> Color(0xFF03A9F4)
+                                else -> Color(0xFF4CAF50)
+                            }
+                            
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isHalftime) Color(0xFFFF9800).copy(alpha = 0.2f) else Color(0xFF4CAF50).copy(alpha = 0.2f),
+                                color = labelColor.copy(alpha = 0.2f),
                                 modifier = Modifier.padding(top = 4.dp)
                             ) {
                                 Text(
-                                    text = if (isHalftime) "ENTREETIEMPO" else "EN VIVO",
+                                    text = labelText,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (isHalftime) Color(0xFFFFB74D) else Color(0xFF81C784),
+                                    color = labelColor,
                                     fontWeight = FontWeight.Black,
                                     fontSize = 10.sp,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
                         }
-                        "Scheduled" -> {
+                        "SCHEDULED" -> {
                             val timeStr = (match.date ?: "").split(" ").lastOrNull() ?: ""
                             if (timeStr.isNotEmpty()) {
                                 Text(
@@ -447,12 +547,12 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    onScoreChange = { if (match.status != "Finished") onScoreChange(match.id, match.homeScore, it) },
-                    enabled = match.status != "Finished"
+                    onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, match.homeScore, it) },
+                    enabled = match.status.uppercase() != "FINISHED"
                 )
             }
  
-            if (match.status != "Scheduled" && match.scorers.isNotEmpty()) {
+            if (match.status.uppercase() != "SCHEDULED" && match.scorers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     modifier = Modifier
@@ -513,7 +613,7 @@ fun MatchCard(
                 }
             }
 
-            if (match.status == "Finished") {
+            if (match.status.uppercase() == "FINISHED") {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { onShowVipStats(match) },
@@ -546,7 +646,7 @@ fun MatchCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                if (match.status == "Scheduled") {
+                if (match.status.uppercase() == "SCHEDULED") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly,

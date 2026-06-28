@@ -15,14 +15,36 @@ object KnockoutCalculator {
             StandingsCalculator.calculateStandings(teams, groupMatches)
         }
 
-        // DIECISEISAVOS (101-116)
-        // Regla: 1° y 2° de cada grupo (24 equipos) + 8 mejores 3° (8 equipos) = 32 equipos.
-        // Por ahora haremos una lógica simplificada para los primeros cruces conocidos.
-        
-        // Ejemplo: Match 101: 2° Grupo A vs 2° Grupo B
+        // Calcular el ranking de mejores terceros
+        val bestThirds = standings.mapNotNull { (_, groupStandings) ->
+            if (groupStandings.all { it.pj >= 3 }) {
+                groupStandings.getOrNull(2) // El 3º puesto
+            } else {
+                null
+            }
+        }.sortedWith(
+            compareByDescending<TeamStats> { it.pts }
+                .thenByDescending { it.gd }
+                .thenByDescending { it.gf }
+        ).map { it.team }
+
+        // Mapear los 32 clasificados a las 16 llaves de Dieciseisavos (101-116) según fixture exacto de Canchallena
         updateKnockoutMatch(knockoutMatches, 101, getTeamAt(standings, "A", 1), getTeamAt(standings, "B", 1)) 
-        // Nota: El usuario puso "2° Grupo A vs 2° Grupo B" en su código original, pero lo corregiré según FIFA si puedo.
-        // Dejaremos la estructura pero llenando con equipos reales si el grupo terminó.
+        updateKnockoutMatch(knockoutMatches, 102, getTeamAt(standings, "E", 0), bestThirds.getOrNull(0))
+        updateKnockoutMatch(knockoutMatches, 103, getTeamAt(standings, "F", 0), getTeamAt(standings, "C", 1))
+        updateKnockoutMatch(knockoutMatches, 104, getTeamAt(standings, "C", 0), getTeamAt(standings, "F", 1))
+        updateKnockoutMatch(knockoutMatches, 105, getTeamAt(standings, "I", 0), bestThirds.getOrNull(1))
+        updateKnockoutMatch(knockoutMatches, 106, getTeamAt(standings, "E", 1), getTeamAt(standings, "I", 1))
+        updateKnockoutMatch(knockoutMatches, 107, getTeamAt(standings, "A", 0), bestThirds.getOrNull(2))
+        updateKnockoutMatch(knockoutMatches, 108, getTeamAt(standings, "L", 0), bestThirds.getOrNull(3))
+        updateKnockoutMatch(knockoutMatches, 109, getTeamAt(standings, "D", 0), bestThirds.getOrNull(4))
+        updateKnockoutMatch(knockoutMatches, 110, getTeamAt(standings, "G", 0), bestThirds.getOrNull(5))
+        updateKnockoutMatch(knockoutMatches, 111, getTeamAt(standings, "K", 1), getTeamAt(standings, "L", 1))
+        updateKnockoutMatch(knockoutMatches, 112, getTeamAt(standings, "H", 0), getTeamAt(standings, "J", 1))
+        updateKnockoutMatch(knockoutMatches, 113, getTeamAt(standings, "B", 0), bestThirds.getOrNull(6))
+        updateKnockoutMatch(knockoutMatches, 114, getTeamAt(standings, "J", 0), getTeamAt(standings, "H", 1))
+        updateKnockoutMatch(knockoutMatches, 115, getTeamAt(standings, "K", 0), bestThirds.getOrNull(7))
+        updateKnockoutMatch(knockoutMatches, 116, getTeamAt(standings, "D", 1), getTeamAt(standings, "G", 1))
 
         // Lógica de ganadores de llaves anteriores
         fillWinners(knockoutMatches)
@@ -51,30 +73,25 @@ object KnockoutCalculator {
     }
 
     private fun fillWinners(matches: MutableList<Match>) {
-        // IDs: 101..116 (Dieciseisavos), 117..124 (Octavos), 125..128 (Cuartos), 129..130 (Semis), 131 (Final), 132 (3er Puesto)
-        
-        // Octavos (117-124) dependen de Dieciseisavos
-        for (i in 0..7) {
-            val m1 = matches.find { it.id == 101 + i * 2 }
-            val m2 = matches.find { it.id == 102 + i * 2 }
-            val winner1 = getWinner(m1)
-            val winner2 = getWinner(m2)
-            updateKnockoutMatch(matches, 117 + i, winner1, winner2)
-        }
+        // Octavos (117-124) según cascada FIFA oficial
+        updateKnockoutMatch(matches, 117, getWinner(matches.find { it.id == 101 }), getWinner(matches.find { it.id == 104 })) // FIFA P90
+        updateKnockoutMatch(matches, 118, getWinner(matches.find { it.id == 103 }), getWinner(matches.find { it.id == 106 })) // FIFA P89
+        updateKnockoutMatch(matches, 119, getWinner(matches.find { it.id == 102 }), getWinner(matches.find { it.id == 105 })) // FIFA P91
+        updateKnockoutMatch(matches, 120, getWinner(matches.find { it.id == 107 }), getWinner(matches.find { it.id == 108 })) // FIFA P92
+        updateKnockoutMatch(matches, 121, getWinner(matches.find { it.id == 112 }), getWinner(matches.find { it.id == 111 })) // FIFA P93
+        updateKnockoutMatch(matches, 122, getWinner(matches.find { it.id == 110 }), getWinner(matches.find { it.id == 109 })) // FIFA P94
+        updateKnockoutMatch(matches, 123, getWinner(matches.find { it.id == 114 }), getWinner(matches.find { it.id == 113 })) // FIFA P95
+        updateKnockoutMatch(matches, 124, getWinner(matches.find { it.id == 116 }), getWinner(matches.find { it.id == 115 })) // FIFA P96
 
-        // Cuartos (125-128)
-        for (i in 0..3) {
-            val m1 = matches.find { it.id == 117 + i * 2 }
-            val m2 = matches.find { it.id == 118 + i * 2 }
-            updateKnockoutMatch(matches, 125 + i, getWinner(m1), getWinner(m2))
-        }
+        // Cuartos (125-128) según FIFA oficial
+        updateKnockoutMatch(matches, 125, getWinner(matches.find { it.id == 117 }), getWinner(matches.find { it.id == 118 })) // FIFA P97
+        updateKnockoutMatch(matches, 126, getWinner(matches.find { it.id == 121 }), getWinner(matches.find { it.id == 122 })) // FIFA P98 - CORREGIDO
+        updateKnockoutMatch(matches, 127, getWinner(matches.find { it.id == 119 }), getWinner(matches.find { it.id == 120 })) // FIFA P99 - CORREGIDO
+        updateKnockoutMatch(matches, 128, getWinner(matches.find { it.id == 123 }), getWinner(matches.find { it.id == 124 })) // FIFA P100
 
         // Semis (129-130)
-        for (i in 0..1) {
-            val m1 = matches.find { it.id == 125 + i * 2 }
-            val m2 = matches.find { it.id == 126 + i * 2 }
-            updateKnockoutMatch(matches, 129 + i, getWinner(m1), getWinner(m2))
-        }
+        updateKnockoutMatch(matches, 129, getWinner(matches.find { it.id == 125 }), getWinner(matches.find { it.id == 126 }))
+        updateKnockoutMatch(matches, 130, getWinner(matches.find { it.id == 127 }), getWinner(matches.find { it.id == 128 }))
 
         // Final (131)
         val s1 = matches.find { it.id == 129 }
