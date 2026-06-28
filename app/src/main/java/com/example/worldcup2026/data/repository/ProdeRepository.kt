@@ -28,7 +28,12 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
             currentUser = response.user
             true
         } catch (e: Exception) {
-            Log.e("ProdeRepo", "Error authenticating", e)
+            if (e is retrofit2.HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.e("ProdeRepo", "Http Error: Code ${e.code()}, Body: $errorBody", e)
+            } else {
+                Log.e("ProdeRepo", "Error authenticating", e)
+            }
             false
         }
     }
