@@ -64,7 +64,7 @@ fun LeagueDetailScreen(
                         onClick = {
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "¡Unite a mi Prode del Mundial! Mi código de liga es: ${league.code}. Descargá El Loco del Pedal.")
+                                putExtra(Intent.EXTRA_TEXT, "¡Unite a mi Prode del Mundial! Mi código de liga es: ${league.code}. Descargá la app del Mundial 2026.")
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, null)
