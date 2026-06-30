@@ -34,6 +34,23 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         return Pair(0, 0)
     }
 
+    private fun parseYellowCardsFromVipStats(vipStats: String?): Pair<Int, Int> {
+        if (vipStats.isNullOrEmpty()) return Pair(0, 0)
+        try {
+            val parts = vipStats.split("|")
+            val yellowPart = parts.find { it.startsWith("yellow:") } ?: return Pair(0, 0)
+            val values = yellowPart.substringAfter("yellow:").split(",")
+            if (values.size >= 2) {
+                val homeYellow = values[0].toIntOrNull() ?: 0
+                val awayYellow = values[1].toIntOrNull() ?: 0
+                return Pair(homeYellow, awayYellow)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return Pair(0, 0)
+    }
+
     suspend fun getMockGroups(): List<Group> {
         return com.example.worldcup2026.data.api.NetworkModule.apiService.getGroups()
     }
@@ -63,27 +80,72 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         return matches
     }
 
-    private fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match) {
+    private suspend fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match) {
         val saved = savedEntities.find { it.id == baseMatch.id }
         if (saved != null) {
+            val homeScore = baseMatch.homeScore ?: saved.homeScore
+            val awayScore = baseMatch.awayScore ?: saved.awayScore
+            val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
+            val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
+            val status = if (baseMatch.status != "Scheduled") baseMatch.status else saved.status
+
+            val homePossession = baseMatch.homePossession ?: saved.homePossession
+            val awayPossession = baseMatch.awayPossession ?: saved.awayPossession
+            val homeShots = baseMatch.homeShots ?: saved.homeShots
+            val awayShots = baseMatch.awayShots ?: saved.awayShots
+            val scorers = if (baseMatch.scorers.isNotEmpty()) baseMatch.scorers else (if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"))
+            val events = if (baseMatch.events.isNotEmpty()) baseMatch.events else (if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|"))
+            val vipStats = baseMatch.vipStats ?: saved.vipStats
+            val clock = baseMatch.clock ?: saved.clock
+
             targetList.add(baseMatch.copy(
-                homeScore = saved.homeScore,
-                awayScore = saved.awayScore,
-                homePenalties = saved.homePenalties,
-                awayPenalties = saved.awayPenalties,
-                status = saved.status,
+                homeScore = homeScore,
+                awayScore = awayScore,
+                homePenalties = homePenalties,
+                awayPenalties = awayPenalties,
+                status = status,
                 predictedWinner = saved.predictedWinner,
                 predictedHomeScore = saved.predictedHomeScore,
                 predictedAwayScore = saved.predictedAwayScore,
-                homePossession = saved.homePossession,
-                awayPossession = saved.awayPossession,
-                homeShots = saved.homeShots,
-                awayShots = saved.awayShots,
-                scorers = if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"),
-                events = if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|"),
-                vipStats = saved.vipStats,
-                clock = saved.clock
+                homePossession = homePossession,
+                awayPossession = awayPossession,
+                homeShots = homeShots,
+                awayShots = awayShots,
+                scorers = scorers,
+                events = events,
+                vipStats = vipStats,
+                clock = clock
             ))
+
+            // Si detectamos discrepancia o datos nuevos de resultado real/penales, actualizamos en la DB de Room
+            if (saved.homeScore != homeScore ||
+                saved.awayScore != awayScore ||
+                saved.homePenalties != homePenalties ||
+                saved.awayPenalties != awayPenalties ||
+                saved.status != status ||
+                saved.vipStats != vipStats ||
+                saved.clock != clock
+            ) {
+                matchDao.insertMatch(MatchEntity(
+                    id = baseMatch.id,
+                    homeScore = homeScore,
+                    awayScore = awayScore,
+                    homePenalties = homePenalties,
+                    awayPenalties = awayPenalties,
+                    status = status,
+                    predictedWinner = saved.predictedWinner,
+                    predictedHomeScore = saved.predictedHomeScore,
+                    predictedAwayScore = saved.predictedAwayScore,
+                    homePossession = homePossession,
+                    awayPossession = awayPossession,
+                    homeShots = homeShots,
+                    awayShots = awayShots,
+                    scorers = if (scorers.isEmpty()) null else scorers.joinToString("|"),
+                    events = if (events.isEmpty()) null else events.joinToString("|"),
+                    vipStats = vipStats,
+                    clock = clock
+                ))
+            }
         } else {
             targetList.add(baseMatch)
         }
@@ -177,12 +239,12 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     val homeTeamName = matchInfo?.homeTeam?.name ?: "Local"
                     val awayTeamName = matchInfo?.awayTeam?.name ?: "Visitante"
 
-                    // 1. Detección de Goles
                     val oldHome = saved.homeScore ?: 0
                     val newHome = liveMatch.homeScore ?: 0
                     val oldAway = saved.awayScore ?: 0
                     val newAway = liveMatch.awayScore ?: 0
 
+                    // 1. Detección de Goles
                     if (newHome > oldHome || newAway > oldAway) {
                         val scoringTeam = if (newHome > oldHome) homeTeamName else awayTeamName
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
@@ -190,6 +252,17 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                             title = "⚽ ¡GOOOOOL de $scoringTeam! ⚽",
                             message = "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})",
                             isGoal = true
+                        )
+                    }
+
+                    // 1b. Detección de Goles Anulados (VAR)
+                    if (newHome < oldHome || newAway < oldAway) {
+                        val annulledTeam = if (newHome < oldHome) homeTeamName else awayTeamName
+                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
+                            context = context,
+                            title = "❌ ¡GOL ANULADO (VAR)! ❌",
+                            message = "El VAR anuló el gol de $annulledTeam. El marcador vuelve a: $homeTeamName $newHome - $newAway $awayTeamName.",
+                            isGoal = false
                         )
                     }
 
@@ -204,6 +277,37 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                             context = context,
                             title = "🟥 ¡Tarjeta Roja para $penalizedTeam! 🟥",
                             message = "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})",
+                            isGoal = false
+                        )
+                    }
+
+                    // 2b. Detección de Tarjetas Amarillas
+                    val (oldHomeYellow, oldAwayYellow) = parseYellowCardsFromVipStats(saved.vipStats)
+                    val newHomeYellow = liveMatch.homeYellowCards ?: 0
+                    val newAwayYellow = liveMatch.awayYellowCards ?: 0
+
+                    if (newHomeYellow > oldHomeYellow || newAwayYellow > oldAwayYellow) {
+                        val penalizedTeam = if (newHomeYellow > oldHomeYellow) homeTeamName else awayTeamName
+                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
+                            context = context,
+                            title = "🟨 Tarjeta Amarilla 🟨",
+                            message = "Amonestación para un jugador de $penalizedTeam. (Min ${liveMatch.clock ?: ""})",
+                            isGoal = false
+                        )
+                    }
+
+                    // 2c. Detección de Goles en la Tanda de Penales
+                    val oldHomePens = saved.homePenalties ?: 0
+                    val newHomePens = liveMatch.homePenalties ?: 0
+                    val oldAwayPens = saved.awayPenalties ?: 0
+                    val newAwayPens = liveMatch.awayPenalties ?: 0
+
+                    if (newHomePens > oldHomePens || newAwayPens > oldAwayPens) {
+                        val scoringTeam = if (newHomePens > oldHomePens) homeTeamName else awayTeamName
+                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
+                            context = context,
+                            title = "🥅 ¡Gol en la Tanda de Penales! ⚽",
+                            message = "Gol de $scoringTeam. Tanda actual: $newHomePens - $newAwayPens",
                             isGoal = false
                         )
                     }
@@ -235,6 +339,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 if (saved == null || 
                     saved.homeScore != liveMatch.homeScore || 
                     saved.awayScore != liveMatch.awayScore || 
+                    saved.homePenalties != liveMatch.homePenalties ||
+                    saved.awayPenalties != liveMatch.awayPenalties ||
                     saved.status != liveMatch.status ||
                     saved.homePossession != liveMatch.homePossession ||
                     saved.vipStats != vipStatsStr ||
@@ -246,8 +352,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         id = liveMatch.matchId,
                         homeScore = liveMatch.homeScore,
                         awayScore = liveMatch.awayScore,
-                        homePenalties = saved?.homePenalties,
-                        awayPenalties = saved?.awayPenalties,
+                        homePenalties = liveMatch.homePenalties ?: saved?.homePenalties,
+                        awayPenalties = liveMatch.awayPenalties ?: saved?.awayPenalties,
                         status = liveMatch.status,
                         predictedWinner = saved?.predictedWinner,
                         predictedHomeScore = saved?.predictedHomeScore,

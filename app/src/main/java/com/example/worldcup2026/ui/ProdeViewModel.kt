@@ -45,7 +45,16 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                 _isAuthenticated.value = true
                 _currentUser.value = prodeRepository.currentUser
                 prodeRepository.fetchMyLeagues()
-                // Sincronizar pronósticos locales existentes con el servidor al iniciar sesión
+                // Descargar y restaurar predicciones guardadas en el servidor
+                launch {
+                    try {
+                        prodeRepository.fetchMyPredictions(worldCupRepository)
+                        loadMatches()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                // Sincronizar pronósticos locales existentes con el servidor al iniciar sesión si hubiera nuevos
                 launch {
                     try {
                         val matches = worldCupRepository.getMatches()

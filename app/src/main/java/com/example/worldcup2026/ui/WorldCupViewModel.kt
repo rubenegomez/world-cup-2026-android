@@ -26,6 +26,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = mutableStateOf<WorldCupUiState>(WorldCupUiState.Loading)
     val uiState: State<WorldCupUiState> = _uiState
 
+    private val _isServerConnected = mutableStateOf(true)
+    val isServerConnected: State<Boolean> = _isServerConnected
+
     private val _adFreeUntil = mutableStateOf(0L)
     val adFreeUntil: State<Long> = _adFreeUntil
 
@@ -50,6 +53,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 // Sincronización automática con el JSON remoto de GitHub en segundo plano
                 launch {
                     val success = repository.syncMatchesWithLiveJson(getApplication())
+                    _isServerConnected.value = success
                     if (success) {
                         val matches = repository.getMatches()
                         val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
@@ -68,6 +72,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 startAutoSync(allMatches)
             } catch (e: Exception) {
                 e.printStackTrace()
+                _isServerConnected.value = false
                 _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
             }
         }
@@ -77,6 +82,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             try {
                 val success = repository.syncMatchesWithLiveJson(getApplication())
+                _isServerConnected.value = success
                 if (success) {
                     val matches = repository.getMatches()
                     val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches)
@@ -88,6 +94,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 onComplete(success)
             } catch (e: Exception) {
                 e.printStackTrace()
+                _isServerConnected.value = false
                 onComplete(false)
             }
         }
@@ -183,9 +190,16 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private fun calculatePointsForMatch(match: Match): Int {
         if (match.status != "Finished") return 0
+        val h = match.homeScore ?: 0
+        val a = match.awayScore ?: 0
         val realWinner = when {
-            (match.homeScore ?: 0) > (match.awayScore ?: 0) -> "L"
-            (match.homeScore ?: 0) < (match.awayScore ?: 0) -> "V"
+            match.id > 100 && h == a -> {
+                val hp = match.homePenalties ?: 0
+                val ap = match.awayPenalties ?: 0
+                if (hp > ap) "L" else if (hp < ap) "V" else "E"
+            }
+            h > a -> "L"
+            h < a -> "V"
             else -> "E"
         }
         var points = 0
@@ -327,6 +341,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     delay(60000) // Cada 60 segundos
                     try {
                         val success = repository.syncMatchesWithLiveJson(getApplication())
+                        _isServerConnected.value = success
                         if (success) {
                             val updatedMatches = repository.getMatches()
                             val finalMatches = KnockoutCalculator.calculateKnockoutMatches(updatedMatches)
@@ -335,6 +350,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        _isServerConnected.value = false
                     }
                 }
             }

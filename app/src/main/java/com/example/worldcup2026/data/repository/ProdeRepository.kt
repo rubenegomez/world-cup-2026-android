@@ -98,4 +98,23 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
             false
         }
     }
+
+    suspend fun fetchMyPredictions(worldCupRepository: WorldCupRepository): Boolean {
+        val token = authToken ?: return false
+        return try {
+            val serverPredictions = api.getMyPredictions(token)
+            serverPredictions.forEach { pred ->
+                worldCupRepository.saveMatchPrediction(
+                    matchId = pred.matchId,
+                    winner = if (pred.predictedHomeScore > pred.predictedAwayScore) "home" else if (pred.predictedHomeScore < pred.predictedAwayScore) "away" else "draw",
+                    homePredict = pred.predictedHomeScore,
+                    awayPredict = pred.predictedAwayScore
+                )
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error fetching predictions from server", e)
+            false
+        }
+    }
 }

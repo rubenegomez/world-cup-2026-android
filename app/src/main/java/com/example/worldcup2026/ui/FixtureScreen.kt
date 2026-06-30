@@ -473,18 +473,39 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
+                    penalties = if (match.status.uppercase() == "FINISHED" && match.id > 100 && match.homeScore == match.awayScore) match.homePenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, it, match.awayScore) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val statusUpper = match.status.uppercase()
+                    val isLive = statusUpper == "LIVE" || statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" || statusUpper == "PAUSA" || statusUpper == "PAUSE"
+                    
+                    if (isLive) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFE53935).copy(alpha = 0.2f),
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        ) {
+                            Text(
+                                text = "• EN VIVO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFE53935),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 8.sp,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    
                     Text(
                         text = "VS",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black,
                         color = Color.White.copy(alpha = 0.2f)
                     )
-                    val statusUpper = match.status.uppercase()
+                    
                     when (statusUpper) {
                         "FINISHED" -> {
                             Text(
@@ -502,15 +523,30 @@ fun MatchCard(
                             val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
                                     clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
                             
+                            val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") || clockLower.contains("pens")
+                            val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") || clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
+                                    (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
+                            
+                            val clockClean = clockLower.replace("'", "").replace("+", " ")
+                            val clockMin = clockClean.split(" ").firstOrNull()?.toIntOrNull()
+                            val isFirstHalf = clockMin != null && clockMin <= 45 && !isHalftime && !isWaterBreak
+                            val isSecondHalf = clockMin != null && clockMin in 46..90 && !isHalftime && !isWaterBreak
+                            
                             val labelText = when {
+                                isPenalties -> "PENALES"
+                                isExtraTime -> "ALARGUE"
                                 isHalftime -> "ENTREETIEMPO"
                                 isWaterBreak -> "PAUSA HIDRATACIÓN"
-                                else -> "EN VIVO"
+                                isSecondHalf -> "2° TIEMPO"
+                                isFirstHalf -> "1° TIEMPO"
+                                else -> "EN JUEGO"
                             }
                             val labelColor = when {
-                                isHalftime -> Color(0xFFFF9800)
-                                isWaterBreak -> Color(0xFF03A9F4)
-                                else -> Color(0xFF4CAF50)
+                                isPenalties -> Color(0xFFE91E63) // Rosa/Rojo intenso para penales
+                                isExtraTime -> Color(0xFF9C27B0) // Púrpura para alargue
+                                isHalftime -> Color(0xFFFF9800)  // Naranja
+                                isWaterBreak -> Color(0xFF03A9F4) // Celeste
+                                else -> Color(0xFF4CAF50)         // Verde
                             }
                             
                             Surface(
@@ -547,6 +583,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
+                    penalties = if (match.status.uppercase() == "FINISHED" && match.id > 100 && match.homeScore == match.awayScore) match.awayPenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, match.homeScore, it) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -692,6 +729,11 @@ fun MatchCard(
                             val a = match.awayScore ?: 0
                             
                             val realWinner = when {
+                                match.id > 100 && h == a -> {
+                                    val hp = match.homePenalties ?: 0
+                                    val ap = match.awayPenalties ?: 0
+                                    if (hp > ap) "L" else if (hp < ap) "V" else "E"
+                                }
                                 h > a -> "L"
                                 h < a -> "V"
                                 else -> "E"
@@ -731,11 +773,17 @@ fun MatchCard(
                 }
             }
 
-            if (match.id > 100 && match.homeScore != null && match.homeScore == match.awayScore) {
+            val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
+                match.predictedHomeScore != null && 
+                match.predictedAwayScore != null && 
+                match.predictedHomeScore == match.predictedAwayScore && 
+                match.id > 100
+
+            if (showPredictionPenalties) {
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                Text("PRONÓSTICO TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -745,6 +793,140 @@ fun MatchCard(
                     PenaltyCounter(match.homePenalties ?: 0) { onPenaltiesChange(match.id, it, match.awayPenalties) }
                     Text("-", fontWeight = FontWeight.Bold, color = Color.White)
                     PenaltyCounter(match.awayPenalties ?: 0) { onPenaltiesChange(match.id, match.homePenalties, it) }
+                }
+            }
+
+            val showFinishedPenalties = match.status.uppercase() == "FINISHED" && 
+                match.homePenalties != null && 
+                match.awayPenalties != null && 
+                match.id > 100
+
+            if (showFinishedPenalties) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                val homeSequence = remember(match.events, match.homePenalties) {
+                    val list = mutableListOf<Boolean>()
+                    val penEvents = match.events.filter { it.contains("tanda de penales", ignoreCase = true) || it.contains("penales", ignoreCase = true) }
+                    if (penEvents.isNotEmpty()) {
+                        penEvents.forEach { ev ->
+                            val cleanEv = ev.replace("[Penales]", "", ignoreCase = true)
+                                .replace("[Tanda de penales]", "", ignoreCase = true)
+                                .trim()
+                            val firstAlphaIndex = cleanEv.indexOfFirst { it.isLetterOrDigit() }
+                            val cleanPrefix = if (firstAlphaIndex != -1) cleanEv.substring(firstAlphaIndex) else cleanEv
+                            val colonIdx = cleanPrefix.indexOf(':')
+                            if (colonIdx != -1) {
+                                val teamPart = cleanPrefix.substring(0, colonIdx).trim()
+                                val isHome = teamPart.lowercase().contains(match.homeTeam.name.lowercase())
+                                if (isHome) {
+                                    list.add(!ev.contains("❌") && !ev.contains("errado", ignoreCase = true) && !ev.contains("fallado", ignoreCase = true))
+                                }
+                            }
+                        }
+                    }
+                    if (list.isEmpty() && match.homePenalties != null) {
+                        val scored = match.homePenalties
+                        val total = if (scored >= 5) scored + 1 else 5
+                        repeat(scored) { list.add(true) }
+                        repeat(total - scored) { list.add(false) }
+                        val seedRandom = java.util.Random(match.id.toLong() + 200)
+                        list.shuffle(seedRandom)
+                    }
+                    list
+                }
+
+                val awaySequence = remember(match.events, match.awayPenalties) {
+                    val list = mutableListOf<Boolean>()
+                    val penEvents = match.events.filter { it.contains("tanda de penales", ignoreCase = true) || it.contains("penales", ignoreCase = true) }
+                    if (penEvents.isNotEmpty()) {
+                        penEvents.forEach { ev ->
+                            val cleanEv = ev.replace("[Penales]", "", ignoreCase = true)
+                                .replace("[Tanda de penales]", "", ignoreCase = true)
+                                .trim()
+                            val firstAlphaIndex = cleanEv.indexOfFirst { it.isLetterOrDigit() }
+                            val cleanPrefix = if (firstAlphaIndex != -1) cleanEv.substring(firstAlphaIndex) else cleanEv
+                            val colonIdx = cleanPrefix.indexOf(':')
+                            if (colonIdx != -1) {
+                                val teamPart = cleanPrefix.substring(0, colonIdx).trim()
+                                val isAway = teamPart.lowercase().contains(match.awayTeam.name.lowercase())
+                                if (isAway) {
+                                    list.add(!ev.contains("❌") && !ev.contains("errado", ignoreCase = true) && !ev.contains("fallado", ignoreCase = true))
+                                }
+                            }
+                        }
+                    }
+                    if (list.isEmpty() && match.awayPenalties != null) {
+                        val scored = match.awayPenalties
+                        val total = if (scored >= 5) scored + 1 else 5
+                        repeat(scored) { list.add(true) }
+                        repeat(total - scored) { list.add(false) }
+                        val seedRandom = java.util.Random(match.id.toLong() + 300)
+                        list.shuffle(seedRandom)
+                    }
+                    list
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = match.homeTeam.name,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier.width(110.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            homeSequence.forEach { isGoal ->
+                                PenaltyBall(isGoal = isGoal)
+                            }
+                            repeat((5 - homeSequence.size).coerceAtLeast(0)) {
+                                PenaltyBall(isGoal = null)
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = match.awayTeam.name,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            modifier = Modifier.width(110.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            awaySequence.forEach { isGoal ->
+                                PenaltyBall(isGoal = isGoal)
+                            }
+                            repeat((5 - awaySequence.size).coerceAtLeast(0)) {
+                                PenaltyBall(isGoal = null)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -781,7 +963,7 @@ fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
 }
 
 @Composable
-fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enabled: Boolean = true) {
+fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null, onScoreChange: (Int?) -> Unit, enabled: Boolean = true) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp)
@@ -806,7 +988,8 @@ fun TeamMatchInfo(team: Team, score: Int?, onScoreChange: (Int?) -> Unit, enable
             ) {
                 Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f))
             }
-            Text(text = score?.toString() ?: "0", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
+            val displayText = (score?.toString() ?: "0") + (if (penalties != null) " ($penalties)" else "")
+            Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
             IconButton(
                 onClick = { onScoreChange((score ?: 0) + 1) }, 
                 modifier = Modifier.size(24.dp),
@@ -894,3 +1077,6 @@ fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
     }
     return ParsedScorer("", scorerStr, true)
 }
+
+
+

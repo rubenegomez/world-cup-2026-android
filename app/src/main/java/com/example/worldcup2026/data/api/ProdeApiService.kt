@@ -80,4 +80,9 @@ interface ProdeApiService {
         @Header("Authorization") token: String,
         @Body predictions: List<SubmitPredictionRequest>
     )
+
+    @GET("api/prode/predictions")
+    suspend fun getMyPredictions(
+        @Header("Authorization") token: String
+    ): List<SubmitPredictionRequest>
 }

@@ -29,6 +29,8 @@ data class LiveMatchDto(
     val matchId: Int,
     val homeScore: Int?,
     val awayScore: Int?,
+    val homePenalties: Int? = null,
+    val awayPenalties: Int? = null,
     val status: String,
     val homePossession: Int?,
     val awayPossession: Int?,
@@ -77,7 +79,7 @@ class NullTeamInterceptor : Interceptor {
 }
 
 object NetworkModule {
-    const val BASE_URL = "http://ellocodelpedal.duckdns.org:8000/"
+    const val BASE_URL = "https://ellocodelpedal.duckdns.org/"
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(NullTeamInterceptor())

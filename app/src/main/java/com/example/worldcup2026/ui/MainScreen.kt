@@ -2,6 +2,7 @@ package com.example.worldcup2026.ui
 
 import com.example.worldcup2026.data.model.Match
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -13,6 +14,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
+import androidx.compose.animation.core.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worldcup2026.ui.CelebrationScreen
 
@@ -20,6 +25,16 @@ import com.example.worldcup2026.ui.CelebrationScreen
 @Composable
 fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     val context = LocalContext.current
+    val infiniteTransition = rememberInfiniteTransition(label = "live_pulse")
+    val livePulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOutQuad),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "live_alpha"
+    )
     val prefs = remember { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
     val uiState by viewModel.uiState
     val pendingReward by viewModel.pendingRewardDialog
@@ -95,8 +110,34 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                 Scaffold(
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     topBar = {
+                        val hasLiveMatches = (uiState as? WorldCupUiState.Success)?.matches?.any { it.status.equals("LIVE", ignoreCase = true) } ?: false
                         CenterAlignedTopAppBar(
-                            title = { Text(com.example.worldcup2026.data.util.TournamentConfig.TOURNAMENT_NAME, fontWeight = FontWeight.Black, color = androidx.compose.ui.graphics.Color.White) },
+                            title = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = com.example.worldcup2026.data.util.TournamentConfig.TOURNAMENT_NAME,
+                                        fontWeight = FontWeight.Black,
+                                        color = androidx.compose.ui.graphics.Color.White
+                                    )
+                                    if (hasLiveMatches) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFF4CAF50).copy(alpha = livePulseAlpha))
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "MONITOREO EN VIVO",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF4CAF50),
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 9.sp
+                                        )
+                                    }
+                                }
+                            },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             ),
@@ -186,8 +227,36 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                         }
                     }
                 ) { paddingValues ->
-                    Box(modifier = Modifier.padding(paddingValues)) {
-                        when (val state = uiState) {
+                    Column(modifier = Modifier.padding(paddingValues)) {
+                        val isConnected by viewModel.isServerConnected
+                        if (!isConnected) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFE53935).copy(alpha = 0.15f))
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Desconectado",
+                                        tint = Color(0xFFE53935),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Sin conexión con el servidor. Datos sin actualizar.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFFE53935),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                        
+                        Box(modifier = Modifier.weight(1f)) {
+                            when (val state = uiState) {
                             is WorldCupUiState.Loading -> {
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
                                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -329,6 +398,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                         }
                     }
                 }
+            }
             }
         }
     }

@@ -29,22 +29,22 @@ object KnockoutCalculator {
         ).map { it.team }
 
         // Mapear los 32 clasificados a las 16 llaves de Dieciseisavos (101-116) según fixture exacto de Canchallena
-        updateKnockoutMatch(knockoutMatches, 101, getTeamAt(standings, "A", 1), getTeamAt(standings, "B", 1)) 
-        updateKnockoutMatch(knockoutMatches, 102, getTeamAt(standings, "E", 0), bestThirds.getOrNull(0))
-        updateKnockoutMatch(knockoutMatches, 103, getTeamAt(standings, "F", 0), getTeamAt(standings, "C", 1))
-        updateKnockoutMatch(knockoutMatches, 104, getTeamAt(standings, "C", 0), getTeamAt(standings, "F", 1))
-        updateKnockoutMatch(knockoutMatches, 105, getTeamAt(standings, "I", 0), bestThirds.getOrNull(1))
-        updateKnockoutMatch(knockoutMatches, 106, getTeamAt(standings, "E", 1), getTeamAt(standings, "I", 1))
-        updateKnockoutMatch(knockoutMatches, 107, getTeamAt(standings, "A", 0), bestThirds.getOrNull(2))
+        updateKnockoutMatch(knockoutMatches, 101, bestThirds.getOrNull(0), getTeamAt(standings, "B", 1))
+        updateKnockoutMatch(knockoutMatches, 102, getTeamAt(standings, "C", 0), getTeamAt(standings, "F", 1))
+        updateKnockoutMatch(knockoutMatches, 103, getTeamAt(standings, "E", 0), getTeamAt(standings, "D", 1))
+        updateKnockoutMatch(knockoutMatches, 104, getTeamAt(standings, "F", 0), getTeamAt(standings, "C", 1))
+        updateKnockoutMatch(knockoutMatches, 105, getTeamAt(standings, "E", 1), getTeamAt(standings, "I", 1))
+        updateKnockoutMatch(knockoutMatches, 106, getTeamAt(standings, "I", 0), bestThirds.getOrNull(1))
+        updateKnockoutMatch(knockoutMatches, 107, getTeamAt(standings, "A", 0), getTeamAt(standings, "E", 2) ?: getTeamAt(standings, "E", 1))
         updateKnockoutMatch(knockoutMatches, 108, getTeamAt(standings, "L", 0), bestThirds.getOrNull(3))
-        updateKnockoutMatch(knockoutMatches, 109, getTeamAt(standings, "D", 0), bestThirds.getOrNull(4))
-        updateKnockoutMatch(knockoutMatches, 110, getTeamAt(standings, "G", 0), bestThirds.getOrNull(5))
-        updateKnockoutMatch(knockoutMatches, 111, getTeamAt(standings, "K", 1), getTeamAt(standings, "L", 1))
-        updateKnockoutMatch(knockoutMatches, 112, getTeamAt(standings, "H", 0), getTeamAt(standings, "J", 1))
-        updateKnockoutMatch(knockoutMatches, 113, getTeamAt(standings, "B", 0), bestThirds.getOrNull(6))
-        updateKnockoutMatch(knockoutMatches, 114, getTeamAt(standings, "J", 0), getTeamAt(standings, "H", 1))
-        updateKnockoutMatch(knockoutMatches, 115, getTeamAt(standings, "K", 0), bestThirds.getOrNull(7))
-        updateKnockoutMatch(knockoutMatches, 116, getTeamAt(standings, "D", 1), getTeamAt(standings, "G", 1))
+        updateKnockoutMatch(knockoutMatches, 109, getTeamAt(standings, "G", 0), getTeamAt(standings, "A", 1))
+        updateKnockoutMatch(knockoutMatches, 110, getTeamAt(standings, "D", 0), bestThirds.getOrNull(2))
+        updateKnockoutMatch(knockoutMatches, 111, getTeamAt(standings, "H", 0), getTeamAt(standings, "J", 1))
+        updateKnockoutMatch(knockoutMatches, 112, getTeamAt(standings, "K", 0), getTeamAt(standings, "L", 1))
+        updateKnockoutMatch(knockoutMatches, 113, getTeamAt(standings, "D", 2) ?: getTeamAt(standings, "D", 0), getTeamAt(standings, "G", 1))
+        updateKnockoutMatch(knockoutMatches, 114, getTeamAt(standings, "J", 0), bestThirds.getOrNull(4))
+        updateKnockoutMatch(knockoutMatches, 115, getTeamAt(standings, "K", 1), bestThirds.getOrNull(6))
+        updateKnockoutMatch(knockoutMatches, 116, getTeamAt(standings, "B", 0), bestThirds.getOrNull(5))
 
         // Lógica de ganadores de llaves anteriores
         fillWinners(knockoutMatches)
@@ -65,6 +65,13 @@ object KnockoutCalculator {
         val index = matches.indexOfFirst { it.id == id }
         if (index != -1) {
             val m = matches[index]
+            if (m.status.equals("Finished", ignoreCase = true) || m.status.equals("LIVE", ignoreCase = true)) {
+                return
+            }
+            if (m.homeTeam.group != "X" && m.homeTeam.group != "Final" &&
+                m.awayTeam.group != "X" && m.awayTeam.group != "Final") {
+                return
+            }
             matches[index] = m.copy(
                 homeTeam = home ?: m.homeTeam,
                 awayTeam = away ?: m.awayTeam
