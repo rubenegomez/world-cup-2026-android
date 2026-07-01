@@ -109,7 +109,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun getChampion(matches: List<Match>): Team? {
-        val finalMatch = matches.find { it.id == 103 }
+        val finalMatch = matches.find { it.id == 104 }
         if (finalMatch == null || finalMatch.status != "Finished") return null
         val h = finalMatch.homeScore ?: 0
         val a = finalMatch.awayScore ?: 0

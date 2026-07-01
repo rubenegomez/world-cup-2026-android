@@ -56,13 +56,13 @@ object KnockoutCalculator {
         updateKnockoutMatch(matches, 101, getWinner(matches.find { it.id == 97 }), getWinner(matches.find { it.id == 98 }))
         updateKnockoutMatch(matches, 102, getWinner(matches.find { it.id == 99 }), getWinner(matches.find { it.id == 100 }))
 
-        // Final (103)
+        // 3er Puesto (103)
         val s1 = matches.find { it.id == 101 }
         val s2 = matches.find { it.id == 102 }
-        updateKnockoutMatch(matches, 103, getWinner(s1), getWinner(s2))
+        updateKnockoutMatch(matches, 103, getLoser(s1), getLoser(s2))
         
-        // 3er Puesto (104)
-        updateKnockoutMatch(matches, 104, getLoser(s1), getLoser(s2))
+        // Final (104)
+        updateKnockoutMatch(matches, 104, getWinner(s1), getWinner(s2))
     }
 
     private fun getWinner(match: Match?): Team? {
