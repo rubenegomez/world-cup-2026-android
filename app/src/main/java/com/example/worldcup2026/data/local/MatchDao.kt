@@ -8,6 +8,9 @@ interface MatchDao {
     @Query("SELECT * FROM matches")
     fun getAllMatches(): Flow<List<MatchEntity>>
 
+    @Query("SELECT * FROM matches WHERE tournamentId = :tournamentId")
+    fun getMatchesByTournament(tournamentId: Int): Flow<List<MatchEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMatch(match: MatchEntity)
 

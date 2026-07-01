@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.first
 class WorldCupRepository(private val matchDao: MatchDao) {
     private var cachedMatches: List<Match>? = null
 
-    private suspend fun getCachedMatch(matchId: Int): Match? {
+    private suspend fun getCachedMatch(matchId: Int, tournamentId: Int): Match? {
         if (cachedMatches == null) {
-            getMatches()
+            getMatches(tournamentId)
         }
         return cachedMatches?.find { it.id == matchId }
     }
@@ -51,8 +51,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         return Pair(0, 0)
     }
 
-    suspend fun getMockGroups(): List<Group> {
-        return com.example.worldcup2026.data.api.NetworkModule.apiService.getGroups()
+    suspend fun getMockGroups(tournamentId: Int): List<Group> {
+        return com.example.worldcup2026.data.api.NetworkModule.apiService.getGroups(tournamentId)
     }
 
     private fun createTeam(id: Int, name: String, flagCode: String, group: String): Team {
@@ -63,14 +63,14 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         return Team(-1, name, "", "Final", emptyList())
     }
 
-    suspend fun getMatches(): List<Match> {
-        val savedMatches = matchDao.getAllMatches().first()
+    suspend fun getMatches(tournamentId: Int): List<Match> {
+        val savedMatches = matchDao.getMatchesByTournament(tournamentId).first()
         val matches = mutableListOf<Match>()
         
         try {
-            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches()
+            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(tournamentId)
             remoteMatches.forEach { match ->
-                addMatchWithPersistence(matches, savedMatches, match)
+                addMatchWithPersistence(matches, savedMatches, match, tournamentId)
             }
             cachedMatches = matches
         } catch (e: Exception) {
@@ -80,7 +80,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         return matches
     }
 
-    private suspend fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match) {
+    private suspend fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match, tournamentId: Int) {
         val saved = savedEntities.find { it.id == baseMatch.id }
         if (saved != null) {
             val homeScore = baseMatch.homeScore ?: saved.homeScore
@@ -128,6 +128,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             ) {
                 matchDao.insertMatch(MatchEntity(
                     id = baseMatch.id,
+                    tournamentId = tournamentId,
                     homeScore = homeScore,
                     awayScore = awayScore,
                     homePenalties = homePenalties,
@@ -155,12 +156,13 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val saved = matchDao.getAllMatches().first().find { it.id == matchId }
         val finalStatus = status ?: if (homeScore != null && awayScore != null) "Finished" else "Scheduled"
         matchDao.insertMatch(MatchEntity(
-            matchId, 
-            homeScore, 
-            awayScore, 
-            homePenalties, 
-            awayPenalties, 
-            finalStatus,
+            id = matchId, 
+            tournamentId = saved?.tournamentId ?: 1,
+            homeScore = homeScore, 
+            awayScore = awayScore, 
+            homePenalties = homePenalties, 
+            awayPenalties = awayPenalties, 
+            status = finalStatus,
             predictedWinner = saved?.predictedWinner,
             predictedHomeScore = saved?.predictedHomeScore,
             predictedAwayScore = saved?.predictedAwayScore,
@@ -178,12 +180,13 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     suspend fun saveMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?) {
         val saved = matchDao.getAllMatches().first().find { it.id == matchId }
         matchDao.insertMatch(MatchEntity(
-            matchId,
-            saved?.homeScore,
-            saved?.awayScore,
-            saved?.homePenalties,
-            saved?.awayPenalties,
-            saved?.status ?: "Scheduled",
+            id = matchId,
+            tournamentId = saved?.tournamentId ?: 1,
+            homeScore = saved?.homeScore,
+            awayScore = saved?.awayScore,
+            homePenalties = saved?.homePenalties,
+            awayPenalties = saved?.awayPenalties,
+            status = saved?.status ?: "Scheduled",
             predictedWinner = winner,
             predictedHomeScore = homePredict,
             predictedAwayScore = awayPredict,
@@ -203,12 +206,13 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val home = if (status == "Finished") (saved?.homeScore ?: 0) else saved?.homeScore
         val away = if (status == "Finished") (saved?.awayScore ?: 0) else saved?.awayScore
         matchDao.insertMatch(MatchEntity(
-            matchId, 
-            home, 
-            away, 
-            saved?.homePenalties, 
-            saved?.awayPenalties, 
-            status,
+            id = matchId, 
+            tournamentId = saved?.tournamentId ?: 1,
+            homeScore = home, 
+            awayScore = away, 
+            homePenalties = saved?.homePenalties, 
+            awayPenalties = saved?.awayPenalties, 
+            status = status,
             predictedWinner = saved?.predictedWinner,
             predictedHomeScore = saved?.predictedHomeScore,
             predictedAwayScore = saved?.predictedAwayScore,
@@ -223,19 +227,19 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         ))
     }
 
-    suspend fun syncMatchesWithLiveJson(context: android.content.Context): Boolean {
+    suspend fun syncMatchesWithLiveJson(context: android.content.Context, tournamentId: Int): Boolean {
         try {
             val service = com.example.worldcup2026.data.api.NetworkModule.apiService
-            val matchesList = service.getLiveMatches()
+            val matchesList = service.getLiveMatches(tournamentId)
             
-            val savedMatches = matchDao.getAllMatches().first()
+            val savedMatches = matchDao.getMatchesByTournament(tournamentId).first()
             
             matchesList.forEach { liveMatch ->
                 val saved = savedMatches.find { it.id == liveMatch.matchId }
                 
                 // --- DETECCION DE INCIDENCIAS EN VIVO ---
                 if (saved != null) {
-                    val matchInfo = getCachedMatch(liveMatch.matchId)
+                    val matchInfo = getCachedMatch(liveMatch.matchId, tournamentId)
                     val homeTeamName = matchInfo?.homeTeam?.name ?: "Local"
                     val awayTeamName = matchInfo?.awayTeam?.name ?: "Visitante"
 
@@ -350,6 +354,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 ) {
                     matchDao.insertMatch(MatchEntity(
                         id = liveMatch.matchId,
+                        tournamentId = tournamentId,
                         homeScore = liveMatch.homeScore,
                         awayScore = liveMatch.awayScore,
                         homePenalties = liveMatch.homePenalties ?: saved?.homePenalties,
@@ -379,12 +384,13 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     suspend fun saveMatchVipStats(matchId: Int, homePossession: Int, awayPossession: Int, homeShots: Int, awayShots: Int) {
         val saved = matchDao.getAllMatches().first().find { it.id == matchId }
         matchDao.insertMatch(MatchEntity(
-            matchId,
-            saved?.homeScore,
-            saved?.awayScore,
-            saved?.homePenalties,
-            saved?.awayPenalties,
-            saved?.status ?: "Scheduled",
+            id = matchId,
+            tournamentId = saved?.tournamentId ?: 1,
+            homeScore = saved?.homeScore,
+            awayScore = saved?.awayScore,
+            homePenalties = saved?.homePenalties,
+            awayPenalties = saved?.awayPenalties,
+            status = saved?.status ?: "Scheduled",
             predictedWinner = saved?.predictedWinner,
             predictedHomeScore = saved?.predictedHomeScore,
             predictedAwayScore = saved?.predictedAwayScore,
@@ -399,7 +405,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         ))
     }
 
-    suspend fun getAllTeams(): List<Team> {
-        return getMockGroups().flatMap { it.teams }
+    suspend fun getAllTeams(tournamentId: Int): List<Team> {
+        return getMockGroups(tournamentId).flatMap { it.teams }
     }
 }

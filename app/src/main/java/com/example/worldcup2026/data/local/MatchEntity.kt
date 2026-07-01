@@ -2,10 +2,13 @@ package com.example.worldcup2026.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
+
 
 @Entity(tableName = "matches")
 data class MatchEntity(
     @PrimaryKey val id: Int,
+    @ColumnInfo(name = "tournamentId", defaultValue = "1") val tournamentId: Int = 1,
     val homeScore: Int?,
     val awayScore: Int?,
     val homePenalties: Int? = null,

@@ -6,6 +6,7 @@ import com.example.worldcup2026.data.model.Team
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Query
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -13,16 +14,16 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 
 interface WorldCupApiService {
     @GET("api/teams")
-    suspend fun getTeams(): List<Team>
+    suspend fun getTeams(@Query("tournament_id") tournamentId: Int? = null): List<Team>
 
     @GET("api/groups")
-    suspend fun getGroups(): List<Group>
+    suspend fun getGroups(@Query("tournament_id") tournamentId: Int? = null): List<Group>
 
     @GET("api/matches")
-    suspend fun getMatches(): List<Match>
+    suspend fun getMatches(@Query("tournament_id") tournamentId: Int? = null): List<Match>
 
     @GET("api/matches/live")
-    suspend fun getLiveMatches(): List<LiveMatchDto>
+    suspend fun getLiveMatches(@Query("tournament_id") tournamentId: Int? = null): List<LiveMatchDto>
 }
 
 data class LiveMatchDto(

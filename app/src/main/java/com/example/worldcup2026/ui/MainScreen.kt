@@ -38,7 +38,8 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     val prefs = remember { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
     val uiState by viewModel.uiState
     val pendingReward by viewModel.pendingRewardDialog
-    var selectedScreen by remember { mutableIntStateOf(0) }
+    var selectedScreen by remember { mutableIntStateOf(-1) }
+    var selectedTournamentName by remember { mutableStateOf("Torneos") }
     var isWatchingAd by remember { mutableStateOf(false) }
     var showVipDialog by remember { mutableStateOf(false) }
     var showCelebration by remember { mutableStateOf(false) }
@@ -52,9 +53,11 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     
     LaunchedEffect(selectedScreen) {
         val screenName = when (selectedScreen) {
+            -1 -> "Torneos"
             0 -> "Fixture"
             1 -> "Posiciones"
             2 -> "Creditos"
+            3 -> "Prode"
             else -> "Desconocido"
         }
         com.example.worldcup2026.data.util.AnalyticsManager.logScreenView(screenName)
@@ -114,27 +117,42 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                         CenterAlignedTopAppBar(
                             title = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = com.example.worldcup2026.data.util.TournamentConfig.TOURNAMENT_NAME,
-                                        fontWeight = FontWeight.Black,
-                                        color = androidx.compose.ui.graphics.Color.White
-                                    )
-                                    if (hasLiveMatches) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .size(8.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0xFF4CAF50).copy(alpha = livePulseAlpha))
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                    if (selectedScreen == -1) {
                                         Text(
-                                            text = "MONITOREO EN VIVO",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = Color(0xFF4CAF50),
+                                            text = "Seleccione un Torneo",
                                             fontWeight = FontWeight.Black,
-                                            fontSize = 9.sp
+                                            color = androidx.compose.ui.graphics.Color.White
                                         )
+                                    } else {
+                                        IconButton(onClick = { selectedScreen = -1 }) {
+                                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                                        }
+                                        Text(
+                                            text = selectedTournamentName,
+                                            fontWeight = FontWeight.Black,
+                                            color = androidx.compose.ui.graphics.Color.White,
+                                            fontSize = 18.sp,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
+                                        )
+                                        if (hasLiveMatches) {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFF4CAF50).copy(alpha = livePulseAlpha))
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "EN VIVO",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF4CAF50),
+                                                fontWeight = FontWeight.Black,
+                                                fontSize = 9.sp
+                                            )
+                                        }
                                     }
                                 }
                             },
@@ -142,87 +160,91 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                             ),
                             actions = {
-                                if (isRefreshing) {
-                                    Box(modifier = Modifier.padding(end = 16.dp)) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp),
-                                            strokeWidth = 2.dp,
-                                            color = androidx.compose.ui.graphics.Color.White
-                                        )
-                                    }
-                                } else {
-                                    IconButton(
-                                        onClick = {
-                                            isRefreshing = true
-                                            viewModel.syncLiveResults { success ->
-                                                isRefreshing = false
-                                                android.widget.Toast.makeText(
-                                                    context,
-                                                    if (success) "Resultados en vivo actualizados" else "Error al sincronizar resultados",
-                                                    android.widget.Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
+                                if (selectedScreen != -1) {
+                                    if (isRefreshing) {
+                                        Box(modifier = Modifier.padding(end = 16.dp)) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp,
+                                                color = androidx.compose.ui.graphics.Color.White
+                                            )
                                         }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Sincronizar resultados",
-                                            tint = androidx.compose.ui.graphics.Color.White
-                                        )
+                                    } else {
+                                        IconButton(
+                                            onClick = {
+                                                isRefreshing = true
+                                                viewModel.syncLiveResults { success ->
+                                                    isRefreshing = false
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        if (success) "Resultados en vivo actualizados" else "Error al sincronizar resultados",
+                                                        android.widget.Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "Sincronizar resultados",
+                                                tint = androidx.compose.ui.graphics.Color.White
+                                            )
+                                        }
                                     }
                                 }
                             }
                         )
                     },
                     bottomBar = {
-                        Column {
-                            if (isAdsEnabled) {
-                                AdmobBanner()
-                            }
-                            NavigationBar(
-                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.15f),
-                                contentColor = androidx.compose.ui.graphics.Color.White
-                            ) {
-                                NavigationBarItem(
-                                    selected = selectedScreen == 0,
-                                    onClick = { selectedScreen = 0 },
-                                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-                                    label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                        if (selectedScreen != -1) {
+                            Column {
+                                if (isAdsEnabled) {
+                                    AdmobBanner()
+                                }
+                                NavigationBar(
+                                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.15f),
+                                    contentColor = androidx.compose.ui.graphics.Color.White
+                                ) {
+                                    NavigationBarItem(
+                                        selected = selectedScreen == 0,
+                                        onClick = { selectedScreen = 0 },
+                                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
+                                        label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
                                     )
-                                )
-                                NavigationBarItem(
-                                    selected = selectedScreen == 1,
-                                    onClick = { selectedScreen = 1 },
-                                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
-                                    label = { Text("Posiciones", style = MaterialTheme.typography.labelSmall) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    NavigationBarItem(
+                                        selected = selectedScreen == 1,
+                                        onClick = { selectedScreen = 1 },
+                                        icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                        label = { Text("Posiciones", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
                                     )
-                                )
-                                NavigationBarItem(
-                                    selected = selectedScreen == 2,
-                                    onClick = { selectedScreen = 2 },
-                                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                    label = { Text("Créditos", style = MaterialTheme.typography.labelSmall) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    NavigationBarItem(
+                                        selected = selectedScreen == 2,
+                                        onClick = { selectedScreen = 2 },
+                                        icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                        label = { Text("Créditos", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
                                     )
-                                )
-                                NavigationBarItem(
-                                    selected = selectedScreen == 3,
-                                    onClick = { selectedScreen = 3 },
-                                    icon = { Icon(Icons.Default.Star, contentDescription = null) },
-                                    label = { Text("Prode", style = MaterialTheme.typography.labelSmall) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                    NavigationBarItem(
+                                        selected = selectedScreen == 3,
+                                        onClick = { selectedScreen = 3 },
+                                        icon = { Icon(Icons.Default.Star, contentDescription = null) },
+                                        label = { Text("Prode", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
                     }
@@ -264,6 +286,11 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                             }
                             is WorldCupUiState.Success -> {
                                 when (selectedScreen) {
+                                    -1 -> TournamentScreen(onTournamentSelected = { id, name ->
+                                        selectedTournamentName = name
+                                        viewModel.setTournament(id)
+                                        selectedScreen = 0
+                                    })
                                     0 -> FixtureScreen(
                                         matches = state.matches,
                                         onScoreChange = { id, home, away -> 
@@ -399,7 +426,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                     }
                 }
             }
-            }
         }
     }
+}
 }

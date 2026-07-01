@@ -34,7 +34,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadMatches() {
         viewModelScope.launch {
-            _allMatches.value = worldCupRepository.getMatches()
+            _allMatches.value = worldCupRepository.getMatches(1)
         }
     }
 
@@ -57,7 +57,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                 // Sincronizar pronósticos locales existentes con el servidor al iniciar sesión si hubiera nuevos
                 launch {
                     try {
-                        val matches = worldCupRepository.getMatches()
+                        val matches = worldCupRepository.getMatches(1)
                         val localPredictions = matches.filter { it.predictedHomeScore != null && it.predictedAwayScore != null }
                             .map { SubmitPredictionRequest(it.id, it.predictedHomeScore ?: 0, it.predictedAwayScore ?: 0) }
                         if (localPredictions.isNotEmpty()) {
