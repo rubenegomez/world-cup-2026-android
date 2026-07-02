@@ -278,7 +278,7 @@ fun DayFilteredFixture(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val dates = matches.filter { it.id <= 104 }
+    val dates = matches.filter { it.id <= 132 }
         .map { 
             val safeDate = it.date ?: ""
             val parts = safeDate.split(" ")
@@ -303,7 +303,7 @@ fun DayFilteredFixture(
     
     var selectedDate by remember { mutableStateOf(initialDate) }
     val filteredMatches = matches
-        .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 104 }
+        .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 132 }
         .sortedBy { it.date ?: "" }
 
     val listState = rememberLazyListState()
@@ -365,9 +365,9 @@ fun GroupFilteredFixture(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val groups = matches.filter { it.id <= 104 }.map { it.homeTeam.group }.distinct().sorted()
+    val groups = matches.filter { it.id <= 132 }.map { it.homeTeam.group }.distinct().sorted()
     var selectedGroup by remember { mutableStateOf(if (groups.isNotEmpty()) groups.first() else "") }
-    val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && it.id <= 104 }
+    val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && it.id <= 132 }
 
     Column {
         LazyRow(
@@ -473,7 +473,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if (match.id > 100 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
+                    penalties = if (match.id > 116 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, it, match.awayScore) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -578,7 +578,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if (match.id > 100 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
+                    penalties = if (match.id > 116 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, match.homeScore, it) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -724,7 +724,7 @@ fun MatchCard(
                             val a = match.awayScore ?: 0
                             
                             val realWinner = when {
-                                match.id > 100 && h == a -> {
+                                match.id > 116 && h == a -> {
                                     val hp = match.homePenalties ?: 0
                                     val ap = match.awayPenalties ?: 0
                                     if (hp > ap) "L" else if (hp < ap) "V" else "E"
@@ -775,7 +775,7 @@ fun MatchCard(
 
             val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
                 isDrawPrediction && 
-                match.id > 100
+                match.id > 116
 
             if (showPredictionPenalties) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -810,7 +810,7 @@ fun MatchCard(
             val showPenaltyShootout = (match.status.uppercase() == "FINISHED" || isLivePenalties) &&
                 match.homePenalties != null && 
                 match.awayPenalties != null && 
-                match.id > 100
+                match.id > 116
 
             if (showPenaltyShootout) {
                 Spacer(modifier = Modifier.height(16.dp))

@@ -109,7 +109,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun getChampion(matches: List<Match>): Team? {
-        val finalMatch = matches.find { it.id == 104 }
+        val finalMatch = matches.find { it.id == 131 }
         if (finalMatch == null || finalMatch.status != "Finished") return null
         val h = finalMatch.homeScore ?: 0
         val a = finalMatch.awayScore ?: 0
@@ -187,11 +187,11 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             }
         }
         return when {
-            matchId in 73..88 -> 4 // 16avos
-            matchId in 89..96 -> 5 // Octavos
-            matchId in 97..100 -> 6 // Cuartos
-            matchId in 101..102 -> 7 // Semis
-            matchId == 103 || matchId == 104 -> 8 // Final y 3er puesto
+            matchId in 101..116 -> 4 // 16avos
+            matchId in 117..124 -> 5 // Octavos
+            matchId in 125..128 -> 6 // Cuartos
+            matchId in 129..130 -> 7 // Semis
+            matchId == 131 || matchId == 132 -> 8 // Final y 3er puesto
             else -> 9
         }
     }
@@ -201,7 +201,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val h = match.homeScore ?: 0
         val a = match.awayScore ?: 0
         val realWinner = when {
-            match.id > 100 && h == a -> {
+            match.id > 116 && h == a -> {
                 val hp = match.homePenalties ?: 0
                 val ap = match.awayPenalties ?: 0
                 if (hp > ap) "L" else if (hp < ap) "V" else "E"

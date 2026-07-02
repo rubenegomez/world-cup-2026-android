@@ -28,11 +28,11 @@ object TournamentConfig {
 
     val KNOCKOUT_ROUNDS: List<KnockoutRoundConfig> = if (IS_WORLD_CUP) {
         listOf(
-            KnockoutRoundConfig("DIECISEISAVOS", 73, 88),
-            KnockoutRoundConfig("OCTAVOS", 89, 96),
-            KnockoutRoundConfig("CUARTOS", 97, 100),
-            KnockoutRoundConfig("SEMIFINAL", 101, 102),
-            KnockoutRoundConfig("FINAL", 103, 104)
+            KnockoutRoundConfig("DIECISEISAVOS", 101, 116),
+            KnockoutRoundConfig("OCTAVOS", 117, 124),
+            KnockoutRoundConfig("CUARTOS", 125, 128),
+            KnockoutRoundConfig("SEMIFINAL", 129, 130),
+            KnockoutRoundConfig("FINAL", 131, 132)
         )
     } else {
         listOf(
