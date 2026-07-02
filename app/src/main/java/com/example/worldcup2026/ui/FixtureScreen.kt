@@ -43,7 +43,7 @@ fun FixtureScreen(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit = { _, _, _ -> },
     onStatusChange: (Int, String) -> Unit = { _, _ -> },
     onShowVipStats: (Match) -> Unit = {},
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit = { _, _, _, _ -> },
+    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _, _, _ -> },
     showAds: Boolean = true
 ) {
     val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
@@ -124,7 +124,7 @@ fun KnockoutBracket(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
     val rounds = remember { com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.map { it.name } }
@@ -275,10 +275,10 @@ fun DayFilteredFixture(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val dates = matches.filter { it.id <= 100 }
+    val dates = matches.filter { it.id <= 104 }
         .map { 
             val safeDate = it.date ?: ""
             val parts = safeDate.split(" ")
@@ -303,7 +303,7 @@ fun DayFilteredFixture(
     
     var selectedDate by remember { mutableStateOf(initialDate) }
     val filteredMatches = matches
-        .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 100 }
+        .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 104 }
         .sortedBy { it.date ?: "" }
 
     val listState = rememberLazyListState()
@@ -362,12 +362,12 @@ fun GroupFilteredFixture(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit,
+    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val groups = matches.filter { it.id <= 100 }.map { it.homeTeam.group }.distinct().sorted()
+    val groups = matches.filter { it.id <= 104 }.map { it.homeTeam.group }.distinct().sorted()
     var selectedGroup by remember { mutableStateOf(if (groups.isNotEmpty()) groups.first() else "") }
-    val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && it.id <= 100 }
+    val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && it.id <= 104 }
 
     Column {
         LazyRow(
@@ -407,7 +407,7 @@ fun MatchCard(
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?) -> Unit
+    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -442,7 +442,7 @@ fun MatchCard(
                         IconButton(
                             onClick = { 
                                 onScoreChange(match.id, null, null)
-                                onPredictionChange(match.id, null, null, null)
+                                onPredictionChange(match.id, null, null, null, null, null)
                             },
                             modifier = Modifier.size(24.dp)
                         ) {
@@ -473,7 +473,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if (match.status.uppercase() == "FINISHED" && match.id > 100 && match.homeScore == match.awayScore) match.homePenalties else null,
+                    penalties = if (match.id > 100 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, it, match.awayScore) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -481,90 +481,29 @@ fun MatchCard(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     val statusUpper = match.status.uppercase()
                     val isLive = statusUpper == "LIVE" || statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" || statusUpper == "PAUSA" || statusUpper == "PAUSE"
-                    
-                    if (isLive) {
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = Color(0xFFE53935).copy(alpha = 0.2f),
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        ) {
-                            Text(
-                                text = "• EN VIVO",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFFE53935),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 8.sp,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                    
-                    Text(
-                        text = "VS",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White.copy(alpha = 0.2f)
-                    )
-                    
-                    when (statusUpper) {
-                        "FINISHED" -> {
+
+                    when {
+                        statusUpper == "FINISHED" -> {
                             Text(
                                 text = "FINALIZADO",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = Color(0xFF4CAF50),
                                 fontWeight = FontWeight.Black,
-                                fontSize = 9.sp
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(bottom = 4.dp)
                             )
                         }
-                        "LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE" -> {
-                            val clockLower = match.clock?.lowercase() ?: ""
-                            val isHalftime = statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" ||
-                                    clockLower.contains("entretiempo") || clockLower.contains("halftime") || clockLower.contains("medio tiempo")
-                            val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
-                                    clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
-                            
-                            val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") || clockLower.contains("pens")
-                            val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") || clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
-                                    (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
-                            
-                            val clockClean = clockLower.replace("'", "").replace("+", " ")
-                            val clockMin = clockClean.split(" ").firstOrNull()?.toIntOrNull()
-                            val isFirstHalf = clockMin != null && clockMin <= 45 && !isHalftime && !isWaterBreak
-                            val isSecondHalf = clockMin != null && clockMin in 46..90 && !isHalftime && !isWaterBreak
-                            
-                            val labelText = when {
-                                isPenalties -> "PENALES"
-                                isExtraTime -> "ALARGUE"
-                                isHalftime -> "ENTREETIEMPO"
-                                isWaterBreak -> "PAUSA HIDRATACIÓN"
-                                isSecondHalf -> "2° TIEMPO"
-                                isFirstHalf -> "1° TIEMPO"
-                                else -> "EN JUEGO"
-                            }
-                            val labelColor = when {
-                                isPenalties -> Color(0xFFE91E63) // Rosa/Rojo intenso para penales
-                                isExtraTime -> Color(0xFF9C27B0) // Púrpura para alargue
-                                isHalftime -> Color(0xFFFF9800)  // Naranja
-                                isWaterBreak -> Color(0xFF03A9F4) // Celeste
-                                else -> Color(0xFF4CAF50)         // Verde
-                            }
-                            
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = labelColor.copy(alpha = 0.2f),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                Text(
-                                    text = labelText,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = labelColor,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
+                        isLive -> {
+                            Text(
+                                text = "EN VIVO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF4CAF50),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
                         }
-                        "SCHEDULED" -> {
+                        statusUpper == "SCHEDULED" -> {
                             val timeStr = (match.date ?: "").split(" ").lastOrNull() ?: ""
                             if (timeStr.isNotEmpty()) {
                                 Text(
@@ -573,9 +512,65 @@ fun MatchCard(
                                     color = Color.White.copy(alpha = 0.8f),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp,
-                                    modifier = Modifier.padding(top = 2.dp)
+                                    modifier = Modifier.padding(bottom = 4.dp)
                                 )
                             }
+                        }
+                    }
+
+                    Text(
+                        text = "VS",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White.copy(alpha = 0.2f)
+                    )
+
+                    if (isLive) {
+                        val clockLower = match.clock?.lowercase() ?: ""
+                        val isHalftime = statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" ||
+                                clockLower.contains("entretiempo") || clockLower.contains("halftime") || clockLower.contains("medio tiempo")
+                        val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
+                                clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
+
+                        val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") || clockLower.contains("pens")
+                        val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") || clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
+                                (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
+
+                        val clockClean = clockLower.replace("'", "").replace("+", " ")
+                        val clockMin = clockClean.split(" ").firstOrNull()?.toIntOrNull()
+                        val isFirstHalf = clockMin != null && clockMin <= 45 && !isHalftime && !isWaterBreak
+                        val isSecondHalf = clockMin != null && clockMin in 46..90 && !isHalftime && !isWaterBreak
+
+                        val labelText = when {
+                            isPenalties -> "PENALES"
+                            isExtraTime -> "ALARGUE"
+                            isHalftime -> "ENTREETIEMPO"
+                            isWaterBreak -> "PAUSA HIDRATACIÓN"
+                            isSecondHalf -> "2° TIEMPO"
+                            isFirstHalf -> "1° TIEMPO"
+                            else -> "EN JUEGO"
+                        }
+                        val labelColor = when {
+                            isPenalties -> Color(0xFFE91E63)
+                            isExtraTime -> Color(0xFF9C27B0)
+                            isHalftime -> Color(0xFFFF9800)
+                            isWaterBreak -> Color(0xFF03A9F4)
+                            else -> Color(0xFF4CAF50)
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = labelColor.copy(alpha = 0.2f),
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Text(
+                                text = labelText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = labelColor,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
                         }
                     }
                 }
@@ -583,7 +578,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if (match.status.uppercase() == "FINISHED" && match.id > 100 && match.homeScore == match.awayScore) match.awayPenalties else null,
+                    penalties = if (match.id > 100 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, match.homeScore, it) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -691,15 +686,15 @@ fun MatchCard(
                     ) {
                         PredictionChip(label = "L", selected = match.predictedWinner == "L") {
                             val nextWinner = if (match.predictedWinner == "L") null else "L"
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore)
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
                         }
                         PredictionChip(label = "E", selected = match.predictedWinner == "E") {
                             val nextWinner = if (match.predictedWinner == "E") null else "E"
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore)
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
                         }
                         PredictionChip(label = "V", selected = match.predictedWinner == "V") {
                             val nextWinner = if (match.predictedWinner == "V") null else "V"
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore)
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
                         }
                         
                         VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))
@@ -708,7 +703,7 @@ fun MatchCard(
                             value = match.predictedHomeScore, 
                             onValueChange = { h -> 
                                 val a = if (h != null && match.predictedAwayScore == null) 0 else match.predictedAwayScore
-                                onPredictionChange(match.id, match.predictedWinner, h, a) 
+                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
                             }
                         )
                         Text(" - ", fontWeight = FontWeight.Bold, color = Color.White)
@@ -716,7 +711,7 @@ fun MatchCard(
                             value = match.predictedAwayScore, 
                             onValueChange = { a -> 
                                 val h = if (a != null && match.predictedHomeScore == null) 0 else match.predictedHomeScore
-                                onPredictionChange(match.id, match.predictedWinner, h, a) 
+                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
                             }
                         )
                     }
@@ -773,10 +768,13 @@ fun MatchCard(
                 }
             }
 
+            val isDrawPrediction = match.predictedWinner == "E" || 
+                (match.predictedHomeScore != null && 
+                 match.predictedAwayScore != null && 
+                 match.predictedHomeScore == match.predictedAwayScore)
+
             val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
-                match.predictedHomeScore != null && 
-                match.predictedAwayScore != null && 
-                match.predictedHomeScore == match.predictedAwayScore && 
+                isDrawPrediction && 
                 match.id > 100
 
             if (showPredictionPenalties) {
@@ -790,18 +788,31 @@ fun MatchCard(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    PenaltyCounter(match.homePenalties ?: 0) { onPenaltiesChange(match.id, it, match.awayPenalties) }
+                    PredictionInput(
+                        value = match.predictedHomePenalties,
+                        onValueChange = { hp ->
+                            onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, hp, match.predictedAwayPenalties)
+                        }
+                    )
                     Text("-", fontWeight = FontWeight.Bold, color = Color.White)
-                    PenaltyCounter(match.awayPenalties ?: 0) { onPenaltiesChange(match.id, match.homePenalties, it) }
+                    PredictionInput(
+                        value = match.predictedAwayPenalties,
+                        onValueChange = { ap ->
+                            onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, ap)
+                        }
+                    )
                 }
             }
 
-            val showFinishedPenalties = match.status.uppercase() == "FINISHED" && 
+            val isLivePenalties = match.status.uppercase() != "FINISHED" && 
+                (match.clock?.lowercase()?.contains("penal") == true || match.status.uppercase() == "PENALES")
+
+            val showPenaltyShootout = (match.status.uppercase() == "FINISHED" || isLivePenalties) &&
                 match.homePenalties != null && 
                 match.awayPenalties != null && 
                 match.id > 100
 
-            if (showFinishedPenalties) {
+            if (showPenaltyShootout) {
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
                 Spacer(modifier = Modifier.height(8.dp))

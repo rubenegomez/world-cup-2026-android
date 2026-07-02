@@ -309,8 +309,8 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                                 showVipDialog = true
                                             }
                                         },
-                                        onPredictionChange = { id, winner, home, away ->
-                                            viewModel.updateMatchPrediction(id, winner, home, away)
+                                        onPredictionChange = { id, winner, home, away, homePen, awayPen ->
+                                            viewModel.updateMatchPrediction(id, winner, home, away, homePen, awayPen)
                                         },
                                         showAds = isAdsEnabled
                                     )

@@ -43,7 +43,9 @@ data class StandingDto(
 data class SubmitPredictionRequest(
     val matchId: Int,
     val predictedHomeScore: Int,
-    val predictedAwayScore: Int
+    val predictedAwayScore: Int,
+    val predictedHomePenalties: Int? = null,
+    val predictedAwayPenalties: Int? = null
 )
 
 // --- API Service ---

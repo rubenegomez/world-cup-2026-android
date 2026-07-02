@@ -294,12 +294,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun updateMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?) {
+    fun updateMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?, homePenaltiesPredict: Int? = null, awayPenaltiesPredict: Int? = null) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             
-            AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict")
-            repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict)
+            AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict, pens=$homePenaltiesPredict-$awayPenaltiesPredict")
+            repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict, homePenaltiesPredict, awayPenaltiesPredict)
             
             // Sincronizar automáticamente con el servidor si está autenticado
             if (com.example.worldcup2026.data.repository.ProdeRepository.authToken != null) {
@@ -312,7 +312,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                             com.example.worldcup2026.data.api.SubmitPredictionRequest(
                                 matchId = matchId,
                                 predictedHomeScore = homePredict ?: 0,
-                                predictedAwayScore = awayPredict ?: 0
+                                predictedAwayScore = awayPredict ?: 0,
+                                predictedHomePenalties = homePenaltiesPredict,
+                                predictedAwayPenalties = awayPenaltiesPredict
                             )
                         ))
                     } catch (e: Exception) {
@@ -322,7 +324,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             }
 
             val updatedList = currentState.matches.map {
-                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict) else it
+                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict, predictedHomePenalties = homePenaltiesPredict, predictedAwayPenalties = awayPenaltiesPredict) else it
             }
             _uiState.value = currentState.copy(matches = updatedList)
         }

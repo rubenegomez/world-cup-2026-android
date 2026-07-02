@@ -38,6 +38,8 @@ data class Match(
     val predictedWinner: String? = null, // "L", "E", "V"
     val predictedHomeScore: Int? = null,
     val predictedAwayScore: Int? = null,
+    val predictedHomePenalties: Int? = null,
+    val predictedAwayPenalties: Int? = null,
     // Estadísticas VIP
     val homePossession: Int? = null,
     val awayPossession: Int? = null,

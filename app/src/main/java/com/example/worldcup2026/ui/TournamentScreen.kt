@@ -18,10 +18,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-data class TournamentItem(val id: Int, val name: String, val type: String, val gradient: List<Color>)
+data class TournamentItem(val id: Int, val name: String, val type: String, val gradient: List<Color>, val active: Boolean = false)
 
 val internacionales = listOf(
-    TournamentItem(1, "World Cup 2026", "Internacional", listOf(Color(0xFF1E3C72), Color(0xFF2A5298))),
+    TournamentItem(1, "World Cup 2026", "Internacional", listOf(Color(0xFF1E3C72), Color(0xFF2A5298)), active = true),
     TournamentItem(2, "Eliminatorias Mundial 2030", "Internacional", listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364))),
     TournamentItem(3, "CONMEBOL Libertadores", "Internacional", listOf(Color(0xFF000000), Color(0xFF434343))),
     TournamentItem(4, "CONMEBOL Sudamericana", "Internacional", listOf(Color(0xFF141E30), Color(0xFF243B55)))
@@ -83,28 +83,29 @@ fun TournamentScreen(onTournamentSelected: (Int, String) -> Unit) {
 
 @Composable
 fun TournamentCard(tournament: TournamentItem, onClick: () -> Unit) {
+    val alpha = if (tournament.active) 1f else 0.5f
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.horizontalGradient(tournament.gradient))
-            .clickable { onClick() }
+            .then(if (tournament.active) Modifier.clickable { onClick() } else Modifier)
             .padding(24.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Column {
             Text(
                 text = tournament.name,
-                color = Color.White,
+                color = Color.White.copy(alpha = alpha),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 style = MaterialTheme.typography.headlineSmall
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Tocar para ver fixture",
-                color = Color.White.copy(alpha = 0.8f),
+                text = if (tournament.active) "Tocar para ver fixture" else "Próximamente",
+                color = Color.White.copy(alpha = if (tournament.active) 0.8f else 0.5f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )

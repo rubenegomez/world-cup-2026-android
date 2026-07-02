@@ -59,7 +59,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                     try {
                         val matches = worldCupRepository.getMatches(1)
                         val localPredictions = matches.filter { it.predictedHomeScore != null && it.predictedAwayScore != null }
-                            .map { SubmitPredictionRequest(it.id, it.predictedHomeScore ?: 0, it.predictedAwayScore ?: 0) }
+                            .map { SubmitPredictionRequest(it.id, it.predictedHomeScore ?: 0, it.predictedAwayScore ?: 0, it.predictedHomePenalties, it.predictedAwayPenalties) }
                         if (localPredictions.isNotEmpty()) {
                             prodeRepository.submitPredictions(localPredictions)
                         }

@@ -18,6 +18,8 @@ data class MatchEntity(
     val predictedWinner: String? = null,
     val predictedHomeScore: Int? = null,
     val predictedAwayScore: Int? = null,
+    val predictedHomePenalties: Int? = null,
+    val predictedAwayPenalties: Int? = null,
     // Stats
     val homePossession: Int? = null,
     val awayPossession: Int? = null,
