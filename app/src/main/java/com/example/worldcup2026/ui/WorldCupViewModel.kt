@@ -34,6 +34,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _adFreeUntil = mutableStateOf(0L)
     val adFreeUntil: State<Long> = _adFreeUntil
 
+    // Estado para registrar torneos en vivo (ID del torneo -> si tiene partidos en vivo)
+    private val _liveTournaments = mutableStateOf<Map<Int, Boolean>>(emptyMap())
+    val liveTournaments: State<Map<Int, Boolean>> = _liveTournaments
+
     data class RewardDialogInfo(val round: Int, val points: Int, val hours: Int)
     private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
     val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
@@ -47,7 +51,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
         loadData()
         checkPendingRewardDialog()
+        startLiveTournamentsChecker()
     }
+
 
     fun setTournament(id: Int) {
         currentTournamentId.value = id
@@ -68,6 +74,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                         val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                         _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                         checkRoundRewards(allMatches)
+                        com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
                         startAutoSync(allMatches)
                     }
                 }
@@ -77,6 +84,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                 _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                 checkRoundRewards(allMatches)
+                com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
                 startAutoSync(allMatches)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -97,11 +105,13 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
                     _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                     checkRoundRewards(allMatches)
+                    com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
                     startAutoSync(allMatches)
                 }
                 onComplete(success)
             } catch (e: Exception) {
                 e.printStackTrace()
+
                 _isServerConnected.value = false
                 onComplete(false)
             }
@@ -367,8 +377,26 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun startLiveTournamentsChecker() {
+        viewModelScope.launch {
+            val database = WorldCupDatabase.getDatabase(getApplication())
+            // Escuchar cambios de todos los partidos para actualizar los indicadores "EN VIVO" de los torneos
+            database.matchDao().getAllMatches().collect { allEntities ->
+                val liveMap = mutableMapOf<Int, Boolean>()
+                // Clasificamos si hay algún partido LIVE en los torneos
+                val grouped = allEntities.groupBy { it.tournamentId }
+                for (tourneyId in listOf(1, 3, 5)) {
+                    val hasLive = grouped[tourneyId]?.any { it.status.equals("LIVE", ignoreCase = true) } ?: false
+                    liveMap[tourneyId] = hasLive
+                }
+                _liveTournaments.value = liveMap
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         autoSyncJob?.cancel()
     }
 }
+

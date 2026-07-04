@@ -7,6 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import retrofit2.http.Path
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -24,7 +25,53 @@ interface WorldCupApiService {
 
     @GET("api/matches/live")
     suspend fun getLiveMatches(@Query("tournament_id") tournamentId: Int? = null): List<LiveMatchDto>
+
+    @GET("api/tournaments/{id}/annual-standings")
+    suspend fun getAnnualStandings(@Path("id") tournamentId: Int): List<AnnualStandingDto>
+
+    @GET("api/tournaments/{id}/descenso-standings")
+    suspend fun getDescensoStandings(@Path("id") tournamentId: Int): List<DescensoStandingDto>
+
+    @GET("api/tournaments/{id}/goleadores")
+    suspend fun getGoleadores(@Path("id") tournamentId: Int): List<GoleadorDto>
 }
+
+data class AnnualStandingDto(
+    val pos: Int,
+    val team_id: Int,
+    val team_name: String,
+    val logo_url: String,
+    val pj: Int,
+    val g: Int,
+    val e: Int,
+    val p: Int,
+    val gf: Int,
+    val gc: Int,
+    val dg: Int,
+    val pts: Int
+)
+
+data class DescensoStandingDto(
+    val pos: Int,
+    val team_id: Int,
+    val team_name: String,
+    val logo_url: String,
+    val historical_pts: Int,
+    val historical_pj: Int,
+    val current_pts: Int,
+    val current_pj: Int,
+    val total_pts: Int,
+    val total_pj: Int,
+    val promedio: Double
+)
+
+data class GoleadorDto(
+    val pos: Int,
+    val player_name: String,
+    val team_name: String,
+    val logo_url: String,
+    val goals: Int
+)
 
 data class LiveMatchDto(
     val matchId: Int,

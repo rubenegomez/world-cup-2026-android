@@ -46,17 +46,28 @@ fun FixtureScreen(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _, _, _ -> },
     showAds: Boolean = true
 ) {
-    val tabs = listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
+    val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
+    val tabs = remember(isWorldCup) {
+        if (isWorldCup) {
+            listOf("POR DÍA", "POR GRUPO", "ELIMINACIÓN")
+        } else {
+            listOf("POR DÍA", "POR GRUPO")
+        }
+    }
     
     // Determinar la pestaña inicial según la fecha del sistema
-    val initialPage = remember(matches) {
+    val initialPage = remember(matches, isWorldCup) {
         try {
-            val today = java.time.LocalDate.now()
-            val startOfKnockouts = java.time.LocalDate.of(2026, 6, 27) // Primer partido de eliminación directa
-            if (today.isAfter(startOfKnockouts) || today.isEqual(startOfKnockouts)) {
-                2 // Pestaña ELIMINACIÓN
+            if (isWorldCup) {
+                val today = java.time.LocalDate.now()
+                val startOfKnockouts = java.time.LocalDate.of(2026, 6, 27) // Primer partido de eliminación directa
+                if (today.isAfter(startOfKnockouts) || today.isEqual(startOfKnockouts)) {
+                    2 // Pestaña ELIMINACIÓN
+                } else {
+                    0 // Pestaña POR DÍA
+                }
             } else {
-                0 // Pestaña POR DÍA
+                0
             }
         } catch (e: Exception) {
             0
@@ -111,7 +122,9 @@ fun FixtureScreen(
             when (page) {
                 0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
                 1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
-                2 -> KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
+                2 -> if (isWorldCup) {
+                    KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
+                }
             }
         }
     }
@@ -278,7 +291,8 @@ fun DayFilteredFixture(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val dates = matches.filter { it.id <= 132 }
+    val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
+    val dates = matches.filter { if (isWorldCup) it.id <= 72 else true }
         .map { 
             val safeDate = it.date ?: ""
             val parts = safeDate.split(" ")
@@ -303,7 +317,7 @@ fun DayFilteredFixture(
     
     var selectedDate by remember { mutableStateOf(initialDate) }
     val filteredMatches = matches
-        .filter { (it.date ?: "").startsWith(selectedDate) && it.id <= 132 }
+        .filter { (it.date ?: "").startsWith(selectedDate) && (if (isWorldCup) it.id <= 72 else true) }
         .sortedBy { it.date ?: "" }
 
     val listState = rememberLazyListState()
@@ -365,9 +379,10 @@ fun GroupFilteredFixture(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean
 ) {
-    val groups = matches.filter { it.id <= 132 }.map { it.homeTeam.group }.distinct().sorted()
+    val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
+    val groups = matches.filter { if (isWorldCup) it.id <= 72 else true }.map { it.homeTeam.group }.distinct().sorted()
     var selectedGroup by remember { mutableStateOf(if (groups.isNotEmpty()) groups.first() else "") }
-    val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && it.id <= 132 }
+    val filteredMatches = matches.filter { it.homeTeam.group == selectedGroup && (if (isWorldCup) it.id <= 72 else true) }
 
     Column {
         LazyRow(
@@ -426,10 +441,13 @@ fun MatchCard(
             ) {
                 Column {
                     Text(
-                        text = when {
-                            match.id == 131 -> "GRAN FINAL"
-                            match.id == 132 -> "TERCER PUESTO"
-                            match.id > 100 -> "ELIMINACIÓN"
+                        text = when (match.id) {
+                            in 73..88 -> "DIECISEISAVOS DE FINAL"
+                            in 89..96 -> "OCTAVOS DE FINAL"
+                            in 97..100 -> "CUARTOS DE FINAL"
+                            101, 102 -> "SEMIFINAL"
+                            103 -> "TERCER PUESTO"
+                            104 -> "GRAN FINAL"
                             else -> "GRUPO ${match.homeTeam.group}"
                         },
                         style = MaterialTheme.typography.labelSmall,
@@ -473,7 +491,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if (match.id > 116 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
+                    penalties = if (match.id >= 73 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, it, match.awayScore) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -578,7 +596,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if (match.id > 116 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
+                    penalties = if (match.id >= 73 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
                     onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, match.homeScore, it) },
                     enabled = match.status.uppercase() != "FINISHED"
                 )
@@ -724,7 +742,7 @@ fun MatchCard(
                             val a = match.awayScore ?: 0
                             
                             val realWinner = when {
-                                match.id > 116 && h == a -> {
+                                match.id >= 73 && h == a -> {
                                     val hp = match.homePenalties ?: 0
                                     val ap = match.awayPenalties ?: 0
                                     if (hp > ap) "L" else if (hp < ap) "V" else "E"
@@ -775,7 +793,7 @@ fun MatchCard(
 
             val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
                 isDrawPrediction && 
-                match.id > 116
+                match.id >= 73
 
             if (showPredictionPenalties) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -810,7 +828,7 @@ fun MatchCard(
             val showPenaltyShootout = (match.status.uppercase() == "FINISHED" || isLivePenalties) &&
                 match.homePenalties != null && 
                 match.awayPenalties != null && 
-                match.id > 116
+                match.id >= 73
 
             if (showPenaltyShootout) {
                 Spacer(modifier = Modifier.height(16.dp))

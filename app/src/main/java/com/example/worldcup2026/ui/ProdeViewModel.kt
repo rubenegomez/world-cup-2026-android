@@ -30,6 +30,27 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadMatches()
+        checkExistingSession()
+    }
+
+    private fun checkExistingSession() {
+        viewModelScope.launch {
+            try {
+                val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                if (firebaseUser != null) {
+                    firebaseUser.getIdToken(false).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val token = task.result?.token
+                            if (token != null) {
+                                handleSignIn(token)
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun loadMatches() {

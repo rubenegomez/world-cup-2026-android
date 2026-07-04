@@ -83,8 +83,9 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     private suspend fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match, tournamentId: Int) {
         val saved = savedEntities.find { it.id == baseMatch.id }
         if (saved != null) {
-            val homeScore = baseMatch.homeScore ?: saved.homeScore
-            val awayScore = baseMatch.awayScore ?: saved.awayScore
+            // Si el remoto tiene score, preferimos SIEMPRE el remoto. Si no, usamos el local guardado.
+            val homeScore = baseMatch.homeScore ?: (if (baseMatch.status == "Finished") 0 else saved.homeScore)
+            val awayScore = baseMatch.awayScore ?: (if (baseMatch.status == "Finished") 0 else saved.awayScore)
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
             val status = if (baseMatch.status != "Scheduled") baseMatch.status else saved.status

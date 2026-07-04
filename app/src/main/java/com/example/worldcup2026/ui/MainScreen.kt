@@ -113,86 +113,88 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                 Scaffold(
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     topBar = {
-                        val hasLiveMatches = (uiState as? WorldCupUiState.Success)?.matches?.any { it.status.equals("LIVE", ignoreCase = true) } ?: false
-                        CenterAlignedTopAppBar(
-                            title = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (selectedScreen == -1) {
-                                        Text(
-                                            text = "Seleccione un Torneo",
-                                            fontWeight = FontWeight.Black,
-                                            color = androidx.compose.ui.graphics.Color.White
-                                        )
-                                    } else {
-                                        IconButton(onClick = { selectedScreen = -1 }) {
-                                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
-                                        }
-                                        Text(
-                                            text = selectedTournamentName,
-                                            fontWeight = FontWeight.Black,
-                                            color = androidx.compose.ui.graphics.Color.White,
-                                            fontSize = 18.sp,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false)
-                                        )
-                                        if (hasLiveMatches) {
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color(0xFF4CAF50).copy(alpha = livePulseAlpha))
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
+                        if (selectedScreen != -1) {
+                            val hasLiveMatches = (uiState as? WorldCupUiState.Success)?.matches?.any { it.status.equals("LIVE", ignoreCase = true) } ?: false
+                            CenterAlignedTopAppBar(
+                                title = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (selectedScreen == -1) {
                                             Text(
-                                                text = "EN VIVO",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = Color(0xFF4CAF50),
+                                                text = "Seleccione un Torneo",
                                                 fontWeight = FontWeight.Black,
-                                                fontSize = 9.sp
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                            ),
-                            actions = {
-                                if (selectedScreen != -1) {
-                                    if (isRefreshing) {
-                                        Box(modifier = Modifier.padding(end = 16.dp)) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(20.dp),
-                                                strokeWidth = 2.dp,
                                                 color = androidx.compose.ui.graphics.Color.White
                                             )
-                                        }
-                                    } else {
-                                        IconButton(
-                                            onClick = {
-                                                isRefreshing = true
-                                                viewModel.syncLiveResults { success ->
-                                                    isRefreshing = false
-                                                    android.widget.Toast.makeText(
-                                                        context,
-                                                        if (success) "Resultados en vivo actualizados" else "Error al sincronizar resultados",
-                                                        android.widget.Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
+                                        } else {
+                                            IconButton(onClick = { selectedScreen = -1 }) {
+                                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
                                             }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Refresh,
-                                                contentDescription = "Sincronizar resultados",
-                                                tint = androidx.compose.ui.graphics.Color.White
+                                            Text(
+                                                text = selectedTournamentName,
+                                                fontWeight = FontWeight.Black,
+                                                color = androidx.compose.ui.graphics.Color.White,
+                                                fontSize = 18.sp,
+                                                maxLines = 1,
+                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
                                             )
+                                            if (hasLiveMatches) {
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(0xFF4CAF50).copy(alpha = livePulseAlpha))
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "EN VIVO",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color(0xFF4CAF50),
+                                                    fontWeight = FontWeight.Black,
+                                                    fontSize = 9.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                ),
+                                actions = {
+                                    if (selectedScreen != -1) {
+                                        if (isRefreshing) {
+                                            Box(modifier = Modifier.padding(end = 16.dp)) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(20.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = androidx.compose.ui.graphics.Color.White
+                                                )
+                                            }
+                                        } else {
+                                            IconButton(
+                                                onClick = {
+                                                    isRefreshing = true
+                                                    viewModel.syncLiveResults { success ->
+                                                        isRefreshing = false
+                                                        android.widget.Toast.makeText(
+                                                            context,
+                                                            if (success) "Resultados en vivo actualizados" else "Error al sincronizar resultados",
+                                                            android.widget.Toast.LENGTH_SHORT
+                                                        ).show()
+                                                    }
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Refresh,
+                                                    contentDescription = "Sincronizar resultados",
+                                                    tint = androidx.compose.ui.graphics.Color.White
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
                     },
                     bottomBar = {
                         if (selectedScreen != -1) {
@@ -286,7 +288,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                             }
                             is WorldCupUiState.Success -> {
                                 when (selectedScreen) {
-                                    -1 -> TournamentScreen(onTournamentSelected = { id, name ->
+                                    -1 -> TournamentScreen(viewModel = viewModel, onTournamentSelected = { id, name ->
                                         selectedTournamentName = name
                                         viewModel.setTournament(id)
                                         selectedScreen = 0

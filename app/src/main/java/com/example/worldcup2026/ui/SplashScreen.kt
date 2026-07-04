@@ -67,20 +67,35 @@ fun SplashScreen(onTimeout: () -> Unit) {
                 .alpha(alpha.value),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "WORLD CUP",
-                color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 4.sp
-            )
-            Text(
-                text = "2026",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 8.sp
-            )
+            val appName = androidx.compose.ui.res.stringResource(id = R.string.app_name)
+            val parts = remember(appName) { appName.split(" ") }
+            
+            if (parts.size >= 2) {
+                val firstPart = parts.dropLast(1).joinToString(" ")
+                val lastPart = parts.last()
+                Text(
+                    text = firstPart.uppercase(),
+                    color = Color.White,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 3.sp
+                )
+                Text(
+                    text = lastPart.uppercase(),
+                    color = Color(0xFFE5B842),
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 6.sp
+                )
+            } else {
+                Text(
+                    text = appName.uppercase(),
+                    color = Color.White,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 4.sp
+                )
+            }
         }
     }
 }
