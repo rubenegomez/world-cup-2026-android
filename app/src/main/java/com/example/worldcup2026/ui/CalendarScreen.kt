@@ -72,7 +72,6 @@ fun CalendarScreen(
             onViewModeChanged = { viewMode = it },
             onDateSelected = { 
                 selectedDate = it 
-                onNavigateToMatches(it)
             }
         )
 
