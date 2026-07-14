@@ -31,6 +31,12 @@ class AuthManager(private val context: Context) {
             account?.idToken
         } catch (e: ApiException) {
             e.printStackTrace()
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                android.widget.Toast.makeText(context, "Error de inicio de sesión: Código ${e.statusCode}", android.widget.Toast.LENGTH_LONG).show()
+            }
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }
