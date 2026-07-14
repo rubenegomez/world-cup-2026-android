@@ -534,8 +534,13 @@ match: Match,
                             )
                         }
                         statusUpper == "SCHEDULED" -> {
-                            val timeStr = (match.date ?: "").split(" ").lastOrNull() ?: ""
-                            if (timeStr.isNotEmpty()) {
+                            val rawDate = match.date ?: ""
+                            val timeStr = when {
+                                rawDate.contains("T") -> rawDate.substringAfter("T").substringBeforeLast(":")
+                                rawDate.contains(" ") -> rawDate.substringAfter(" ").substringBeforeLast(":")
+                                else -> ""
+                            }
+                            if (timeStr.isNotEmpty() && timeStr != rawDate) {
                                 Text(
                                     text = timeStr,
                                     style = MaterialTheme.typography.labelSmall,
@@ -1157,6 +1162,27 @@ fun AyudaJugadorView(match: Match) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                .padding(12.dp)
+        ) {
+            Text("Reglas del Prode", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("1 punto por acertar el ganador o empate", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("3 puntos por acertar el resultado exacto", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            }
+        }
+        
         Column {
             Text("Probabilidad de victoria", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))

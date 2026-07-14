@@ -46,6 +46,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     var showSplash by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<java.time.LocalDate?>(null) }
+    var selectedTournamentForStandings by remember { mutableStateOf<Int?>(null) }
     
     var selectedMatchForVip by remember { mutableStateOf<Match?>(null) }
     
@@ -290,10 +291,18 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                                 matches = state.matches,
                                                 viewModel = viewModel,
                                                 onNavigateToTournament = { id ->
-                                                    // selectedScreen = -1 // Go back to Tournament list or however they want to navigate
-                                                    // Now there is no tournament screen
+                                                    selectedTournamentForStandings = id
+                                                    selectedScreen = 5
                                                 }
                                             )
+                                        } else {
+                                            selectedScreen = 0
+                                        }
+                                    }
+                                    5 -> {
+                                        if (selectedTournamentForStandings != null) {
+                                            val tMatches = state.matches.filter { it.tournament_id == selectedTournamentForStandings }
+                                            StandingsScreen(matches = tMatches)
                                         } else {
                                             selectedScreen = 0
                                         }

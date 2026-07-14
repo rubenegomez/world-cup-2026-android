@@ -38,7 +38,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
                 if (firebaseUser != null) {
-                    firebaseUser.getIdToken(false).addOnCompleteListener { task ->
+                    firebaseUser.getIdToken(true).addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             val token = task.result?.token
                             if (token != null) {

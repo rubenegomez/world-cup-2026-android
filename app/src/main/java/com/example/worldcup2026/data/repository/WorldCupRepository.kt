@@ -251,16 +251,16 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     suspend fun syncMatchesWithLiveJson(context: android.content.Context, tournamentId: Int): Boolean {
         try {
             val service = com.example.worldcup2026.data.api.NetworkModule.apiService
-            val matchesList = service.getLiveMatches(tournamentId)
+            val matchesList = service.getLiveMatches(null)
             
-            val savedMatches = matchDao.getMatchesByTournament(tournamentId).first()
+            val savedMatches = matchDao.getAllMatches().first()
             
             matchesList.forEach { liveMatch ->
                 val saved = savedMatches.find { it.id == liveMatch.matchId }
                 
                 // --- DETECCION DE INCIDENCIAS EN VIVO ---
                 if (saved != null) {
-                    val matchInfo = getCachedMatch(liveMatch.matchId, tournamentId)
+                    val matchInfo = getCachedMatch(liveMatch.matchId, saved.tournamentId)
                     val homeTeamName = matchInfo?.homeTeam?.name ?: "Local"
                     val awayTeamName = matchInfo?.awayTeam?.name ?: "Visitante"
 

@@ -69,9 +69,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     val success = repository.syncMatchesWithLiveJson(getApplication(), currentTournamentId.value)
                     _isServerConnected.value = success
                     if (success) {
-                        val matches = repository.getMatches(currentTournamentId.value)
-                        val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches, currentTournamentId.value)
-                        val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
+                        val globalMatches = repository.getAllMatchesGlobal()
+                        val worldCupMatches = globalMatches.filter { it.tournament_id == 1 }
+                        val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, 1)
+                        val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches)
                         _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                         checkRoundRewards(allMatches)
                         com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
@@ -79,9 +80,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     }
                 }
 
-                val matches = repository.getMatches(currentTournamentId.value)
-                val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches, currentTournamentId.value)
-                val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
+                val globalMatches = repository.getAllMatchesGlobal()
+                val worldCupMatches = globalMatches.filter { it.tournament_id == 1 }
+                val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, 1)
+                val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches)
                 _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                 checkRoundRewards(allMatches)
                 com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
@@ -100,9 +102,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 val success = repository.syncMatchesWithLiveJson(getApplication(), currentTournamentId.value)
                 _isServerConnected.value = success
                 if (success) {
-                    val matches = repository.getMatches(currentTournamentId.value)
-                    val finalMatches = KnockoutCalculator.calculateKnockoutMatches(matches, currentTournamentId.value)
-                    val allMatches = groupMatchesPlusKnockout(matches, finalMatches)
+                    val globalMatches = repository.getAllMatchesGlobal()
+                    val worldCupMatches = globalMatches.filter { it.tournament_id == 1 }
+                    val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, 1)
+                    val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches)
                     _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                     checkRoundRewards(allMatches)
                     com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
@@ -157,8 +160,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     )
                 } else it
             }
-            
-            val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList, currentTournamentId.value)
+            val worldCupMatches = updatedList.filter { it.tournament_id == 1 }
+            val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, 1)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
             checkRoundRewards(allMatches)
@@ -179,7 +182,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     it.copy(status = status, homeScore = home, awayScore = away)
                 } else it
             }
-            val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList, currentTournamentId.value)
+            val worldCupMatches = updatedList.filter { it.tournament_id == 1 }
+            val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, 1)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
             checkRoundRewards(allMatches)
@@ -297,7 +301,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) it.copy(homePenalties = homePenalties, awayPenalties = awayPenalties) else it
             }
-            val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(updatedList, currentTournamentId.value)
+            val worldCupMatches = updatedList.filter { it.tournament_id == 1 }
+            val finalKnockout = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, 1)
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
             checkRoundRewards(allMatches)
@@ -348,8 +353,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun groupMatchesPlusKnockout(all: List<Match>, knockout: List<Match>): List<Match> {
-        val groupOnes = all.filter { it.id <= 72 }
-        return groupOnes + knockout
+        val nonWorldCupKnockouts = all.filter { it.tournament_id != 1 || it.id <= 72 }
+        return nonWorldCupKnockouts + knockout
     }
 
     private fun startAutoSync(matches: List<Match>) {

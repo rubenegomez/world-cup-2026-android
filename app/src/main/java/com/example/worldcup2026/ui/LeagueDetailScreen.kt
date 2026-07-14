@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +39,8 @@ fun LeagueDetailScreen(
         standings = viewModel.getStandings(league.id)
         isLoading = false
     }
+    
+    val currentUser by viewModel.currentUser.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -99,11 +102,14 @@ fun LeagueDetailScreen(
                             else -> Color(0xFF1E1E1E)
                         }
                         
+                        val isCurrentUser = currentUser?.fullName == standing.name
+                        
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (index < 3) positionColor.copy(alpha = 0.2f) else Color(0xFF1E1E1E)
-                            )
+                                containerColor = if (isCurrentUser) Color(0xFF2E7D32).copy(alpha = 0.3f) else if (index < 3) positionColor.copy(alpha = 0.2f) else Color(0xFF1E1E1E)
+                            ),
+                            border = if (isCurrentUser) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50)) else null
                         ) {
                             Row(
                                 modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -123,6 +129,15 @@ fun LeagueDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
+                                if (isCurrentUser) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Star,
+                                        contentDescription = "Tú",
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
                                 Text(
                                     text = "${standing.points} pts",
                                     color = MaterialTheme.colorScheme.primary,
