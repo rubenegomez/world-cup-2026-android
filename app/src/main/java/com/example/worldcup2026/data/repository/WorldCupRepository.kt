@@ -63,6 +63,24 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         return Team(-1, name, "", "Final", emptyList())
     }
 
+    suspend fun getAllMatchesGlobal(): List<Match> {
+        val savedMatches = matchDao.getAllMatches().first()
+        val matches = mutableListOf<Match>()
+        
+        try {
+            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
+            remoteMatches.forEach { match ->
+                val tournamentId = match.tournament_id ?: 1 // Default if missing
+                addMatchWithPersistence(matches, savedMatches, match, tournamentId)
+            }
+            cachedMatches = matches
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
+        return matches
+    }
+
     suspend fun getMatches(tournamentId: Int): List<Match> {
         val savedMatches = matchDao.getMatchesByTournament(tournamentId).first()
         val matches = mutableListOf<Match>()

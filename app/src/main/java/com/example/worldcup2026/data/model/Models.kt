@@ -24,6 +24,7 @@ data class Group(
 
 data class Match(
     val id: Int,
+    val tournament_id: Int? = null,
     val homeTeam: Team,
     val awayTeam: Team,
     val homeScore: Int?,

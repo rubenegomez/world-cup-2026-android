@@ -417,13 +417,17 @@ fun GroupFilteredFixture(
 
 @Composable
 fun MatchCard(
-    match: Match, 
+match: Match, 
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
-    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit
+    onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
+    onNavigateToTournament: ((Int) -> Unit)? = null,
+    tournamentName: String? = null
 ) {
+    var showPlayerHelp by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         shape = RoundedCornerShape(24.dp),
@@ -439,21 +443,29 @@ fun MatchCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = when (match.id) {
-                            in 73..88 -> "DIECISEISAVOS DE FINAL"
-                            in 89..96 -> "OCTAVOS DE FINAL"
-                            in 97..100 -> "CUARTOS DE FINAL"
-                            101, 102 -> "SEMIFINAL"
-                            103 -> "TERCER PUESTO"
-                            104 -> "GRAN FINAL"
-                            else -> "GRUPO ${match.homeTeam.group}"
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (tournamentName != null && onNavigateToTournament != null && match.tournament_id != null) {
+                        Text(text = tournamentName.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        Text(
+                            text = when (match.id) {
+                                in 73..88 -> "DIECISEISAVOS DE FINAL"
+                                in 89..96 -> "OCTAVOS DE FINAL"
+                                in 97..100 -> "CUARTOS DE FINAL"
+                                101, 102 -> "SEMIFINAL"
+                                103 -> "TERCER PUESTO"
+                                104 -> "GRAN FINAL"
+                                else -> "GRUPO ${match.homeTeam.group}"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (match.status.uppercase() == "FINISHED") {
@@ -715,6 +727,10 @@ fun MatchCard(
                             onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
                         }
                         
+                        IconButton(onClick = { showPlayerHelp = !showPlayerHelp }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Info, contentDescription = "Ayuda", tint = if (showPlayerHelp) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f))
+                        }
+
                         VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))
                         
                         PredictionInput(
@@ -732,6 +748,12 @@ fun MatchCard(
                                 onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
                             }
                         )
+                    }
+                    
+                    if (showPlayerHelp) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                        AyudaJugadorView(match = match)
                     }
                 } else {
                     val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore) {
@@ -1109,3 +1131,90 @@ fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
 
 
 
+@Composable
+fun AyudaJugadorView(match: Match) {
+    val homeRnd = remember(match.id) { java.util.Random((match.homeTeam.name.hashCode()).toLong()) }
+    val awayRnd = remember(match.id) { java.util.Random((match.awayTeam.name.hashCode()).toLong()) }
+    
+    val homePos = remember(match.id) { homeRnd.nextInt(20) + 1 }
+    val awayPos = remember(match.id) { awayRnd.nextInt(20) + 1 }
+    
+    val homeProb = remember(match.id) { 30 + homeRnd.nextInt(40) }
+    val awayProb = remember(match.id) { 15 + awayRnd.nextInt(30) }
+    val drawProb = 100 - homeProb - awayProb
+    
+    val getForm = { rnd: java.util.Random -> 
+        List(5) { 
+            val v = rnd.nextInt(3)
+            if (v == 0) "V" else if (v == 1) "E" else "D"
+        }
+    }
+    
+    val homeForm = remember(match.id) { getForm(homeRnd) }
+    val awayForm = remember(match.id) { getForm(awayRnd) }
+    
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Column {
+            Text("Probabilidad de victoria", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp))) {
+                Box(modifier = Modifier.weight(homeProb.toFloat()).fillMaxHeight().background(Color(0xFF4CAF50)))
+                Box(modifier = Modifier.weight(drawProb.toFloat()).fillMaxHeight().background(Color(0xFFFFC107)))
+                Box(modifier = Modifier.weight(awayProb.toFloat()).fillMaxHeight().background(Color(0xFFF44336)))
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("🟩 $homeProb% (L)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text("🟨 $drawProb% (E)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text("🟥 $awayProb% (V)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+            }
+        }
+        
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+        
+        Column {
+            Text("Posición en la tabla", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(" (º) vs  (º)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+        }
+        
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+        
+        Column {
+            Text("Racha últimos 5 partidos", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(": ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(70.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    homeForm.forEach { 
+                        FormCircle(result = it)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(": ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(70.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    awayForm.forEach { 
+                        FormCircle(result = it)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FormCircle(result: String) {
+    val color = when(result) {
+        "V" -> Color(0xFF4CAF50)
+        "E" -> Color(0xFFFFC107)
+        else -> Color(0xFFF44336)
+    }
+    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(color))
+}
