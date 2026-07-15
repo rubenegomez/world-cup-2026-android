@@ -57,7 +57,7 @@ fun CalendarScreen(
     // Obtenemos partidos para la fecha seleccionada
     val matchesForSelectedDate = remember(matches, selectedDate) {
         val dateStr = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        matches.filter { it.date == dateStr }.sortedBy { it.clock ?: "00:00" }
+        matches.filter { it.date?.startsWith(dateStr) == true }.sortedBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
     }
 
     Column(
@@ -273,7 +273,7 @@ fun WeekSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChan
             val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("es", "ES")).take(3)
             
             val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date == dateStr } }
+            val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date?.startsWith(dateStr) == true } }
             
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -339,7 +339,7 @@ fun MonthSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateCha
         items(days) { date ->
             val isSelected = date == selectedDate
             val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date == dateStr } }
+            val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date?.startsWith(dateStr) == true } }
             
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

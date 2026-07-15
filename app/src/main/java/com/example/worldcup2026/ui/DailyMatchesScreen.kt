@@ -26,7 +26,7 @@ fun DailyMatchesScreen(
 ) {
     val matchesForSelectedDate = remember(matches, date) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        matches.filter { it.date == dateStr }.sortedBy { it.clock ?: "00:00" }
+        matches.filter { it.date?.startsWith(dateStr) == true }.sortedBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
     }
 
     LazyColumn(

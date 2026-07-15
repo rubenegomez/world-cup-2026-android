@@ -75,6 +75,7 @@ data class GoleadorDto(
 
 data class LiveMatchDto(
     val matchId: Int,
+    val tournament_id: Int? = null,
     val homeScore: Int?,
     val awayScore: Int?,
     val homePenalties: Int? = null,
@@ -96,8 +97,8 @@ data class LiveMatchDto(
     val awayRedCards: Int?,
     val homePasses: String?,
     val awayPasses: String?,
-    val scorers: List<String>,
-    val events: List<String>,
+    val scorers: List<String>?,
+    val events: List<String>?,
     val clock: String?
 )
 

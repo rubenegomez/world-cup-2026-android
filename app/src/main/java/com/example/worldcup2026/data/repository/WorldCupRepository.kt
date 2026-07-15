@@ -70,7 +70,9 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         try {
             val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
             remoteMatches.forEach { match ->
-                val tournamentId = match.tournament_id ?: 1 // Default if missing
+                val saved = savedMatches.find { it.id == match.id }
+                // BUGFIX: Remote API is the source of truth for tournament_id, otherwise local DB corruption persists.
+                val tournamentId = match.tournament_id ?: saved?.tournamentId ?: 1
                 addMatchWithPersistence(matches, savedMatches, match, tournamentId)
             }
             cachedMatches = matches
@@ -118,6 +120,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             val clock = baseMatch.clock ?: saved.clock
 
             targetList.add(baseMatch.copy(
+                tournament_id = tournamentId,
                 homeScore = homeScore,
                 awayScore = awayScore,
                 homePenalties = homePenalties,
@@ -167,7 +170,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 ))
             }
         } else {
-            targetList.add(baseMatch)
+            targetList.add(baseMatch.copy(tournament_id = tournamentId))
         }
     }
 
@@ -358,8 +361,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     "passes:${liveMatch.homePasses ?: ""},${liveMatch.awayPasses ?: ""}"
                 } else null
 
-                val scorersStr = if (liveMatch.scorers.isEmpty()) null else liveMatch.scorers.joinToString("|")
-                val eventsStr = if (liveMatch.events.isEmpty()) null else liveMatch.events.joinToString("|")
+                val scorersList = liveMatch.scorers.orEmpty()
+                val eventsList = liveMatch.events.orEmpty()
+                val scorersStr = if (scorersList.isEmpty()) null else scorersList.joinToString("|")
+                val eventsStr = if (eventsList.isEmpty()) null else eventsList.joinToString("|")
 
                 if (saved == null || 
                     saved.homeScore != liveMatch.homeScore || 
@@ -373,9 +378,10 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     saved.events != eventsStr ||
                     saved.clock != liveMatch.clock
                 ) {
+                    val finalTournamentId = liveMatch.tournament_id ?: saved?.tournamentId ?: tournamentId
                     matchDao.insertMatch(MatchEntity(
                         id = liveMatch.matchId,
-                        tournamentId = tournamentId,
+                        tournamentId = finalTournamentId,
                         homeScore = liveMatch.homeScore,
                         awayScore = liveMatch.awayScore,
                         homePenalties = liveMatch.homePenalties ?: saved?.homePenalties,
