@@ -353,8 +353,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun groupMatchesPlusKnockout(all: List<Match>, knockout: List<Match>, tournamentId: Int): List<Match> {
-        val nonWorldCupKnockouts = all.filter { it.tournament_id != tournamentId || it.id <= 72 }
-        return nonWorldCupKnockouts + knockout
+        return if (tournamentId == 1) {
+            val nonWorldCupKnockouts = all.filter { it.tournament_id != 1 || it.id <= 72 }
+            nonWorldCupKnockouts + knockout
+        } else {
+            all
+        }
     }
 
     private fun startAutoSync(matches: List<Match>) {

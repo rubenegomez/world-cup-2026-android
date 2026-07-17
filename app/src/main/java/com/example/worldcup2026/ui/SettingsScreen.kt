@@ -327,7 +327,9 @@ fun TeamsListScreen(
             val matches = (uiState as WorldCupUiState.Success).matches
             matches.flatMap { listOf(it.homeTeam, it.awayTeam) }
                 .filter { it.name.isNotBlank() && it.name.lowercase() != "por definir" && !it.name.contains("Ganador", ignoreCase = true) }
-                .distinctBy { it.id }
+                .sortedByDescending { !it.flagUrl.isNullOrBlank() }
+                .distinctBy { it.name.trim().lowercase() }
+                .sortedBy { it.name }
                 .sortedBy { it.name }
         } else {
             emptyList()
