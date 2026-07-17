@@ -72,7 +72,8 @@ fun CalendarScreen(
             onViewModeChanged = { viewMode = it },
             onDateSelected = { 
                 selectedDate = it 
-            }
+            },
+            onNavigateToMatches = onNavigateToMatches
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -111,7 +112,8 @@ fun CalendarHeader(
     selectedDate: LocalDate,
     viewMode: CalendarViewMode,
     onViewModeChanged: (CalendarViewMode) -> Unit,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    onNavigateToMatches: (LocalDate) -> Unit
 ) {
     val monthName = selectedDate.month.getDisplayName(TextStyle.FULL, Locale("es", "ES")).replaceFirstChar { it.uppercase() }
     val year = selectedDate.year
@@ -151,7 +153,11 @@ fun CalendarHeader(
                 }
             }
             IconButton(
-                onClick = { onDateSelected(LocalDate.now()) },
+                onClick = { 
+                    val now = LocalDate.now()
+                    onDateSelected(now)
+                    onNavigateToMatches(now)
+                },
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)

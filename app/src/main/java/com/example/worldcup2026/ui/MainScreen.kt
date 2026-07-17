@@ -115,7 +115,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                     topBar = {
                         if (selectedScreen != -1) {
-                            val hasLiveMatches = (uiState as? WorldCupUiState.Success)?.matches?.any { it.status.equals("LIVE", ignoreCase = true) } ?: false
+                            val hasLiveMatches = viewModel.liveTournaments.value.any { it.value }
                             CenterAlignedTopAppBar(
                                 title = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -126,7 +126,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                             }
                                         }
                                         Text(
-                                            text = "La Previa Web",
+                                            text = "ARENA PRODE Y TORNEOS",
                                             fontWeight = FontWeight.Black,
                                             color = androidx.compose.ui.graphics.Color.White,
                                             fontSize = 18.sp,

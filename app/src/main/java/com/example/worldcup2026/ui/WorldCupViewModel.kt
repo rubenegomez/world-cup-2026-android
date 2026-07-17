@@ -394,7 +394,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 val liveMap = mutableMapOf<Int, Boolean>()
                 // Clasificamos si hay algún partido LIVE en los torneos
                 val grouped = allEntities.groupBy { it.tournamentId }
-                for (tourneyId in listOf(1, 3, 5)) {
+                for (tourneyId in listOf(1, 3, 5, 6, 8)) {
                     val hasLive = grouped[tourneyId]?.any { it.status.equals("LIVE", ignoreCase = true) } ?: false
                     liveMap[tourneyId] = hasLive
                 }
