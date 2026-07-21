@@ -143,7 +143,7 @@ object NetworkModule {
             .create(WorldCupApiService::class.java)
     }
 
-    const val PRODE_BASE_URL = "https://ellocodelpedal.duckdns.org/"
+    const val PRODE_BASE_URL = "http://ellocodelpedal.duckdns.org:8000/"
 
     val prodeApiService: ProdeApiService by lazy {
         Retrofit.Builder()

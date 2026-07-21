@@ -281,7 +281,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                             selectedScreen = 4
                                         }
                                     )
-                                    1 -> ProdeScreen()
+                                    1 -> ProdeScreen(onNavigateToSettings = { selectedScreen = 3 })
                                     2 -> AboutScreen()
                                     3 -> SettingsContainer(viewModel)
                                     4 -> {

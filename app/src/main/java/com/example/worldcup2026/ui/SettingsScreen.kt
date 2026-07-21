@@ -116,19 +116,7 @@ fun SettingsMenuScreen(
     val authManager = remember { AuthManager(context) }
     val coroutineScope = rememberCoroutineScope()
     
-    val signInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val googleIdToken = authManager.handleSignInResult(result.data)
-        if (googleIdToken != null) {
-            coroutineScope.launch {
-                val firebaseIdToken = authManager.getFirebaseIdToken(googleIdToken)
-                if (firebaseIdToken != null) {
-                    viewModel.handleSignIn(firebaseIdToken)
-                }
-            }
-        }
-    }
+    val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -136,28 +124,48 @@ fun SettingsMenuScreen(
     ) {
         item {
             SettingSection(title = "Cuenta") {
-                if (isAuthenticated) {
+                if (isAuthenticated && user != null) {
+                    // Profile Info
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        coil.compose.AsyncImage(
+                            model = user.photoUrl,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(text = user.displayName ?: "Usuario", fontWeight = FontWeight.Bold)
+                            Text(text = user.email ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
                     SettingItem(
                         icon = Icons.Default.Logout,
                         title = "Cerrar Sesión",
                         subtitle = "Desconectar tu cuenta de la nube",
                         onClick = { 
-                            val client = authManager.getGoogleSignInClient()
-                            client.signOut().addOnCompleteListener {
-                                viewModel.signOut()
-                            }
+                            authManager.signOut()
+                            viewModel.signOut()
                         }
                     )
                 } else {
                     SettingItem(
                         icon = Icons.Default.Login,
-                        title = "Iniciar Sesión / Registrarse",
+                        title = "Iniciar Sesión con Google",
                         subtitle = "Guarda tu progreso del Prode en la nube",
                         onClick = { 
-                            val client = authManager.getGoogleSignInClient()
-                            client.signOut().addOnCompleteListener {
-                                val signInIntent = client.signInIntent
-                                signInLauncher.launch(signInIntent)
+                            coroutineScope.launch {
+                                val firebaseIdToken = authManager.signInWithGoogle()
+                                if (firebaseIdToken != null) {
+                                    viewModel.handleSignIn(firebaseIdToken)
+                                }
                             }
                         }
                     )

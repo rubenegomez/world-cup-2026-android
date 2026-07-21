@@ -122,7 +122,13 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun getChampion(matches: List<Match>): Team? {
-        val finalMatch = matches.find { it.id == 131 }
+        // Prevent local test data from triggering the World Cup champion celebration,
+        // since the actual tournament hasn't happened yet.
+        if (com.example.worldcup2026.data.util.TournamentConfig.IS_WORLD_CUP) return null
+
+        val finalRound = com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.find { it.name.equals("FINAL", ignoreCase = true) }
+        val finalMatchId = finalRound?.endId ?: 131
+        val finalMatch = matches.find { it.id == finalMatchId }
         if (finalMatch == null || finalMatch.status != "Finished") return null
         val h = finalMatch.homeScore ?: 0
         val a = finalMatch.awayScore ?: 0
@@ -192,22 +198,28 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private fun getMatchRound(matchId: Int): Int {
         if (matchId <= 0) return 0
-        if (matchId <= 72) {
-            val relativeId = (matchId - 1) % 6
-            return when (relativeId) {
-                0, 1 -> 1 // Fecha 1
-                2, 3 -> 2 // Fecha 2
-                else -> 3 // Fecha 3
+        
+        val config = com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS
+        val roundIndex = config.indexOfFirst { matchId in it.startId..it.endId }
+        
+        if (roundIndex != -1) {
+            return if (com.example.worldcup2026.data.util.TournamentConfig.IS_WORLD_CUP) {
+                4 + roundIndex
+            } else {
+                10 + roundIndex
             }
         }
-        return when {
-            matchId in 101..116 -> 4 // 16avos
-            matchId in 117..124 -> 5 // Octavos
-            matchId in 125..128 -> 6 // Cuartos
-            matchId in 129..130 -> 7 // Semis
-            matchId == 131 || matchId == 132 -> 8 // Final y 3er puesto
-            else -> 9
+
+        val groupMatchesEnd = config.firstOrNull()?.startId?.minus(1) ?: 72
+        if (matchId <= groupMatchesEnd) {
+            val perRound = groupMatchesEnd / 3
+            return when {
+                matchId <= perRound -> 1
+                matchId <= perRound * 2 -> 2
+                else -> 3
+            }
         }
+        return 9
     }
 
     private fun calculatePointsForMatch(match: Match): Int {

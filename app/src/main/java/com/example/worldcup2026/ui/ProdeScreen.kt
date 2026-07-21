@@ -31,32 +31,13 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
+fun ProdeScreen(viewModel: ProdeViewModel = viewModel(), onNavigateToSettings: () -> Unit = {}) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    val signInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        android.util.Log.d("ProdeSignIn", "Result code: ${result.resultCode}, data: ${result.data}")
-        val googleIdToken = authManager.handleSignInResult(result.data)
-        android.util.Log.d("ProdeSignIn", "googleIdToken: $googleIdToken")
-        if (googleIdToken != null) {
-            coroutineScope.launch {
-                val firebaseIdToken = authManager.getFirebaseIdToken(googleIdToken)
-                android.util.Log.d("ProdeSignIn", "firebaseIdToken: $firebaseIdToken")
-                if (firebaseIdToken != null) {
-                    viewModel.handleSignIn(firebaseIdToken)
-                } else {
-                    android.util.Log.e("ProdeSignIn", "firebaseIdToken es null")
-                }
-            }
-        } else {
-            android.util.Log.e("ProdeSignIn", "googleIdToken es null - revisar SHA1 en Firebase o Web Client ID")
-        }
-    }
+    // Google Sign-In movido a Ajustes para unificar la UX
 
     if (!isAuthenticated) {
         // Pantalla de Login
@@ -71,21 +52,11 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel()) {
                 
                 Button(
                     onClick = {
-                        try {
-                            android.util.Log.d("ProdeSignIn", "Lanzando Google Sign-In...")
-                            val client = authManager.getGoogleSignInClient()
-                            // Forzar re-login para obtener un token fresco
-                            client.signOut().addOnCompleteListener {
-                                val signInIntent = client.signInIntent
-                                signInLauncher.launch(signInIntent)
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("ProdeSignIn", "Error al lanzar sign-in", e)
-                        }
+                        onNavigateToSettings()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Iniciar sesión con Google", color = Color.White)
+                    Text("Ir a Ajustes para Iniciar Sesión", color = Color.White)
                 }
             }
         }
