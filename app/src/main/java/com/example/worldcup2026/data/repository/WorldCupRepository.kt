@@ -108,7 +108,21 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             val awayScore = baseMatch.awayScore ?: (if (baseMatch.status == "Finished") 0 else saved.awayScore)
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
-            val status = if (baseMatch.status != "Scheduled") baseMatch.status else saved.status
+            
+            var status = if (baseMatch.status != "Scheduled") baseMatch.status else saved.status
+            
+            // Forzar a LIVE si el partido estaba programado pero ya pasó su hora de inicio
+            if (status == "Scheduled") {
+                try {
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                    val matchDate = sdf.parse(baseMatch.date)
+                    if (matchDate != null && System.currentTimeMillis() >= matchDate.time) {
+                        status = "LIVE"
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
 
             val homePossession = baseMatch.homePossession ?: saved.homePossession
             val awayPossession = baseMatch.awayPossession ?: saved.awayPossession
@@ -170,7 +184,31 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 ))
             }
         } else {
-            targetList.add(baseMatch.copy(tournament_id = tournamentId))
+            val finalTournamentId = baseMatch.tournament_id ?: tournamentId
+            val newMatch = baseMatch.copy(tournament_id = finalTournamentId)
+            targetList.add(newMatch)
+            
+            // FIX: Debemos insertar en la base de datos local si no existía, para que el Prode y el SyncWorker puedan usarlo!
+            matchDao.insertMatch(MatchEntity(
+                id = newMatch.id,
+                tournamentId = finalTournamentId,
+                homeScore = newMatch.homeScore,
+                awayScore = newMatch.awayScore,
+                homePenalties = newMatch.homePenalties,
+                awayPenalties = newMatch.awayPenalties,
+                status = newMatch.status,
+                predictedWinner = null,
+                predictedHomeScore = null,
+                predictedAwayScore = null,
+                homePossession = newMatch.homePossession,
+                awayPossession = newMatch.awayPossession,
+                homeShots = newMatch.homeShots,
+                awayShots = newMatch.awayShots,
+                scorers = if (newMatch.scorers.isEmpty()) null else newMatch.scorers.joinToString("|"),
+                events = if (newMatch.events.isEmpty()) null else newMatch.events.joinToString("|"),
+                vipStats = newMatch.vipStats,
+                clock = newMatch.clock
+            ))
         }
     }
 
@@ -254,19 +292,39 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     suspend fun syncMatchesWithLiveJson(context: android.content.Context, tournamentId: Int): Boolean {
         try {
             val service = com.example.worldcup2026.data.api.NetworkModule.apiService
-            val matchesList = service.getLiveMatches(null)
+            val matchesList = service.getLiveMatches(tournamentId)
             
             val savedMatches = matchDao.getAllMatches().first()
             
             matchesList.forEach { liveMatch ->
                 val saved = savedMatches.find { it.id == liveMatch.matchId }
                 
+                var effectiveStatus = liveMatch.status ?: "Scheduled"
+                
+                // FORZAR ESTADO "LIVE" SI YA PASO LA HORA DE INICIO
+                val matchInfoForStatus = getCachedMatch(liveMatch.matchId, saved?.tournamentId ?: tournamentId)
+                if (effectiveStatus == "Scheduled" && matchInfoForStatus?.date != null) {
+                    try {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                        val matchDate = sdf.parse(matchInfoForStatus.date)
+                        if (matchDate != null) {
+                            val currentTime = System.currentTimeMillis()
+                            val matchTimeMs = matchDate.time
+                            if (currentTime >= matchTimeMs) {
+                                effectiveStatus = "LIVE"
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Ignore parsing errors
+                    }
+                }
+
                 // --- DETECCION DE INCIDENCIAS EN VIVO ---
                 if (saved != null) {
                     val matchInfo = getCachedMatch(liveMatch.matchId, saved.tournamentId)
                     val homeTeamName = matchInfo?.homeTeam?.name ?: "Local"
                     val awayTeamName = matchInfo?.awayTeam?.name ?: "Visitante"
-
+                    
                     val oldHome = saved.homeScore ?: 0
                     val newHome = liveMatch.homeScore ?: 0
                     val oldAway = saved.awayScore ?: 0
@@ -341,11 +399,11 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     }
 
                     // 3. Detección de fin de partido
-                    if (saved.status != "Finished" && liveMatch.status == "Finished") {
+                    if (saved.status != "Finished" && effectiveStatus == "Finished") {
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
-                            title = "⏱️ ¡Final del partido! ⏱️",
-                            message = "Terminó: $homeTeamName $newHome - $newAway $awayTeamName",
+                            title = "🏁 ¡Final del partido! 🏁",
+                            message = "$homeTeamName y $awayTeamName han terminado su encuentro.",
                             isGoal = false
                         )
                     }
@@ -371,7 +429,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     saved.awayScore != liveMatch.awayScore || 
                     saved.homePenalties != liveMatch.homePenalties ||
                     saved.awayPenalties != liveMatch.awayPenalties ||
-                    saved.status != liveMatch.status ||
+                    saved.status != effectiveStatus ||
                     saved.homePossession != liveMatch.homePossession ||
                     saved.vipStats != vipStatsStr ||
                     saved.scorers != scorersStr ||
@@ -386,7 +444,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         awayScore = liveMatch.awayScore,
                         homePenalties = liveMatch.homePenalties ?: saved?.homePenalties,
                         awayPenalties = liveMatch.awayPenalties ?: saved?.awayPenalties,
-                        status = liveMatch.status,
+                        status = effectiveStatus,
                         predictedWinner = saved?.predictedWinner,
                         predictedHomeScore = saved?.predictedHomeScore,
                         predictedAwayScore = saved?.predictedAwayScore,
