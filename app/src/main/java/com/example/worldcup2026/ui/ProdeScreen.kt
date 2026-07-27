@@ -253,6 +253,8 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     var showJoinDialog by remember { mutableStateOf(false) }
     var leagueNameInput by remember { mutableStateOf("") }
     var leagueCodeInput by remember { mutableStateOf("") }
+    var customPrizeInput by remember { mutableStateOf("") }
+    var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
     
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -272,7 +274,24 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = when(league.name) {
+                                        else -> "🏆 Liga Prode"
+                                    },
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                         Text("Código: ${league.code}", color = Color.Gray, fontSize = 14.sp)
                     }
                 }
@@ -283,28 +302,58 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text("Crear Nueva Liga", color = Color.White) },
+            title = { Text("Crear Nueva Liga de Prode", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
-                OutlinedTextField(
-                    value = leagueNameInput,
-                    onValueChange = { leagueNameInput = it },
-                    label = { Text("Nombre de la Liga", color = Color.Gray) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    singleLine = true
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = leagueNameInput,
+                        onValueChange = { leagueNameInput = it },
+                        label = { Text("Nombre de la Liga", color = Color.Gray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    OutlinedTextField(
+                        value = customPrizeInput,
+                        onValueChange = { customPrizeInput = it },
+                        label = { Text("🎁 Premio (ej. Un Asado / $10.000)", color = Color.Gray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Text("Modalidad de la Liga:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(
+                            selected = selectedMode == "FULL_TOURNAMENT",
+                            onClick = { selectedMode = "FULL_TOURNAMENT" },
+                            label = { Text("Torneo Completo", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = selectedMode == "SINGLE_MATCHDAY",
+                            onClick = { selectedMode = "SINGLE_MATCHDAY" },
+                            label = { Text("Fecha Única", fontSize = 11.sp) }
+                        )
+                    }
+                }
             },
             confirmButton = {
                 Button(onClick = {
                     if (leagueNameInput.isNotBlank()) {
                         viewModel.createLeague(leagueNameInput)
                         leagueNameInput = ""
+                        customPrizeInput = ""
                         showCreateDialog = false
                     }
                 }) {
-                    Text("Crear")
+                    Text("Crear Liga 🏆")
                 }
             },
             dismissButton = {

@@ -23,14 +23,27 @@ data class UserDto(
     val avatarUrl: String
 )
 
-data class CreateLeagueRequest(val name: String)
+data class CreateLeagueRequest(
+    val name: String,
+    val mode: String? = "FULL_TOURNAMENT",
+    val tournament_id: Int? = null,
+    val start_matchday: Int? = null,
+    val end_matchday: Int? = null,
+    val custom_prize: String? = null
+)
 data class JoinLeagueRequest(val code: String)
 
 data class LeagueDto(
     val id: String,
     val name: String,
     val creatorId: String,
-    val code: String
+    val code: String,
+    val mode: String? = "FULL_TOURNAMENT",
+    val tournament_id: Int? = null,
+    val start_matchday: Int? = null,
+    val end_matchday: Int? = null,
+    val custom_prize: String? = null,
+    val status: String? = "ACTIVE"
 )
 
 data class StandingDto(
@@ -45,7 +58,11 @@ data class SubmitPredictionRequest(
     val predictedHomeScore: Int,
     val predictedAwayScore: Int,
     val predictedHomePenalties: Int? = null,
-    val predictedAwayPenalties: Int? = null
+    val predictedAwayPenalties: Int? = null,
+    val isDoubleChance: Boolean? = false,
+    val secHomeScore: Int? = null,
+    val secAwayScore: Int? = null,
+    val isDoublePointsMultiplier: Boolean? = false
 )
 
 // --- API Service ---
