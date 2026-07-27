@@ -1,5 +1,10 @@
 package com.example.worldcup2026.ui
 
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -34,6 +39,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlinx.coroutines.launch
+
+fun isKnockoutMatch(match: Match): Boolean {
+    val tId = match.tournament_id ?: 1
+    val groupName = match.homeTeam.group
+    return (tId == 1 && match.id in 73..104) || (tId == 3 && groupName.equals("Eliminación", ignoreCase = true))
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -316,8 +327,26 @@ fun DayFilteredFixture(
     }
     
     var selectedDate by remember { mutableStateOf(initialDate) }
+    var searchQuery by remember { mutableStateOf("") }
+    var filterLiveOnly by remember { mutableStateOf(false) }
+
     val filteredMatches = matches
         .filter { (it.date ?: "").startsWith(selectedDate) && (if (isWorldCup) it.id <= 72 else true) }
+        .filter { match ->
+            val statusUpper = match.status.uppercase()
+            val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+            val matchesLive = if (filterLiveOnly) isLive else true
+            val matchesSearch = if (searchQuery.isNotBlank()) {
+                match.homeTeam.name.contains(searchQuery, ignoreCase = true) ||
+                match.awayTeam.name.contains(searchQuery, ignoreCase = true)
+            } else true
+            matchesLive && matchesSearch
+        }
+        .sortedWith(
+            compareByDescending<Match> { it.status != "Scheduled" }
+                .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
+        )
+        .distinctBy { "${it.homeTeam.name.lowercase().trim()}_vs_${it.awayTeam.name.lowercase().trim()}" }
         .sortedBy { it.date ?: "" }
 
     val listState = rememberLazyListState()
@@ -330,6 +359,51 @@ fun DayFilteredFixture(
     }
 
     Column {
+        // Barra de Búsqueda y Filtro En Vivo
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Buscar equipo...", fontSize = 12.sp, color = Color.White.copy(alpha = 0.5f)) },
+                modifier = Modifier.weight(1f).height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(18.dp)) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            FilterChip(
+                selected = filterLiveOnly,
+                onClick = { filterLiveOnly = !filterLiveOnly },
+                label = { Text("🔴 En Vivo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (filterLiveOnly) Color.White else Color.White.copy(alpha = 0.7f)) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFE53935),
+                    containerColor = Color.White.copy(alpha = 0.1f)
+                ),
+                border = null,
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
         LazyRow(
             state = listState,
             modifier = Modifier.padding(vertical = 12.dp),
@@ -417,7 +491,7 @@ fun GroupFilteredFixture(
 
 @Composable
 fun MatchCard(
-match: Match, 
+    match: Match, 
     onScoreChange: (Int, Int?, Int?) -> Unit, 
     onPenaltiesChange: (Int, Int?, Int?) -> Unit,
     onStatusChange: (Int, String) -> Unit,
@@ -427,12 +501,30 @@ match: Match,
     tournamentName: String? = null
 ) {
     var showPlayerHelp by remember { mutableStateOf(false) }
+    var isEditingProde by remember { mutableStateOf(false) }
+
+    val statusUpper = match.status.uppercase()
+    val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+    
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
-        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isLive) 2.dp else 0.5.dp,
+            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else Color.White.copy(alpha = 0.15f)
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -503,14 +595,11 @@ match: Match,
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if (match.id >= 73 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
-                    onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, it, match.awayScore) },
-                    enabled = match.status.uppercase() != "FINISHED"
+                    penalties = if (match.id >= 73 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val statusUpper = match.status.uppercase()
-                    val isLive = statusUpper == "LIVE" || statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" || statusUpper == "PAUSA" || statusUpper == "PAUSE"
+                    val isLiveLocal = statusUpper == "LIVE" || statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" || statusUpper == "PAUSA" || statusUpper == "PAUSE"
 
                     when {
                         statusUpper == "FINISHED" -> {
@@ -523,7 +612,7 @@ match: Match,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
                         }
-                        isLive -> {
+                        isLiveLocal -> {
                             Text(
                                 text = "EN VIVO",
                                 style = MaterialTheme.typography.labelSmall,
@@ -535,14 +624,15 @@ match: Match,
                         }
                         statusUpper == "SCHEDULED" -> {
                             val rawDate = match.date ?: ""
-                            val timeStr = when {
-                                rawDate.contains("T") -> rawDate.substringAfter("T").substringBeforeLast(":")
-                                rawDate.contains(" ") -> rawDate.substringAfter(" ").substringBeforeLast(":")
+                            val timePart = when {
+                                rawDate.contains("T") -> rawDate.substringAfter("T").take(5)
+                                rawDate.contains(" ") -> rawDate.substringAfter(" ").take(5)
                                 else -> ""
                             }
-                            if (timeStr.isNotEmpty() && timeStr != rawDate) {
+                            val formattedTime = if (timePart.contains(":") && timePart.length == 5) "$timePart hs" else timePart
+                            if (formattedTime.isNotEmpty()) {
                                 Text(
-                                    text = timeStr,
+                                    text = formattedTime,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.White.copy(alpha = 0.8f),
                                     fontWeight = FontWeight.Bold,
@@ -560,7 +650,7 @@ match: Match,
                         color = Color.White.copy(alpha = 0.2f)
                     )
 
-                    if (isLive) {
+                    if (isLiveLocal) {
                         val clockLower = match.clock?.lowercase() ?: ""
                         val isHalftime = statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" ||
                                 clockLower.contains("entretiempo") || clockLower.contains("halftime") || clockLower.contains("medio tiempo")
@@ -571,18 +661,18 @@ match: Match,
                         val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") || clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
                                 (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
 
-                        val clockClean = clockLower.replace("'", "").replace("+", " ")
+                        val clockClean = clockLower.replace("'", "").replace("+", " ").replace(":", " ")
                         val clockMin = clockClean.split(" ").firstOrNull()?.toIntOrNull()
-                        val isFirstHalf = clockMin != null && clockMin <= 45 && !isHalftime && !isWaterBreak
-                        val isSecondHalf = clockMin != null && clockMin in 46..90 && !isHalftime && !isWaterBreak
+                        val isFirstHalf = (clockMin != null && clockMin <= 45 && !isHalftime && !isWaterBreak) || clockLower.contains("1°") || clockLower.contains("1er") || clockLower.contains("primer") || clockLower.contains("1T")
+                        val isSecondHalf = (clockMin != null && clockMin in 46..90 && !isHalftime && !isWaterBreak) || clockLower.contains("2°") || clockLower.contains("2do") || clockLower.contains("segundo") || clockLower.contains("2T")
 
                         val labelText = when {
                             isPenalties -> "PENALES"
                             isExtraTime -> "ALARGUE"
                             isHalftime -> "ENTREETIEMPO"
                             isWaterBreak -> "PAUSA HIDRATACIÓN"
-                            isSecondHalf -> "2° TIEMPO"
-                            isFirstHalf -> "1° TIEMPO"
+                            isSecondHalf -> "2º TIEMPO"
+                            isFirstHalf -> "1º TIEMPO"
                             else -> "EN JUEGO"
                         }
                         val labelColor = when {
@@ -613,9 +703,7 @@ match: Match,
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if (match.id >= 73 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
-                    onScoreChange = { if (match.status.uppercase() != "FINISHED") onScoreChange(match.id, match.homeScore, it) },
-                    enabled = match.status.uppercase() != "FINISHED"
+                    penalties = if (isKnockoutMatch(match) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null
                 )
             }
  
@@ -691,161 +779,6 @@ match: Match,
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("VER ESTADÍSTICAS VIP", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            // SECCIÓN PRODE (Predicción)
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
-                    .padding(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("MI PRONÓSTICO (PRODE)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                if (match.status.uppercase() == "SCHEDULED") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        PredictionChip(label = "L", selected = match.predictedWinner == "L") {
-                            val nextWinner = if (match.predictedWinner == "L") null else "L"
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
-                        }
-                        PredictionChip(label = "E", selected = match.predictedWinner == "E") {
-                            val nextWinner = if (match.predictedWinner == "E") null else "E"
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
-                        }
-                        PredictionChip(label = "V", selected = match.predictedWinner == "V") {
-                            val nextWinner = if (match.predictedWinner == "V") null else "V"
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
-                        }
-                        
-                        IconButton(onClick = { showPlayerHelp = !showPlayerHelp }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Info, contentDescription = "Ayuda", tint = if (showPlayerHelp) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f))
-                        }
-
-                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))
-                        
-                        PredictionInput(
-                            value = match.predictedHomeScore, 
-                            onValueChange = { h -> 
-                                val a = if (h != null && match.predictedAwayScore == null) 0 else match.predictedAwayScore
-                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
-                            }
-                        )
-                        Text(" - ", fontWeight = FontWeight.Bold, color = Color.White)
-                        PredictionInput(
-                            value = match.predictedAwayScore, 
-                            onValueChange = { a -> 
-                                val h = if (a != null && match.predictedHomeScore == null) 0 else match.predictedHomeScore
-                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
-                            }
-                        )
-                    }
-                    
-                    if (showPlayerHelp) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
-                        AyudaJugadorView(match = match)
-                    }
-                } else {
-                    val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore) {
-                        if (match.predictedWinner == null && match.predictedHomeScore == null && match.predictedAwayScore == null) {
-                            0
-                        } else {
-                            val h = match.homeScore ?: 0
-                            val a = match.awayScore ?: 0
-                            
-                            val realWinner = when {
-                                match.id >= 73 && h == a -> {
-                                    val hp = match.homePenalties ?: 0
-                                    val ap = match.awayPenalties ?: 0
-                                    if (hp > ap) "L" else if (hp < ap) "V" else "E"
-                                }
-                                h > a -> "L"
-                                h < a -> "V"
-                                else -> "E"
-                            }
-                            
-                            val winnerPoints = if (match.predictedWinner == realWinner) 1 else 0
-                            val scorePoints = if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
-                                h == match.predictedHomeScore && a == match.predictedAwayScore) 2 else 0
-                            winnerPoints + scorePoints
-                        }
-                    }
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Ganador: ${match.predictedWinner ?: "-"} | Marcador: ${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (pointsData > 0) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                if (pointsData > 0) "+$pointsData PUNTOS" else "0 PUNTOS",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (pointsData > 0) Color(0xFF81C784) else Color.Red.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            val isDrawPrediction = match.predictedWinner == "E" || 
-                (match.predictedHomeScore != null && 
-                 match.predictedAwayScore != null && 
-                 match.predictedHomeScore == match.predictedAwayScore)
-
-            val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
-                isDrawPrediction && 
-                match.id >= 73
-
-            if (showPredictionPenalties) {
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("PRONÓSTICO TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PredictionInput(
-                        value = match.predictedHomePenalties,
-                        onValueChange = { hp ->
-                            onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, hp, match.predictedAwayPenalties)
-                        }
-                    )
-                    Text("-", fontWeight = FontWeight.Bold, color = Color.White)
-                    PredictionInput(
-                        value = match.predictedAwayPenalties,
-                        onValueChange = { ap ->
-                            onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, ap)
-                        }
-                    )
                 }
             }
 
@@ -986,6 +919,243 @@ match: Match,
                 }
             }
 
+            // SECCIÓN PRODE (Predicción)
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.05f))
+                    .padding(12.dp)
+            ) {
+                val matchHasStarted = match.status.uppercase() != "SCHEDULED"
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("MI PRONÓSTICO (PRODE)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                    }
+
+                    if (!matchHasStarted) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                                    modifier = Modifier.padding(end = 8.dp)
+                                ) {
+                                    Text(
+                                        "APUESTA DOBLE",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD700),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+
+                            if (!isEditingProde) {
+                                Button(
+                                    onClick = { isEditingProde = true },
+                                    modifier = Modifier.height(28.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
+                                ) {
+                                    Text("EDITAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            } else {
+                                Button(
+                                    onClick = { 
+                                        isEditingProde = false
+                                        onPredictionChange(
+                                            match.id,
+                                            match.predictedWinner,
+                                            match.predictedHomeScore,
+                                            match.predictedAwayScore,
+                                            match.predictedHomePenalties,
+                                            match.predictedAwayPenalties
+                                        )
+                                    },
+                                    modifier = Modifier.height(28.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                ) {
+                                    Text("GUARDAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                if (!matchHasStarted) {
+                    val currentPred = match.predictedWinner ?: ""
+                    val isLSelected = currentPred.split(",").contains("L")
+                    val isESelected = currentPred.split(",").contains("E")
+                    val isVSelected = currentPred.split(",").contains("V")
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        PredictionChip(label = "L", selected = isLSelected, enabled = isEditingProde) {
+                            val nextWinner = toggleWinnerChip(match.predictedWinner, "L")
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
+                        }
+                        PredictionChip(label = "E", selected = isESelected, enabled = isEditingProde) {
+                            val nextWinner = toggleWinnerChip(match.predictedWinner, "E")
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
+                        }
+                        PredictionChip(label = "V", selected = isVSelected, enabled = isEditingProde) {
+                            val nextWinner = toggleWinnerChip(match.predictedWinner, "V")
+                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
+                        }
+                        
+                        IconButton(onClick = { showPlayerHelp = !showPlayerHelp }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Info, contentDescription = "Ayuda", tint = if (showPlayerHelp) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f))
+                        }
+
+                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))
+                        
+                        PredictionInput(
+                            value = match.predictedHomeScore, 
+                            enabled = isEditingProde,
+                            onValueChange = { h -> 
+                                val a = if (h != null && match.predictedAwayScore == null) 0 else match.predictedAwayScore
+                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
+                            }
+                        )
+                        Text(" - ", fontWeight = FontWeight.Bold, color = Color.White)
+                        PredictionInput(
+                            value = match.predictedAwayScore, 
+                            enabled = isEditingProde,
+                            onValueChange = { a -> 
+                                val h = if (a != null && match.predictedHomeScore == null) 0 else match.predictedHomeScore
+                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
+                            }
+                        )
+                    }
+                    
+                    if (showPlayerHelp) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                        AyudaJugadorView(match = match)
+                    }
+                } else {
+                    val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore) {
+                        if (match.predictedWinner == null && match.predictedHomeScore == null && match.predictedAwayScore == null) {
+                            0
+                        } else {
+                            val h = match.homeScore ?: 0
+                            val a = match.awayScore ?: 0
+                            
+                            val realWinner = when {
+                                isKnockoutMatch(match) && h == a -> {
+                                    val hp = match.homePenalties ?: 0
+                                    val ap = match.awayPenalties ?: 0
+                                    if (hp > ap) "L" else if (hp < ap) "V" else "E"
+                                }
+                                h > a -> "L"
+                                h < a -> "V"
+                                else -> "E"
+                            }
+                            
+                            val isDouble = isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)
+                            val predictedSigns = (match.predictedWinner ?: "").split(",").map { it.trim() }.filter { it.isNotBlank() }.toMutableSet()
+                            if (match.predictedHomeScore != null && match.predictedAwayScore != null) {
+                                val scoreSign = when {
+                                    match.predictedHomeScore!! > match.predictedAwayScore!! -> "L"
+                                    match.predictedAwayScore!! > match.predictedHomeScore!! -> "V"
+                                    else -> "E"
+                                }
+                                predictedSigns.add(scoreSign)
+                            }
+
+                            val signPoints = if (predictedSigns.contains(realWinner)) {
+                                if (isDouble) 1 else 2
+                            } else 0
+
+                            val scorePoints = if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
+                                h == match.predictedHomeScore && a == match.predictedAwayScore) 3 else 0
+
+                            signPoints + scorePoints
+                        }
+                    }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Ganador: ${match.predictedWinner ?: "-"} | Marcador: ${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (pointsData > 0) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                if (pointsData > 0) "+$pointsData PUNTOS" else "0 PUNTOS",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (pointsData > 0) Color(0xFF81C784) else Color.Red.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            val isDrawPrediction = match.predictedWinner == "E" || 
+                (match.predictedHomeScore != null && 
+                 match.predictedAwayScore != null && 
+                 match.predictedHomeScore == match.predictedAwayScore)
+
+            val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
+                isDrawPrediction && 
+                match.id >= 73
+
+            if (showPredictionPenalties) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("PRONÓSTICO TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PredictionInput(
+                        value = match.predictedHomePenalties,
+                        enabled = isEditingProde,
+                        onValueChange = { hp ->
+                            onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, hp, match.predictedAwayPenalties)
+                        }
+                    )
+                    Text("-", fontWeight = FontWeight.Bold, color = Color.White)
+                    PredictionInput(
+                        value = match.predictedAwayPenalties,
+                        enabled = isEditingProde,
+                        onValueChange = { ap ->
+                            onPredictionChange(match.id, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, ap)
+                        }
+                    )
+                }
+            }
+
             // Referencia sutil del Estadio al final de la tarjeta
             val safeStadium = match.stadium ?: ""
             val safeCity = match.city ?: ""
@@ -1019,7 +1189,7 @@ fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
 }
 
 @Composable
-fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null, onScoreChange: (Int?) -> Unit, enabled: Boolean = true) {
+fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp)
@@ -1036,52 +1206,47 @@ fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null, onScoreChange
         Spacer(modifier = Modifier.height(6.dp))
         Text(team.name, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White)
         Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = { if ((score ?: 0) > 0) onScoreChange((score ?: 0) - 1) }, 
-                modifier = Modifier.size(24.dp),
-                enabled = enabled
-            ) {
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f))
-            }
-            val displayText = (score?.toString() ?: "0") + (if (penalties != null) " ($penalties)" else "")
-            Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
-            IconButton(
-                onClick = { onScoreChange((score ?: 0) + 1) }, 
-                modifier = Modifier.size(24.dp),
-                enabled = enabled
-            ) {
-                Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (enabled) Color.White else Color.White.copy(alpha = 0.3f))
-            }
-        }
+        val displayText = (score?.toString() ?: "0") + (if (penalties != null) " ($penalties)" else "")
+        Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
     }
 }
 
 @Composable
-fun PredictionInput(value: Int?, onValueChange: (Int?) -> Unit) {
+fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) -> Unit) {
     Surface(
         modifier = Modifier.size(width = 40.dp, height = 40.dp),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White.copy(alpha = 0.1f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+        color = Color.White.copy(alpha = if (enabled) 0.15f else 0.05f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) 0.3f else 0.05f))
     ) {
         Box(contentAlignment = Alignment.Center) {
             val textValue = value?.toString() ?: ""
+            if (textValue.isEmpty()) {
+                Text(
+                    text = "-",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.3f)
+                )
+            }
             androidx.compose.foundation.text.BasicTextField(
                 value = textValue,
-                onValueChange = {
-                    if (it.isEmpty()) onValueChange(null)
-                    else it.toIntOrNull()?.let { num -> if (num in 0..20) onValueChange(num) }
+                onValueChange = { 
+                    if (enabled) {
+                        if (it.isEmpty()) onValueChange(null) 
+                        else it.toIntOrNull()?.let { num -> if (num in 0..20) onValueChange(num) }
+                    }
                 },
                 textStyle = MaterialTheme.typography.titleMedium.copy(
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
                 ),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                 ),
                 singleLine = true,
+                enabled = enabled,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -1089,24 +1254,64 @@ fun PredictionInput(value: Int?, onValueChange: (Int?) -> Unit) {
 }
 
 @Composable
-fun PredictionChip(label: String, selected: Boolean, onClick: () -> Unit) {
+fun PredictionChip(label: String, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .size(32.dp)
-            .clickable { onClick() },
+            .clickable(enabled = enabled) { onClick() },
         shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f),
-        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)) else null
+        color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (enabled) 0.1f else 0.05f),
+        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) 0.2f else 0.05f)) else null
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 label,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = if (selected) Color.White else Color.White.copy(alpha = if (enabled) 1f else 0.4f)
             )
         }
     }
+}
+
+fun isDoubleBet(predictedWinner: String?, homeScore: Int?, awayScore: Int?): Boolean {
+    if (predictedWinner.isNullOrBlank()) {
+        return false
+    }
+    val signs = predictedWinner.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    
+    // Caso 1: Se eligieron 2 fichas (ej: L + V, L + E, E + V)
+    if (signs.size >= 2) return true
+    
+    // Caso 2: Se eligió 1 ficha pero el marcador exacto ingresado la contradice
+    if (signs.size == 1 && homeScore != null && awayScore != null) {
+        val winnerSign = signs.first()
+        val scoreOutcome = when {
+            homeScore > awayScore -> "L"
+            awayScore > homeScore -> "V"
+            else -> "E"
+        }
+        if (winnerSign != scoreOutcome) {
+            return true // Es una apuesta doble por contradicción (ej: Apuesta L pero marcador 0-1)
+        }
+    }
+    return false
+}
+
+fun toggleWinnerChip(currentWinner: String?, clickedOption: String): String? {
+    if (currentWinner == null || currentWinner.isBlank()) return clickedOption
+    val currentList = currentWinner.split(",").map { it.trim() }.filter { it.isNotBlank() }.toMutableList()
+    if (currentList.contains(clickedOption)) {
+        currentList.remove(clickedOption)
+    } else {
+        if (currentList.size < 2) {
+            currentList.add(clickedOption)
+        } else {
+            currentList.removeAt(0)
+            currentList.add(clickedOption)
+        }
+    }
+    return if (currentList.isEmpty()) null else currentList.sorted().joinToString(",")
 }
 
 data class ParsedScorer(
@@ -1144,10 +1349,6 @@ fun AyudaJugadorView(match: Match) {
     val homePos = remember(match.id) { homeRnd.nextInt(20) + 1 }
     val awayPos = remember(match.id) { awayRnd.nextInt(20) + 1 }
     
-    val homeProb = remember(match.id) { 30 + homeRnd.nextInt(40) }
-    val awayProb = remember(match.id) { 15 + awayRnd.nextInt(30) }
-    val drawProb = 100 - homeProb - awayProb
-    
     val getForm = { rnd: java.util.Random -> 
         List(5) { 
             val v = rnd.nextInt(3)
@@ -1157,6 +1358,15 @@ fun AyudaJugadorView(match: Match) {
     
     val homeForm = remember(match.id) { getForm(homeRnd) }
     val awayForm = remember(match.id) { getForm(awayRnd) }
+
+    val homeFormPts = homeForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) } + 2
+    val awayFormPts = awayForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) }
+    val drawWeight = 5
+
+    val totalPts = (homeFormPts + awayFormPts + drawWeight).toFloat()
+    val homeProb = ((homeFormPts / totalPts) * 100).toInt()
+    val awayProb = ((awayFormPts / totalPts) * 100).toInt()
+    val drawProb = 100 - homeProb - awayProb
     
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -1170,17 +1380,25 @@ fun AyudaJugadorView(match: Match) {
         ) {
             Text("Reglas del Prode", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("1 punto por acertar el ganador o empate", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            }
+            
+            Text("• Apuesta de Signo (L, E, V):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+            Text("   - Apuesta Simple: 2 PUNTOS al acertar (ej: L)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Apuesta Doble: 1 PUNTO al acertar (ej: L+E, máx 3 por fecha)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            
             Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("3 puntos por acertar el resultado exacto", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            }
+            Text("• Apuesta de Marcador Exacto:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+            Text("   - Resultado Exacto: 3 PUNTOS al acertar goles", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("• Totales Combinados por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+            Text("   - Simple acertado + Marcador exacto = 5 PUNTOS", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Doble acertado + Marcador exacto = 4 PUNTOS", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Apuestas independientes: Podés apostar solo a signo, solo a goles o a ambos.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("• Recompensas Sin Publicidad:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold)
+            Text("   - 22 MINUTOS sin publicidad por cada punto ganado.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - ¡1 SEMANA ENTERA sin publicidad por fecha perfecta! (todos los aciertos)", style = MaterialTheme.typography.bodySmall, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
         }
         
         Column {
@@ -1193,18 +1411,10 @@ fun AyudaJugadorView(match: Match) {
             }
             Spacer(modifier = Modifier.height(6.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("🟩 $homeProb% (L)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
-                Text("🟨 $drawProb% (E)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
-                Text("🟥 $awayProb% (V)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text("🟩 $homeProb% (${match.homeTeam.name})", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text("🟨 $drawProb% (Empate)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text("🟥 $awayProb% (${match.awayTeam.name})", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
             }
-        }
-        
-        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
-        
-        Column {
-            Text("Posición en la tabla", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(" (º) vs  (º)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
         }
         
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
@@ -1214,7 +1424,7 @@ fun AyudaJugadorView(match: Match) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(": ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(70.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("🏠 ${match.homeTeam.name}: ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(110.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     homeForm.forEach { 
                         FormCircle(result = it)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1224,13 +1434,21 @@ fun AyudaJugadorView(match: Match) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(": ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(70.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("✈️ ${match.awayTeam.name}: ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(110.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     awayForm.forEach { 
                         FormCircle(result = it)
                         Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
             }
+        }
+
+        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+
+        Column {
+            Text("Historial Directo (H2H entre sí)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Últimos cruces: 2 victorias ${match.homeTeam.name}, 1 empate, 2 victorias ${match.awayTeam.name}", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
         }
     }
 }

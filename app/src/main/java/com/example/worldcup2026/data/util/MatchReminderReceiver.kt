@@ -17,55 +17,67 @@ class MatchReminderReceiver : BroadcastReceiver() {
         val matchId = intent.getIntExtra("match_id", -1)
         val homeTeamName = intent.getStringExtra("home_team") ?: "Local"
         val awayTeamName = intent.getStringExtra("away_team") ?: "Visitante"
-        val isReminder = intent.getBooleanExtra("is_reminder", true) // true = 30min recordatorio, false = al arrancar
+        val isReminder = intent.getBooleanExtra("is_reminder", true)
+        val matchTimeMs = intent.getLongExtra("match_time", 0L)
 
         if (matchId == -1) return
 
         val database = WorldCupDatabase.getDatabase(context)
+        val pendingResult = goAsync()
         
         CoroutineScope(Dispatchers.IO).launch {
-            val matchEntity = database.matchDao().getMatchById(matchId)
-            val hasPrediction = matchEntity != null && 
-                    (matchEntity.predictedHomeScore != null || matchEntity.predictedWinner != null)
+            try {
+                val matchEntity = database.matchDao().getMatchById(matchId)
+                val hasPrediction = matchEntity != null && 
+                        (matchEntity.predictedHomeScore != null || matchEntity.predictedWinner != null)
 
-            val title: String
-            val text: String
-            val soundRes: Int
+                val currentTime = System.currentTimeMillis()
 
-            if (isReminder) {
-                // Alarma 30 minutos antes del partido
-                if (hasPrediction) {
-                    title = "⚽ ¡Todo Listo! ⚽"
-                    text = "Tu pronóstico ya está registrado. En 30 minutos arranca: $homeTeamName vs $awayTeamName."
-                    soundRes = com.example.worldcup2026.R.raw.silbato
+                val title: String
+                val text: String
+                val soundRes: Int
+
+                if (matchTimeMs > 0L && currentTime >= matchTimeMs) {
+                    title = "⚽ ¡Pitazo Inicial! ⚽"
+                    text = "Comienza el partido entre $homeTeamName y $awayTeamName. ¡Que ruede el balón!"
+                    soundRes = com.example.worldcup2026.R.raw.world_cup_whistle
+                } else if (isReminder) {
+                    if (hasPrediction) {
+                        title = "⏱ ¡Todo Listo! ⏱"
+                        text = "Tu pronóstico ya está registrado. En 30 minutos arranca: $homeTeamName vs $awayTeamName."
+                        soundRes = com.example.worldcup2026.R.raw.silbato
+                    } else {
+                        title = "⚠️ ¡COMPLETÁ TU PRODE! ⚠️"
+                        text = "En 30 minutos arranca $homeTeamName vs $awayTeamName y aún no cargaste tu pronóstico."
+                        soundRes = com.example.worldcup2026.R.raw.world_cup_whistle
+                    }
                 } else {
-                    title = "⚠️ ¡COMPLETÁ TU PRODE! ⚠️"
-                    text = "En 30 minutos arranca $homeTeamName vs $awayTeamName y aún no cargaste tu pronóstico."
+                    title = "⚽ ¡Pitazo Inicial! ⚽"
+                    text = "Comienza el partido entre $homeTeamName y $awayTeamName. ¡Que ruede el balón!"
                     soundRes = com.example.worldcup2026.R.raw.world_cup_whistle
                 }
-            } else {
-                // Alarma al arrancar el partido
-                title = "⏱️ ¡Pitazo Inicial! ⏱️"
-                text = "Comienza el partido entre $homeTeamName y $awayTeamName. ¡Que ruede el balón!"
-                soundRes = com.example.worldcup2026.R.raw.world_cup_whistle
+
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val soundUri = Uri.parse(
+                    android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                    "://" + context.packageName + "/" + soundRes
+                )
+
+                val builder = NotificationCompat.Builder(context, "world_cup_2026_notifications")
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setSound(soundUri)
+                    .setAutoCancel(true)
+
+                manager.notify(matchId * 10 + (if (isReminder) 1 else 2), builder.build())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                pendingResult.finish()
             }
-
-            // Enviar notificación
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val soundUri = Uri.parse(
-                android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + 
-                "://" + context.packageName + "/" + soundRes
-            )
-
-            val builder = NotificationCompat.Builder(context, "world_cup_2026_notifications")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(text)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setSound(soundUri)
-                .setAutoCancel(true)
-
-            manager.notify(matchId * 10 + (if (isReminder) 1 else 2), builder.build())
         }
     }
 }
+

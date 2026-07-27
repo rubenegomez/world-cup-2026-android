@@ -111,13 +111,16 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             
             var status = if (baseMatch.status != "Scheduled") baseMatch.status else saved.status
             
-            // Forzar a LIVE si el partido estaba programado pero ya pasó su hora de inicio
+            // Forzar a LIVE solo si el partido comenzó recientemente (hace menos de 2.5 horas)
             if (status == "Scheduled") {
                 try {
                     val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
                     val matchDate = sdf.parse(baseMatch.date)
-                    if (matchDate != null && System.currentTimeMillis() >= matchDate.time) {
-                        status = "LIVE"
+                    if (matchDate != null) {
+                        val diff = System.currentTimeMillis() - matchDate.time
+                        if (diff in 0..(2 * 3600 * 1000 + 30 * 60 * 1000)) {
+                            status = "LIVE"
+                        }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

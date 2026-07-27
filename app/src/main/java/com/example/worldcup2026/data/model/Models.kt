@@ -5,7 +5,7 @@ data class Team(
     val name: String,
     val flagUrl: String?,
     val group: String,
-    val players: List<Player> = emptyList()
+    val players: List<Player>? = emptyList()
 )
 
 data class Player(

@@ -4,10 +4,9 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import com.example.worldcup2026.data.model.Match
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
 object MatchReminderScheduler {
 
@@ -16,10 +15,12 @@ object MatchReminderScheduler {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val currentTime = System.currentTimeMillis()
 
-        matches.forEach { match ->
-            // Solo agendar para partidos programados
-            if (match.status != "Scheduled") return@forEach
+        // Filtrar solo los próximos 30 partidos agendados para no exceder el límite de AlarmManager (500)
+        val upcomingScheduledMatches = matches
+            .filter { it.status == "Scheduled" }
+            .take(30)
 
+        upcomingScheduledMatches.forEach { match ->
             try {
                 val matchDate = sdf.parse(match.date) ?: return@forEach
                 val matchTimeMs = matchDate.time
@@ -28,10 +29,12 @@ object MatchReminderScheduler {
                 val reminderTimeMs = matchTimeMs - (30 * 60 * 1000)
                 if (reminderTimeMs > currentTime) {
                     val intent = Intent(context, MatchReminderReceiver::class.java).apply {
+                        action = "worldcup.alarm.REMINDER_${match.id}"
                         putExtra("match_id", match.id)
                         putExtra("home_team", match.homeTeam?.name)
                         putExtra("away_team", match.awayTeam?.name)
                         putExtra("is_reminder", true)
+                        putExtra("match_time", matchTimeMs)
                     }
                     val pendingIntent = PendingIntent.getBroadcast(
                         context,
@@ -40,28 +43,26 @@ object MatchReminderScheduler {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
                         alarmManager.setExactAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             reminderTimeMs,
                             pendingIntent
                         )
-                    } else {
-                        alarmManager.setExact(
-                            AlarmManager.RTC_WAKEUP,
-                            reminderTimeMs,
-                            pendingIntent
-                        )
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
                     }
                 }
 
                 // 2. Alarma de comienzo (Exactamente a la hora de inicio)
                 if (matchTimeMs > currentTime) {
                     val intent = Intent(context, MatchReminderReceiver::class.java).apply {
+                        action = "worldcup.alarm.START_${match.id}"
                         putExtra("match_id", match.id)
                         putExtra("home_team", match.homeTeam?.name)
                         putExtra("away_team", match.awayTeam?.name)
                         putExtra("is_reminder", false)
+                        putExtra("match_time", matchTimeMs)
                     }
                     val pendingIntent = PendingIntent.getBroadcast(
                         context,
@@ -70,23 +71,21 @@ object MatchReminderScheduler {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    try {
                         alarmManager.setExactAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             matchTimeMs,
                             pendingIntent
                         )
-                    } else {
-                        alarmManager.setExact(
-                            AlarmManager.RTC_WAKEUP,
-                            matchTimeMs,
-                            pendingIntent
-                        )
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
                     }
                 }
-            } catch (e: Exception) {
+
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
         }
     }
 }
+

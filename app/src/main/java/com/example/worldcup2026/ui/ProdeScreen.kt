@@ -31,7 +31,11 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProdeScreen(viewModel: ProdeViewModel = viewModel(), onNavigateToSettings: () -> Unit = {}) {
+fun ProdeScreen(
+    viewModel: ProdeViewModel = viewModel(),
+    worldCupViewModel: WorldCupViewModel? = null,
+    onNavigateToSettings: () -> Unit = {}
+) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
@@ -75,6 +79,54 @@ fun ProdeScreen(viewModel: ProdeViewModel = viewModel(), onNavigateToSettings: (
             val currentUser by viewModel.currentUser.collectAsState()
             
             Column(modifier = Modifier.fillMaxSize()) {
+                
+                // Banner de Recompensas Pendientes
+                if (worldCupViewModel != null) {
+                    val pendingRounds by worldCupViewModel.pendingClaimableRounds
+                    if (pendingRounds.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .clickable {
+                                    pendingRounds.forEach { roundId ->
+                                        worldCupViewModel.claimReward(roundId)
+                                    }
+                                },
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE5B842)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "¡Tienes recompensas pendientes!",
+                                        color = Color(0xFF4E360F),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                    Text(
+                                        text = "Toca aquí para reclamarlas",
+                                        color = Color(0xFF4E360F).copy(alpha = 0.8f),
+                                        fontSize = 14.sp
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Reclamar",
+                                    tint = Color(0xFF4E360F),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Cabecera de Perfil del Usuario Logueado
                 currentUser?.let { user ->
                     Card(

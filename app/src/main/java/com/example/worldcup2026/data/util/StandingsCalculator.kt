@@ -17,7 +17,7 @@ data class TeamStats(
 
 object StandingsCalculator {
     fun calculateStandings(groupTeams: List<Team>, allMatches: List<Match>, isWorldCup: Boolean = true): List<TeamStats> {
-        return groupTeams.map { team ->
+        return groupTeams.filterNotNull().map { team ->
             calculateTeamStats(team, allMatches, isWorldCup)
         }.sortedWith(
             compareByDescending<TeamStats> { it.pts }
@@ -42,13 +42,16 @@ object StandingsCalculator {
         }
 
         groupMatches.forEach { match ->
-            if (match.homeTeam.id == team.id || match.awayTeam.id == team.id) {
+            if (match.status.uppercase() == "SCHEDULED") return@forEach
+            val homeId = match.homeTeam?.id
+            val awayId = match.awayTeam?.id
+            if (homeId == team.id || awayId == team.id) {
                 val hScore = match.homeScore
                 val aScore = match.awayScore
                 
                 if (hScore != null && aScore != null) {
                     pj++
-                    val (teamScore, opponentScore) = if (match.homeTeam.id == team.id) hScore to aScore else aScore to hScore
+                    val (teamScore, opponentScore) = if (homeId == team.id) hScore to aScore else aScore to hScore
                     
                     gf += teamScore
                     ga += opponentScore

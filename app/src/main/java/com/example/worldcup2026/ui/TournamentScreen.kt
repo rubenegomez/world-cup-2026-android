@@ -49,16 +49,19 @@ data class TournamentItem(
 
 val internacionales = listOf(
     TournamentItem(1, "Campeonato Mundial", "Internacional", active = true),
-    TournamentItem(2, "Torneos Regionales", "Internacional", active = false),
-    TournamentItem(3, "Copa Libertadores", "Internacional", active = true),
-    TournamentItem(4, "CONMEBOL Sudamericana", "Internacional", active = false)
+    TournamentItem(2, "Torneos Regionales", "Internacional", active = true),
+    TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = true),
+    TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true)
 )
 
 val nacionales = listOf(
     TournamentItem(5, "Liga Profesional", "Nacional", active = true),
     TournamentItem(6, "Copa Argentina", "Nacional", active = true),
-    TournamentItem(7, "Supercopa Argentina", "Nacional", active = false),
-    TournamentItem(8, "Primera Nacional", "Nacional", active = true)
+    TournamentItem(7, "Supercopa Argentina", "Nacional", active = true),
+    TournamentItem(8, "Primera Nacional", "Nacional", active = true),
+    TournamentItem(9, "Primera B Metropolitana", "Nacional", active = true),
+    TournamentItem(10,"Primera C Metropolitana", "Nacional", active = true),
+    TournamentItem(11,"Primera D Metropolitana", "Nacional", active = true)
 )
 
 @Composable
@@ -153,13 +156,18 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
             // Icono de perfil que abre Ajustes (Muestra foto real de Google/Firebase si existe)
             val currentUser = remember { FirebaseAuth.getInstance().currentUser }
             val photoUrl = currentUser?.photoUrl?.toString()
+            val isVip by viewModel.isVip
 
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(if (isVip) 48.dp else 42.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE5B842))
-                    .border(1.5.dp, Color(0xFFFFF0B3), CircleShape)
+                    .background(if (isVip) Color(0xFFFFD700) else Color(0xFFE5B842))
+                    .border(
+                        width = if (isVip) 3.dp else 1.5.dp, 
+                        color = if (isVip) Color(0xFFFFF0B3) else Color(0xFFFFF0B3), 
+                        shape = CircleShape
+                    )
                     .clickable { showSettingsDialog = true },
                 contentAlignment = Alignment.Center
             ) {

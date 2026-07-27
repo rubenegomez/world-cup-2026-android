@@ -1,6 +1,7 @@
 package com.example.worldcup2026.ui
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -83,6 +84,7 @@ fun CalendarScreen(
             when (mode) {
                 CalendarViewMode.DAY -> DaySelector(
                     selectedDate = selectedDate,
+                    globalMatches = matches,
                     onDateChange = { selectedDate = it },
                     onNavigateToMatches = { onNavigateToMatches(selectedDate) }
                 )
@@ -208,8 +210,28 @@ fun CalendarHeader(
 }
 
 @Composable
-fun DaySelector(selectedDate: LocalDate, onDateChange: (LocalDate) -> Unit, onNavigateToMatches: () -> Unit) {
+fun DaySelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChange: (LocalDate) -> Unit, onNavigateToMatches: () -> Unit) {
     val dayOfWeek = selectedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale("es", "ES")).replaceFirstChar { it.uppercase() }
+    
+    val dateStr = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date?.startsWith(dateStr) == true } }
+    val hasLiveMatch = remember(globalMatches, dateStr) { 
+        globalMatches.any { 
+            it.date?.startsWith(dateStr) == true && 
+            it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") 
+        } 
+    }
+
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
     
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -245,6 +267,24 @@ fun DaySelector(selectedDate: LocalDate, onDateChange: (LocalDate) -> Unit, onNa
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                if (hasMatch) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(if (hasLiveMatch) Color.Red.copy(alpha = pulseAlpha) else MaterialTheme.colorScheme.tertiary)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (hasLiveMatch) "¡En vivo!" else "Hay partidos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (hasLiveMatch) Color.Red.copy(alpha = pulseAlpha) else MaterialTheme.colorScheme.tertiary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
 
             IconButton(onClick = { onDateChange(selectedDate.plusDays(1)) }) {
@@ -270,6 +310,17 @@ fun WeekSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChan
     val startOfWeek = selectedDate.minusDays((selectedDate.dayOfWeek.value - 1).toLong())
     val weekDays = (0..6).map { startOfWeek.plusDays(it.toLong()) }
 
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
@@ -280,6 +331,12 @@ fun WeekSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChan
             
             val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date?.startsWith(dateStr) == true } }
+            val hasLiveMatch = remember(globalMatches, dateStr) { 
+                globalMatches.any { 
+                    it.date?.startsWith(dateStr) == true && 
+                    it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") 
+                } 
+            }
             
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -306,7 +363,13 @@ fun WeekSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChan
                     modifier = Modifier
                         .size(4.dp)
                         .clip(CircleShape)
-                        .background(if (hasMatch) (if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.tertiary) else Color.Transparent)
+                        .background(
+                            when {
+                                hasLiveMatch -> Color.Red.copy(alpha = pulseAlpha)
+                                hasMatch -> if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.tertiary
+                                else -> Color.Transparent
+                            }
+                        )
                 )
             }
         }
@@ -320,6 +383,17 @@ fun MonthSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateCha
     val startingDayOfWeek = firstDayOfMonth.dayOfWeek.value % 7 
     
     val days = (1..daysInMonth).map { firstDayOfMonth.withDayOfMonth(it) }
+
+    val infiniteTransition = rememberInfiniteTransition()
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
     
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
@@ -346,6 +420,12 @@ fun MonthSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateCha
             val isSelected = date == selectedDate
             val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date?.startsWith(dateStr) == true } }
+            val hasLiveMatch = remember(globalMatches, dateStr) { 
+                globalMatches.any { 
+                    it.date?.startsWith(dateStr) == true && 
+                    it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") 
+                } 
+            }
             
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -356,8 +436,12 @@ fun MonthSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateCha
                     .clip(CircleShape)
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .border(
-                        width = if (hasMatch && !isSelected) 1.5.dp else 0.dp,
-                        color = if (hasMatch && !isSelected) MaterialTheme.colorScheme.tertiary else Color.Transparent,
+                        width = if (hasMatch && !isSelected || hasLiveMatch) 1.5.dp else 0.dp,
+                        color = when {
+                            hasLiveMatch -> Color(0xFF4CAF50).copy(alpha = pulseAlpha)
+                            hasMatch && !isSelected -> Color(0xFF4CAF50).copy(alpha = 0.3f)
+                            else -> Color.Transparent
+                        },
                         shape = CircleShape
                     )
                     .clickable { onDateChange(date) }

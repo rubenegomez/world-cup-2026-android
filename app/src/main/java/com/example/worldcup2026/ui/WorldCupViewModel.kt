@@ -33,6 +33,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private val _adFreeUntil = mutableStateOf(0L)
     val adFreeUntil: State<Long> = _adFreeUntil
+    
+    private val _isVip = mutableStateOf(false)
+    val isVip: State<Boolean> = _isVip
+
+    private val _pendingClaimableRounds = mutableStateOf<List<Int>>(emptyList())
+    val pendingClaimableRounds: State<List<Int>> = _pendingClaimableRounds
 
     // Estado para registrar torneos en vivo (ID del torneo -> si tiene partidos en vivo)
     private val _liveTournaments = mutableStateOf<Map<Int, Boolean>>(emptyMap())
@@ -42,6 +48,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
     val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
     
+    private val _celebrationMatch = mutableStateOf<Match?>(null)
+    val celebrationMatch: State<Match?> = _celebrationMatch
+    
     private var autoSyncJob: kotlinx.coroutines.Job? = null
 
     init {
@@ -49,8 +58,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         repository = WorldCupRepository(database.matchDao())
         val prefs = application.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
+        _isVip.value = prefs.getBoolean("is_vip_status", false)
         loadData()
         checkPendingRewardDialog()
+        checkClaimableRounds()
         startLiveTournamentsChecker()
     }
 
@@ -122,13 +133,13 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun getChampion(matches: List<Match>): Team? {
-        // Prevent local test data from triggering the World Cup champion celebration,
-        // since the actual tournament hasn't happened yet.
-        if (com.example.worldcup2026.data.util.TournamentConfig.IS_WORLD_CUP) return null
+        val currentT = currentTournamentId.value
+        // El festejo de Campeón a pantalla completa es EXCLUSIVO para la Final del Mundial o Libertadores
+        if (currentT != 1 && currentT != 2) return null
 
         val finalRound = com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.find { it.name.equals("FINAL", ignoreCase = true) }
-        val finalMatchId = finalRound?.endId ?: 131
-        val finalMatch = matches.find { it.id == finalMatchId }
+        val finalMatchId = finalRound?.endId ?: return null
+        val finalMatch = matches.find { it.id == finalMatchId && it.tournament_id == currentT }
         if (finalMatch == null || finalMatch.status != "Finished") return null
         val h = finalMatch.homeScore ?: 0
         val a = finalMatch.awayScore ?: 0
@@ -237,10 +248,21 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             else -> "E"
         }
         var points = 0
-        if (match.predictedWinner == realWinner) points += 1
+        val predW = match.predictedWinner ?: ""
+        if (predW.isNotEmpty()) {
+            if (predW.contains(",")) {
+                val choices = predW.split(",")
+                if (choices.contains(realWinner)) {
+                    points += 1 // 1 punto por acierto en apuesta doble
+                }
+            } else if (predW == realWinner) {
+                points += 2 // 2 puntos por acierto en apuesta simple
+            }
+        }
+
         if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
             match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) {
-            points += 2
+            points += 3 // 3 puntos por resultado de marcador exacto
         }
         return points
     }
@@ -248,13 +270,19 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private fun checkRoundRewards(matches: List<Match>) {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         val matchesByRound = matches.groupBy { getMatchRound(it.id) }
-        var adFreeTimeToAdd = 0L
         val editor = prefs.edit()
 
+        var hasChanges = false
         for (round in 1..8) {
             val roundMatches = matchesByRound[round] ?: continue
-            val key = "round_rewarded_$round"
-            if (prefs.getBoolean(key, false)) continue
+            val keyRewarded = "round_rewarded_$round"
+            val keyReady = "round_ready_to_claim_$round"
+            
+            // Ya est recompensado (reclamado)
+            if (prefs.getBoolean(keyRewarded, false)) continue
+            
+            // Ya est listo para reclamar (pero no lo reclam an)
+            if (prefs.getBoolean(keyReady, false)) continue
 
             val allFinished = roundMatches.all { it.status == "Finished" }
             if (allFinished && roundMatches.isNotEmpty()) {
@@ -263,24 +291,62 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     roundPoints += calculatePointsForMatch(match)
                 }
                 
-                // Premiar: 12 horas por punto
-                if (roundPoints > 0) {
-                    adFreeTimeToAdd += roundPoints * 12 * 60 * 60 * 1000L
-                }
-                editor.putBoolean(key, true)
-                editor.putBoolean("round_reward_shown_$round", false)
+                editor.putBoolean(keyReady, true)
                 editor.putInt("round_points_$round", roundPoints)
+                hasChanges = true
             }
         }
+        
+        if (hasChanges) {
+            editor.apply()
+            checkClaimableRounds()
+        }
+    }
 
+    private fun checkClaimableRounds() {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val claimables = mutableListOf<Int>()
+        for (round in 1..8) {
+            if (prefs.getBoolean("round_ready_to_claim_$round", false) && !prefs.getBoolean("round_rewarded_$round", false)) {
+                claimables.add(round)
+            }
+        }
+        _pendingClaimableRounds.value = claimables
+    }
+    
+    fun claimReward(round: Int) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val points = prefs.getInt("round_points_$round", 0)
+        val maxPossible = prefs.getInt("round_max_points_$round", 0)
+        
+        val editor = prefs.edit()
+        var adFreeTimeToAdd = 0L
+        if (maxPossible > 0 && points >= maxPossible) {
+            adFreeTimeToAdd = 7 * 24 * 60 * 60 * 1000L // 1 semana (7 días) sin publicidad por fecha perfecta
+        } else if (points > 0) {
+            adFreeTimeToAdd = points * 22 * 60 * 1000L // 22 minutos sin publicidad por cada punto obtenido
+        }
+        
+        editor.putBoolean("round_rewarded_$round", true)
+        editor.putBoolean("round_reward_shown_$round", false)
+        
         if (adFreeTimeToAdd > 0L) {
             val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
             val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
             editor.putLong("ad_free_until", baseTime + adFreeTimeToAdd)
         }
         editor.apply()
+        
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
+        checkClaimableRounds()
         checkPendingRewardDialog()
+    }
+    
+    fun toggleVipStatus() {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val newVipStatus = !_isVip.value
+        prefs.edit().putBoolean("is_vip_status", newVipStatus).apply()
+        _isVip.value = newVipStatus
     }
 
     private fun checkPendingRewardDialog() {
@@ -363,31 +429,77 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             loadData()
         }
     }
+    
+    fun triggerCelebration(matchId: Int, fallbackMatch: Match? = null) {
+        viewModelScope.launch {
+            val currentState = _uiState.value as? WorldCupUiState.Success
+            val currentMatches = currentState?.matches ?: emptyList()
+            var match = currentMatches.find { it.id == matchId }
+            if (match == null) {
+                val global = repository.getAllMatchesGlobal()
+                match = global.find { it.id == matchId }
+            }
+            if (match == null) {
+                match = fallbackMatch
+            }
+            if (match != null) {
+                _celebrationMatch.value = match
+            }
+        }
+    }
+    
+    fun dismissCelebration() {
+        _celebrationMatch.value = null
+    }
 
     private fun groupMatchesPlusKnockout(all: List<Match>, knockout: List<Match>, tournamentId: Int): List<Match> {
-        return if (tournamentId == 1) {
+        val combined = if (tournamentId == 1) {
             val nonWorldCupKnockouts = all.filter { it.tournament_id != 1 || it.id <= 72 }
             nonWorldCupKnockouts + knockout
         } else {
             all
         }
+        return combined.distinctBy { it.id }
     }
 
     private fun startAutoSync(matches: List<Match>) {
         autoSyncJob?.cancel()
         val hasLiveMatches = matches.any { it.status.equals("LIVE", ignoreCase = true) }
-        if (hasLiveMatches) {
+        val hasUnfinishedMatches = matches.any { !it.status.equals("Finished", ignoreCase = true) }
+        
+        if (hasUnfinishedMatches) {
             autoSyncJob = viewModelScope.launch {
                 while (true) {
-                    delay(60000) // Cada 60 segundos
+                    // Poll cada 15 segundos si hay en vivo, o cada 2 minutos si no
+                    delay(if (hasLiveMatches) 15000L else 120000L) 
                     try {
+                        val oldList = (_uiState.value as? WorldCupUiState.Success)?.matches ?: emptyList()
                         val success = repository.syncMatchesWithLiveJson(getApplication(), currentTournamentId.value)
                         _isServerConnected.value = success
                         if (success) {
-                            val updatedMatches = repository.getMatches(currentTournamentId.value)
-                            val finalMatches = KnockoutCalculator.calculateKnockoutMatches(updatedMatches, currentTournamentId.value)
-                            val allMatches = groupMatchesPlusKnockout(updatedMatches, finalMatches, currentTournamentId.value)
+                            val globalMatches = repository.getAllMatchesGlobal()
+                            val worldCupMatches = globalMatches.filter { it.tournament_id == currentTournamentId.value }
+                            val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
+                            val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
                             _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                            
+                            // Detectar automáticamente goles o final de partido para disparar los festejos
+                            for (newM in allMatches) {
+                                val oldM = oldList.find { it.id == newM.id } ?: continue
+                                val oldH = oldM.homeScore ?: 0
+                                val oldA = oldM.awayScore ?: 0
+                                val newH = newM.homeScore ?: 0
+                                val newA = newM.awayScore ?: 0
+                                val goalScored = newH > oldH || newA > oldA
+                                val matchJustFinished = oldM.status != "Finished" && newM.status == "Finished"
+                                if (goalScored || matchJustFinished) {
+                                    triggerCelebration(newM.id)
+                                }
+                            }
+
+                            // Re-evaluar intervalo
+                            startAutoSync(allMatches)
+                            break
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

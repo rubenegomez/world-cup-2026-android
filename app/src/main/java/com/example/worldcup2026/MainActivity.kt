@@ -11,6 +11,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.example.worldcup2026.ui.theme.WorldCup2026Theme
 import com.example.worldcup2026.ui.MainScreen
 import com.example.worldcup2026.data.RemoteConfigManager
+import com.google.firebase.messaging.FirebaseMessaging
+import android.util.Log
 
 import android.os.Build
 import android.Manifest
@@ -42,13 +44,30 @@ class MainActivity : ComponentActivity() {
         // Inicializamos Remote Config para IDs dinámicos
         RemoteConfigManager.init()
         
+        // Firebase Cloud Messaging: Suscribirse a goles/eventos
+        FirebaseMessaging.getInstance().subscribeToTopic("live_matches_updates")
+            .addOnCompleteListener { task ->
+                var msg = "Subscribed to live_matches_updates"
+                if (!task.isSuccessful) {
+                    msg = "Subscribe failed"
+                }
+                Log.d("FCM", msg)
+            }
+        
+        FirebaseMessaging.getInstance().subscribeToTopic("upcoming_matches_30m")
+            .addOnCompleteListener { task ->
+                Log.d("FCM", "Subscribed to upcoming_matches_30m: ${task.isSuccessful}")
+            }
+            
+        val navMatchId = intent.getStringExtra("nav_match_id")
+        
         setContent {
             WorldCup2026Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen()
+                    MainScreen(initialMatchId = navMatchId)
                 }
             }
         }

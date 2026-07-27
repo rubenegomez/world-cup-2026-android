@@ -8,12 +8,14 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -900,46 +902,16 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                     }
                 }
 
-                // Goleadores
-                if (generatedScorers.isNotEmpty()) {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "GOLEADORES",
-                            fontWeight = FontWeight.Black,
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontSize = 10.sp,
-                            letterSpacing = 0.5.sp
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f))
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                generatedScorers.forEach { scorer ->
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = scorer,
-                                            fontSize = 12.sp,
-                                            color = Color.White.copy(alpha = 0.9f)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                // Timeline Vertical de Incidencias (Detalle del Partido)
+                item {
+                    MatchTimelineView(match = match)
                 }
 
                 // Ficha Técnica (Estadio, Árbitro, etc.)
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "DETALLE DEL ENCUENTRO",
+                        text = "FICHA TÉCNICA DEL ENCUENTRO",
                         fontWeight = FontWeight.Black,
                         color = Color.White.copy(alpha = 0.5f),
                         fontSize = 10.sp,
@@ -960,45 +932,27 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                             val city = match.city ?: ""
                             val venue = if (city.isNotEmpty()) "$stadium, $city" else stadium
 
+                            val tourneyName = when (match.tournament_id) {
+                                1 -> "Mundial 2026"
+                                5 -> "Liga Profesional Argentina"
+                                3 -> "Copa Libertadores"
+                                4 -> "Copa Sudamericana"
+                                6 -> "Copa Argentina"
+                                8 -> "Primera Nacional Argentina"
+                                9 -> "Primera B Metropolitana"
+                                10 -> "Primera C"
+                                else -> "Liga Profesional Argentina"
+                            }
+
                             InfoRow("📅 Saque central", displayDate)
                             InfoRow("🏟️ Estadio", venue)
-                            InfoRow("🏆 Campeonato", "World Cup 2026")
+                            InfoRow("🏆 Campeonato", tourneyName)
                         }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // BOTONES DE ACCIÓN (INCIDENCIAS Y ENTENDIDO)
-            var showEventsDialog by remember { mutableStateOf(false) }
-            
-            Button(
-                onClick = { showEventsDialog = true },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                Icon(
-                    Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    "VER INCIDENCIAS EN VIVO",
-                    color = Color.Black,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 13.sp
-                )
-            }
-            
-            if (showEventsDialog) {
-                VipEventsDialog(match = match, onDismiss = { showEventsDialog = false })
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = onDismiss,
@@ -1015,6 +969,169 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
             }
             
             Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+fun MatchTimelineView(match: Match) {
+    val eventsList = remember(match.events, match.scorers) {
+        val list = mutableListOf<ParsedEvent>()
+        if (match.events.isNotEmpty()) {
+            val filtered = match.events.filter { 
+                !it.contains("tanda de penales", ignoreCase = true) && !it.contains("[Penales]", ignoreCase = true) 
+            }
+            filtered.forEach { ev ->
+                list.add(parseEventString(ev, match.homeTeam.name))
+            }
+        } else if (match.scorers.isNotEmpty()) {
+            match.scorers.forEach { sc ->
+                val ps = parseScorerString(sc, match.homeTeam.name)
+                val min = sc.substringAfter("'").substringBefore("'").takeIf { it.length <= 4 } ?: ""
+                list.add(ParsedEvent("⚽", min, ps.team, ps.detail, ps.isHome))
+            }
+        }
+        list
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = "DETALLE DEL PARTIDO",
+            fontWeight = FontWeight.Black,
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 10.sp,
+            letterSpacing = 0.5.sp,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.02f))
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (eventsList.isEmpty()) {
+                    Text(
+                        "Sin incidencias registradas para este encuentro.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                } else {
+                    eventsList.forEach { event ->
+                        TimelineEventRow(event = event)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                // Bottom Stopwatch Icon
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.08f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "⏱️",
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TimelineEventRow(event: ParsedEvent) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left Column (Home Team Event)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            if (event.isHome) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = event.detail,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.End
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (event.emoji.isNotEmpty()) event.emoji else "⚽",
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+
+        // Center Column (Vertical Line + Minute)
+        Column(
+            modifier = Modifier.width(50.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(2.dp)
+                    .height(8.dp)
+                    .background(Color.White.copy(alpha = 0.2f))
+            )
+            Text(
+                text = if (event.minute.isNotEmpty()) "${event.minute}'" else "•",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+            Box(
+                modifier = Modifier
+                    .width(2.dp)
+                    .height(8.dp)
+                    .background(Color.White.copy(alpha = 0.2f))
+            )
+        }
+
+        // Right Column (Away Team Event)
+        Box(
+            modifier = Modifier.weight(1f),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            if (!event.isHome) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Text(
+                        text = if (event.emoji.isNotEmpty()) event.emoji else "⚽",
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = event.detail,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Start
+                    )
+                }
+            }
         }
     }
 }
@@ -1036,7 +1153,7 @@ fun parseEventString(eventStr: String, homeTeamName: String): ParsedEvent {
         val startBracket = eventStr.indexOf('[')
         val endBracket = eventStr.indexOf(']')
         val minute = if (startBracket != -1 && endBracket != -1) {
-            eventStr.substring(startBracket + 1, endBracket)
+            eventStr.substring(startBracket + 1, endBracket).replace("'", "").replace("\"", "").trim()
         } else ""
         
         val firstColon = eventStr.indexOf(':', endBracket.coerceAtLeast(0))

@@ -57,7 +57,7 @@ fun PlayerListScreen(team: Team, onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(team.players) { player ->
+            items(team.players ?: emptyList()) { player ->
                 PlayerCard(player)
             }
         }

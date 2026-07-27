@@ -52,7 +52,7 @@ fun SettingsContainer(viewModel: WorldCupViewModel) {
             if (showTeamsList) {
                 TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
             } else {
-                SettingsMenuScreen(onShowTeamsList = { showTeamsList = true })
+                SettingsMenuScreen(onShowTeamsList = { showTeamsList = true }, worldCupViewModel = viewModel)
             }
         }
     }
@@ -99,7 +99,7 @@ fun SettingsDialog(onDismiss: () -> Unit, viewModel: WorldCupViewModel) {
                 if (showTeamsList) {
                     TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
                 } else {
-                    SettingsMenuScreen(onShowTeamsList = { showTeamsList = true })
+                    SettingsMenuScreen(onShowTeamsList = { showTeamsList = true }, worldCupViewModel = viewModel)
                 }
             }
         }
@@ -109,7 +109,8 @@ fun SettingsDialog(onDismiss: () -> Unit, viewModel: WorldCupViewModel) {
 @Composable
 fun SettingsMenuScreen(
     onShowTeamsList: () -> Unit,
-    viewModel: ProdeViewModel = viewModel()
+    viewModel: ProdeViewModel = viewModel(),
+    worldCupViewModel: WorldCupViewModel
 ) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val context = LocalContext.current
@@ -174,12 +175,73 @@ fun SettingsMenuScreen(
         }
         item {
             SettingSection(title = "Permisos") {
+                val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
+                var showNotifSettings by remember { mutableStateOf(false) }
+
                 SettingItem(
                     icon = Icons.Default.Notifications,
                     title = "Notificaciones",
-                    subtitle = "Recibe alertas de partidos en vivo",
-                    onClick = { /* TODO */ }
+                    subtitle = "Configurar alertas en vivo",
+                    onClick = { showNotifSettings = true }
                 )
+                
+                if (showNotifSettings) {
+                    var receiveAll by remember { mutableStateOf(sharedPrefs.getBoolean("notif_all", true)) }
+                    var receiveGoals by remember { mutableStateOf(sharedPrefs.getBoolean("notif_goals", true)) }
+                    var receiveStartEnd by remember { mutableStateOf(sharedPrefs.getBoolean("notif_start_end", true)) }
+
+                    AlertDialog(
+                        onDismissRequest = { showNotifSettings = false },
+                        title = { Text("Configurar Notificaciones") },
+                        text = {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable {
+                                        receiveAll = !receiveAll
+                                        sharedPrefs.edit().putBoolean("notif_all", receiveAll).apply()
+                                    }.padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Switch(checked = receiveAll, onCheckedChange = null)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Recibir todas las notificaciones")
+                                }
+                                
+                                if (!receiveAll) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            receiveGoals = !receiveGoals
+                                            sharedPrefs.edit().putBoolean("notif_goals", receiveGoals).apply()
+                                        }.padding(vertical = 8.dp, horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Switch(checked = receiveGoals, onCheckedChange = null)
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text("Goles y eventos de score")
+                                    }
+                                    
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().clickable {
+                                            receiveStartEnd = !receiveStartEnd
+                                            sharedPrefs.edit().putBoolean("notif_start_end", receiveStartEnd).apply()
+                                        }.padding(vertical = 8.dp, horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Switch(checked = receiveStartEnd, onCheckedChange = null)
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text("Inicios y finales de partido")
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showNotifSettings = false }) {
+                                Text("Aceptar")
+                            }
+                        }
+                    )
+                }
+
                 SettingItem(
                     icon = Icons.Default.BatteryAlert,
                     title = "Optimización de Batería",
@@ -189,8 +251,94 @@ fun SettingsMenuScreen(
             }
         }
         item {
-            SettingSection(title = "Personalización") {
+            SettingSection(title = "Gamificación") {
+                val isVip by worldCupViewModel.isVip
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        worldCupViewModel.toggleVipStatus()
+                    }.padding(vertical = 12.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Switch(checked = isVip, onCheckedChange = null)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Activar Modo VIP (Demo)", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Simula la membresía VIP con marco dorado y sin anuncios.", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+        item {
+            SettingSection(title = "Personalización y Torneos") {
                 val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
+                
+                // Selector de Torneo Favorito / Prode
+                var selectedTourneyId by remember { 
+                    mutableIntStateOf(sharedPrefs.getInt("favorite_tournament_id", 5)) 
+                }
+                var showTourneyDialog by remember { mutableStateOf(false) }
+
+                val tourneyMap = remember {
+                    mapOf(
+                        5 to "🇦🇷 Liga Profesional Argentina",
+                        1 to "🏆 Mundial 2026",
+                        3 to "🏆 Copa Libertadores",
+                        4 to "🏆 Copa Sudamericana",
+                        6 to "🇦🇷 Copa Argentina",
+                        8 to "🇦🇷 Primera Nacional Argentina",
+                        9 to "🇦🇷 Primera B Metropolitana",
+                        10 to "🇦🇷 Primera C"
+                    )
+                }
+
+                SettingItem(
+                    icon = Icons.Default.Star,
+                    title = "Torneo Favorito / Prode Activo",
+                    subtitle = tourneyMap[selectedTourneyId] ?: "🇦🇷 Liga Profesional Argentina",
+                    onClick = { showTourneyDialog = true }
+                )
+
+                if (showTourneyDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showTourneyDialog = false },
+                        title = { Text("Selecciona tu Torneo Favorito") },
+                        text = {
+                            Column {
+                                tourneyMap.forEach { (id, name) ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                selectedTourneyId = id
+                                                sharedPrefs.edit().putInt("favorite_tournament_id", id).apply()
+                                                showTourneyDialog = false
+                                            }
+                                            .padding(vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = (selectedTourneyId == id),
+                                            onClick = {
+                                                selectedTourneyId = id
+                                                sharedPrefs.edit().putInt("favorite_tournament_id", id).apply()
+                                                showTourneyDialog = false
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showTourneyDialog = false }) {
+                                Text("Cerrar")
+                            }
+                        }
+                    )
+                }
+
                 var currentDefaultView by remember { 
                     mutableStateOf(sharedPrefs.getString("default_calendar_view", "MONTH") ?: "MONTH") 
                 }
@@ -362,17 +510,35 @@ fun TeamsListScreen(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
+            val checkFavorite: (com.example.worldcup2026.data.model.Team) -> Boolean = { t ->
+                sharedPrefs.getBoolean("favorite_team_${t.id}", false) ||
+                sharedPrefs.getBoolean("favorite_team_${t.name.lowercase().trim()}", false)
+            }
+
+            val sortedTeams = remember(allTeams, updateTrigger) {
+                allTeams.sortedWith(
+                    compareByDescending<com.example.worldcup2026.data.model.Team> { checkFavorite(it) }
+                        .thenBy { it.name }
+                )
+            }
+
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(allTeams) { team ->
-                    val isFavorite = sharedPrefs.getBoolean("favorite_team_${team.id}", false)
+                items(sortedTeams, key = { it.name }) { team ->
+                    val isFavorite = remember(updateTrigger, team.id, team.name) {
+                        checkFavorite(team)
+                    }
                     
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp, vertical = 4.dp)
                             .clickable {
-                                sharedPrefs.edit().putBoolean("favorite_team_${team.id}", !isFavorite).apply()
-                                updateTrigger++ // Force recomposition
+                                val nextState = !isFavorite
+                                sharedPrefs.edit()
+                                    .putBoolean("favorite_team_${team.id}", nextState)
+                                    .putBoolean("favorite_team_${team.name.lowercase().trim()}", nextState)
+                                    .commit()
+                                updateTrigger++ // Force recomposition and immediate re-sorting
                             },
                         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
                     ) {

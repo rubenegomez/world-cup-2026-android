@@ -35,32 +35,99 @@ import com.example.worldcup2026.data.util.TeamStats
 import kotlinx.coroutines.launch
 
 // Detección del tipo de torneo según rangos de IDs de partidos
-enum class TournamentKind { WORLD_CUP, LIBERTADORES, LIGA }
+enum class TournamentFormat {
+    WORLD_CUP,
+    ELIMINATORIAS_CONMEBOL,
+    LIBERTADORES,
+    SUDAMERICANA,
+    LIGA_PROFESIONAL,
+    PRIMERA_NACIONAL,
+    PRIMERA_B,
+    PRIMERA_C,
+    COPA_DIRECTA,
+    COPA_INTERCONTINENTAL
+}
+
+// Compatibilidad con código previo
+typealias TournamentKind = TournamentFormat
+
+val LIGA_ZONAS_MAP = mapOf(
+    // ZONA A
+    "Gimnasia (Mendoza)" to "Zona A",
+    "Newell's Old Boys" to "Zona A",
+    "Vélez Sarsfield" to "Zona A",
+    "Lanús" to "Zona A",
+    "Unión (Santa Fe)" to "Zona A",
+    "Platense" to "Zona A",
+    "Defensa y Justicia" to "Zona A",
+    "Boca Juniors" to "Zona A",
+    "Deportivo Riestra" to "Zona A",
+    "Estudiantes de La Plata" to "Zona A",
+    "Independiente" to "Zona A",
+    "Central Córdoba (Santiago del Estero)" to "Zona A",
+    "Instituto (Córdoba)" to "Zona A",
+    "Talleres (Córdoba)" to "Zona A",
+    "San Lorenzo" to "Zona A",
+
+    // ZONA B
+    "Argentinos Juniors" to "Zona B",
+    "Belgrano (Córdoba)" to "Zona B",
+    "Racing Club" to "Zona B",
+    "Huracán" to "Zona B",
+    "Estudiantes de Río Cuarto" to "Zona B",
+    "Barracas Central" to "Zona B",
+    "Aldosivi" to "Zona B",
+    "Atlético Tucumán" to "Zona B",
+    "Independiente Rivadavia" to "Zona B",
+    "Sarmiento (Junín)" to "Zona B",
+    "Rosario Central" to "Zona B",
+    "Gimnasia La Plata" to "Zona B",
+    "River Plate" to "Zona B",
+    "Tigre" to "Zona B",
+    "Banfield" to "Zona B"
+)
 
 @Composable
 fun StandingsScreen(matches: List<Match>) {
-    // IDs 1-300 = Mundial | IDs 301-499 = Libertadores | IDs 500+ = Liga
-    val tournamentKind = remember(matches) {
-        val firstId = matches.minOfOrNull { it.id } ?: 0
-        when {
-            firstId <= 300 -> TournamentKind.WORLD_CUP
-            firstId <= 499 -> TournamentKind.LIBERTADORES
-            else -> TournamentKind.LIGA
+    val tournamentId = remember(matches) {
+        matches.firstOrNull { it.tournament_id != null }?.tournament_id ?: run {
+            val firstId = matches.minOfOrNull { it.id } ?: 0
+            when {
+                firstId <= 300 -> 1
+                firstId <= 499 -> 3
+                else -> 5
+            }
         }
     }
 
-    val tournamentId = remember(tournamentKind) {
-        when (tournamentKind) {
-            TournamentKind.WORLD_CUP   -> 1
-            TournamentKind.LIBERTADORES -> 3
-            TournamentKind.LIGA        -> 5
+    val tournamentFormat = remember(tournamentId) {
+        when (tournamentId) {
+            1 -> TournamentFormat.WORLD_CUP
+            2 -> TournamentFormat.ELIMINATORIAS_CONMEBOL
+            3 -> TournamentFormat.LIBERTADORES
+            4 -> TournamentFormat.SUDAMERICANA
+            5 -> TournamentFormat.LIGA_PROFESIONAL
+            6, 7 -> TournamentFormat.COPA_DIRECTA
+            8 -> TournamentFormat.PRIMERA_NACIONAL
+            9 -> TournamentFormat.PRIMERA_B
+            10, 11 -> TournamentFormat.PRIMERA_C
+            12 -> TournamentFormat.WORLD_CUP
+            13 -> TournamentFormat.COPA_INTERCONTINENTAL
+            else -> TournamentFormat.LIGA_PROFESIONAL
         }
     }
 
-    val tabs = when (tournamentKind) {
-        TournamentKind.WORLD_CUP    -> listOf("GRUPOS", "MEJORES TERCEROS")
-        TournamentKind.LIBERTADORES -> listOf("GRUPOS", "GOLEADORES")
-        TournamentKind.LIGA         -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES")
+    val tabs = when (tournamentFormat) {
+        TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "MEJORES TERCEROS", "GOLEADORES")
+        TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES")
+        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES")
+        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES")
+        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES")
+        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "REDUCIDO", "GOLEADORES")
+        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "COPA ARGENTINA", "GOLEADORES")
+        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "FINAL Y REDUCIDO", "GOLEADORES")
+        TournamentFormat.COPA_DIRECTA,
+        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "GOLEADORES")
     }
 
     var selectedTab by remember { mutableStateOf(0) }
@@ -75,53 +142,54 @@ fun StandingsScreen(matches: List<Match>) {
     var isLoadingDescenso by remember { mutableStateOf(false) }
     var isLoadingGoleadores by remember { mutableStateOf(false) }
 
-    val teamsByGroup = remember(matches) {
-        matches.flatMap { listOf(it.homeTeam, it.awayTeam) }
-            .distinctBy { it.id }
-            .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
-            .groupBy { it.group }
-            .toSortedMap()
+    val teamsByGroup = remember(matches, tournamentFormat) {
+        val rawTeams = matches.flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }.distinctBy { it.id }
+        
+        if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
+            val mappedTeams = rawTeams.map { team ->
+                val assigned = LIGA_ZONAS_MAP[team.name] ?: team.group
+                val finalGroup = if (assigned.isNotEmpty() && assigned != "Fase Regular") assigned else (LIGA_ZONAS_MAP[team.name] ?: "Zona A")
+                team.copy(group = finalGroup, players = team.players ?: emptyList())
+            }
+            mappedTeams
+                .filter { it.id > 0 }
+                .groupBy { it.group }
+                .toSortedMap()
+        } else {
+            rawTeams
+                .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
+                .groupBy { it.group }
+                .toSortedMap()
+        }
     }
 
+    val currentTabTitle = tabs.getOrNull(selectedTab) ?: ""
+
     // Efecto para cargar datos según la pestaña seleccionada
-    LaunchedEffect(selectedTab, tournamentKind) {
-        when (tournamentKind) {
-            TournamentKind.LIGA -> when (selectedTab) {
-                1 -> {
-                    if (annualStandings == null) {
-                        isLoadingAnnual = true
-                        try { annualStandings = NetworkModule.apiService.getAnnualStandings(tournamentId) }
-                        catch (e: Exception) { e.printStackTrace() }
-                        finally { isLoadingAnnual = false }
-                    }
-                }
-                2 -> {
-                    if (descensoStandings == null) {
-                        isLoadingDescenso = true
-                        try { descensoStandings = NetworkModule.apiService.getDescensoStandings(tournamentId) }
-                        catch (e: Exception) { e.printStackTrace() }
-                        finally { isLoadingDescenso = false }
-                    }
-                }
-                3 -> {
-                    if (goleadores == null) {
-                        isLoadingGoleadores = true
-                        try { goleadores = NetworkModule.apiService.getGoleadores(tournamentId) }
-                        catch (e: Exception) { e.printStackTrace() }
-                        finally { isLoadingGoleadores = false }
-                    }
+    LaunchedEffect(currentTabTitle, tournamentId) {
+        when (currentTabTitle) {
+            "TABLA ANUAL" -> {
+                isLoadingAnnual = true
+                try { annualStandings = NetworkModule.apiService.getAnnualStandings(tournamentId) }
+                catch (e: Exception) { e.printStackTrace() }
+                finally { isLoadingAnnual = false }
+            }
+            "PROMEDIOS" -> {
+                if (descensoStandings == null) {
+                    isLoadingDescenso = true
+                    try { descensoStandings = NetworkModule.apiService.getDescensoStandings(tournamentId) }
+                    catch (e: Exception) { e.printStackTrace() }
+                    finally { isLoadingDescenso = false }
                 }
             }
-            TournamentKind.LIBERTADORES -> {
-                // pestaña 1 = Goleadores
-                if (selectedTab == 1 && goleadores == null) {
+            "GOLEADORES" -> {
+                if (goleadores == null) {
                     isLoadingGoleadores = true
                     try { goleadores = NetworkModule.apiService.getGoleadores(tournamentId) }
                     catch (e: Exception) { e.printStackTrace() }
                     finally { isLoadingGoleadores = false }
                 }
             }
-            else -> Unit
         }
     }
 
@@ -152,148 +220,189 @@ fun StandingsScreen(matches: List<Match>) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Box(modifier = Modifier.weight(1f)) {
-            when (tournamentKind) {
-                TournamentKind.WORLD_CUP -> {
-                    if (selectedTab == 0) {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            teamsByGroup.forEach { (groupName, teams) ->
-                                item {
-                                    GroupStandingsTable(groupName, teams, matches, isWorldCup = true)
-                                }
+            when (currentTabTitle) {
+                "GRUPOS", "ZONAS", "ZONA A", "ZONA B", "TABLA GENERAL", "TABLA ÚNICA" -> {
+                    val filterGroup = when (currentTabTitle) {
+                        "ZONA A" -> "Zona A"
+                        "ZONA B" -> "Zona B"
+                        else -> null
+                    }
+                    val displayGroups = if (filterGroup != null) {
+                        teamsByGroup.filterKeys { it.equals(filterGroup, ignoreCase = true) }
+                    } else {
+                        teamsByGroup
+                    }
+
+                    val filteredMatches = remember(matches, tournamentFormat) {
+                        if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
+                            matches.filter { match ->
+                                match.id >= 2000 || (match.date != null && (
+                                    match.date.contains("-07-") || match.date.contains("2026-07") || match.date.contains("/07/") ||
+                                    match.date.contains("-08-") || match.date.contains("2026-08") || match.date.contains("/08/") ||
+                                    match.date.contains("-09-") || match.date.contains("2026-09") || match.date.contains("/09/") ||
+                                    match.date.contains("-10-") || match.date.contains("2026-10") || match.date.contains("/10/") ||
+                                    match.date.contains("-11-") || match.date.contains("2026-11") || match.date.contains("/11/") ||
+                                    match.date.contains("-12-") || match.date.contains("2026-12") || match.date.contains("/12/")
+                                ))
+                            }
+                        } else {
+                            matches
+                        }
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        displayGroups.forEach { (groupName, teams) ->
+                            item {
+                                GroupStandingsTable(groupName, teams, filteredMatches, tournamentFormat = tournamentFormat)
                             }
                         }
-                    } else {
-                        val thirdPlaceTeams = remember(teamsByGroup, matches) {
-                            teamsByGroup.mapNotNull { (_, teams) ->
-                                val standings = StandingsCalculator.calculateStandings(teams, matches, isWorldCup = true)
-                                standings.getOrNull(2)
-                            }.sortedWith(
-                                compareByDescending<TeamStats> { it.pts }
-                                    .thenByDescending { it.gd }
-                                    .thenByDescending { it.gf }
-                            )
+                    }
+                }
+                "MEJORES TERCEROS" -> {
+                    val thirdPlaceTeams = remember(teamsByGroup, matches) {
+                        teamsByGroup.mapNotNull { (_, teams) ->
+                            val standings = StandingsCalculator.calculateStandings(teams, matches, isWorldCup = true)
+                            standings.getOrNull(2)
+                        }.sortedWith(
+                            compareByDescending<TeamStats> { it.pts }
+                                .thenByDescending { it.gd }
+                                .thenByDescending { it.gf }
+                        )
+                    }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(8.dp)
+                    ) {
+                        item { BestThirdsTable(thirdPlaceTeams) }
+                    }
+                }
+                "TABLA ANUAL" -> {
+                    if (isLoadingAnnual) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
+                    } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(8.dp)
                         ) {
-                            item { BestThirdsTable(thirdPlaceTeams) }
+                            item { AnnualStandingsTable(annualStandings ?: emptyList(), descensoStandings ?: emptyList()) }
                         }
                     }
                 }
-
-                TournamentKind.LIBERTADORES -> {
-                    when (selectedTab) {
-                        0 -> { // Grupos A-H
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(8.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                teamsByGroup.forEach { (groupName, teams) ->
-                                    item {
-                                        GroupStandingsTable(groupName, teams, matches, isWorldCup = true)
-                                    }
-                                }
-                            }
+                "PROMEDIOS" -> {
+                    if (isLoadingDescenso) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
-                        1 -> { // Goleadores
-                            if (isLoadingGoleadores) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                }
-                            } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(8.dp)
-                                ) {
-                                    item { GoleadoresTable(goleadores ?: emptyList()) }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                TournamentKind.LIGA -> {
-                    // RENDER LIGA PROFESIONAL
-                    when (selectedTab) {
-                        0 -> { // Zonas A y B
+                    } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            contentPadding = PaddingValues(8.dp)
                         ) {
-                            teamsByGroup.forEach { (groupName, teams) ->
-                                item {
-                                    GroupStandingsTable(groupName, teams, matches, isWorldCup = false)
-                                }
-                            }
+                            item { DescensoStandingsTable(descensoStandings ?: emptyList()) }
                         }
                     }
-                    1 -> { // Tabla Anual
-                        if (isLoadingAnnual) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(8.dp)
-                            ) {
-                                item {
-                                    AnnualStandingsTable(annualStandings ?: emptyList())
-                                }
-                            }
+                }
+                "GOLEADORES" -> {
+                    if (isLoadingGoleadores) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(8.dp)
+                        ) {
+                            item { GoleadoresTable(goleadores ?: emptyList()) }
                         }
                     }
-                    2 -> { // Promedios / Descenso
-                        if (isLoadingDescenso) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(8.dp)
-                            ) {
-                                item {
-                                    DescensoStandingsTable(descensoStandings ?: emptyList())
-                                }
-                            }
+                }
+                else -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Etapa de $currentTabTitle",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Se habilitará automáticamente al finalizar la fase regular.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
-                    3 -> { // Goleadores
-                        if (isLoadingGoleadores) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(8.dp)
-                            ) {
-                                item {
-                                    GoleadoresTable(goleadores ?: emptyList())
-                                }
-                            }
-                        }
-                    }
-                } // cierre when(selectedTab)
-            } // cierre TournamentKind.LIGA
-        } // cierre when(tournamentKind)
-    } // cierre Box peso
-  } // cierre Column
-} // cierre StandingsScreen
+                }
+            }
+        }
+    }
+}
 
+fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: Int): Color {
+    return when (format) {
+        TournamentFormat.LIBERTADORES -> when (position) {
+            1, 2 -> Color(0xFF4CAF50) // Octavos Libertadores
+            3    -> Color(0xFFFFB300) // 16vos Sudamericana
+            else -> Color.Transparent
+        }
+        TournamentFormat.SUDAMERICANA -> when (position) {
+            1    -> Color(0xFF4CAF50) // Octavos Sudamericana
+            2    -> Color(0xFFFFB300) // Playoff Sudamericana
+            else -> Color.Transparent
+        }
+        TournamentFormat.ELIMINATORIAS_CONMEBOL -> when (position) {
+            in 1..6 -> Color(0xFF4CAF50) // Clasificación Directa
+            7       -> Color(0xFFFFB300) // Repechaje
+            else    -> Color.Transparent
+        }
+        TournamentFormat.PRIMERA_NACIONAL -> when (position) {
+            1       -> Color(0xFF4CAF50) // Final 1º Ascenso
+            in 2..8 -> Color(0xFF2196F3) // Reducido 2º Ascenso
+            else    -> Color.Transparent
+        }
+        TournamentFormat.PRIMERA_B -> when (position) {
+            1       -> Color(0xFF4CAF50) // Campeón Ascenso Directo
+            in 2..9 -> Color(0xFF2196F3) // Reducido
+            totalTeams - 1, totalTeams -> Color(0xFFF44336) // Descenso
+            else    -> Color.Transparent
+        }
+        TournamentFormat.PRIMERA_C -> when (position) {
+            1       -> Color(0xFF4CAF50) // Final 1º Ascenso
+            in 2..7 -> Color(0xFF2196F3) // Reducido 2º Ascenso
+            totalTeams -> Color(0xFFF44336) // Desafiliación / Descenso
+            else    -> Color.Transparent
+        }
+        TournamentFormat.WORLD_CUP -> when (position) {
+            1, 2 -> Color(0xFF4CAF50)
+            3    -> Color(0xFFFFB300)
+            else -> Color.Transparent
+        }
+        TournamentFormat.LIGA_PROFESIONAL -> when (position) {
+            in 1..4 -> Color(0xFF4CAF50)
+            else    -> Color.Transparent
+        }
+        else -> Color.Transparent
+    }
+}
 
 @Composable
-fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Match>, isWorldCup: Boolean, qualifiedCount: Int = if (isWorldCup) 2 else 4) {
+fun GroupStandingsTable(
+    groupName: String, 
+    teams: List<Team>, 
+    matches: List<Match>, 
+    tournamentFormat: TournamentFormat = TournamentFormat.WORLD_CUP
+) {
+    val isWorldCup = tournamentFormat == TournamentFormat.WORLD_CUP
     val standings = StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
-    val title = if (isWorldCup) "Grupo $groupName" else "Zona $groupName"
+    val title = if (groupName.startsWith("Zona") || groupName.startsWith("Tabla")) groupName else "Grupo $groupName"
 
     Column(
         modifier = Modifier
@@ -329,23 +438,24 @@ fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Matc
         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
         standings.forEachIndexed { index, stats ->
-            val isQualified = index < qualifiedCount
-            val rowBgColor = if (isQualified) Color(0xFF4CAF50).copy(alpha = 0.05f) else Color.Transparent
+            val pos = index + 1
+            val totalTeams = standings.size
+            val rowBgColor = getQualificationColor(tournamentFormat, pos, totalTeams)
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(rowBgColor, RoundedCornerShape(4.dp))
+                    .background(if (rowBgColor != Color.Transparent) rowBgColor.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(4.dp))
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${index + 1}", 
+                    text = "$pos", 
                     modifier = Modifier.width(30.dp), 
                     textAlign = TextAlign.Center, 
                     style = MaterialTheme.typography.bodySmall, 
                     fontWeight = FontWeight.Bold,
-                    color = if (isQualified) Color(0xFF81C784) else Color.White
+                    color = if (rowBgColor != Color.Transparent) rowBgColor else Color.White
                 )
                 
                 AsyncImage(
@@ -364,7 +474,7 @@ fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Matc
                         .weight(1f)
                         .padding(start = 8.dp),
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isQualified) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = if (rowBgColor != Color.Transparent) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -386,7 +496,44 @@ fun GroupStandingsTable(groupName: String, teams: List<Team>, matches: List<Matc
 }
 
 @Composable
-fun AnnualStandingsTable(standings: List<AnnualStandingDto>) {
+fun AnnualStandingsTable(standings: List<AnnualStandingDto>, descensoStandings: List<DescensoStandingDto> = emptyList()) {
+    val worstDescensoTeamId = descensoStandings.minByOrNull { it.promedio }?.team_id
+    val worstAnnualTeamId = standings.lastOrNull()?.team_id
+    
+    // Si el 30º de la Anual es también el peor en Promedios, el descenso por Tabla Anual pasa al 29º
+    val descensoIndex = if (worstAnnualTeamId != null && worstAnnualTeamId == worstDescensoTeamId && standings.size >= 2) {
+        standings.size - 2
+    } else {
+        standings.size - 1
+    }
+
+    // Corrimiento automático de cupos por Campeón (ej: Belgrano Campeón Apertura)
+    val teamQualifications = remember(standings) {
+        val map = mutableMapOf<Int, String>()
+        var libGruposAssigned = 0
+        var libPreviaAssigned = 0
+        var sudamAssigned = 0
+
+        standings.forEach { dto ->
+            val isAperturaChampion = dto.team_name.contains("Belgrano", ignoreCase = true)
+            if (isAperturaChampion) {
+                map[dto.team_id] = "CAMPEON_LIBERTADORES"
+            } else if (libGruposAssigned < 2) {
+                map[dto.team_id] = "LIBERTADORES_GRUPOS"
+                libGruposAssigned++
+            } else if (libPreviaAssigned < 1) {
+                map[dto.team_id] = "LIBERTADORES_PREVIA"
+                libPreviaAssigned++
+            } else if (sudamAssigned < 6) {
+                map[dto.team_id] = "SUDAMERICANA"
+                sudamAssigned++
+            } else {
+                map[dto.team_id] = "NINGUNO"
+            }
+        }
+        map
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -400,11 +547,48 @@ fun AnnualStandingsTable(standings: List<AnnualStandingDto>) {
             modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
         )
         Text(
-            text = "Clasificación a Copas Libertadores y Sudamericana",
+            text = "Acumulado Apertura + Clausura (Clasificación a Copas y Descenso)",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(start = 8.dp, bottom = 12.dp)
+            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
         )
+
+        // Leyenda explicativa al inicio para máxima visibilidad
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                .padding(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFFFFD54F), CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("🏆 Campeón (Libertadores Directo - Libera Cupo)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFF81C784), CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Copa Libertadores (Fase de Grupos)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFF64B5F6), CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Copa Libertadores (Fase Previa)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFFFFB74D), CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Copa Sudamericana (Grupos - Incluye Corrimiento)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(8.dp).background(Color(0xFFE57373), CircleShape))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Descenso (30º puesto / Corrimiento)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         Row(
             modifier = Modifier
@@ -426,15 +610,22 @@ fun AnnualStandingsTable(standings: List<AnnualStandingDto>) {
 
         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
-        standings.forEachIndexed { index, stats ->
-            // Libertadores (pasan los primeros 3)
-            val isLibertadores = index < 3
-            // Sudamericana (pasan del 4 al 9)
-            val isSudamericana = index in 3..8
+        standings.forEachIndexed { index, dto ->
+            val pos = index + 1
+            val qual = teamQualifications[dto.team_id] ?: "NINGUNO"
+            val isDescenso = index == descensoIndex
+
+            val isCampeon = qual == "CAMPEON_LIBERTADORES"
+            val isLibertadoresGrupos = qual == "LIBERTADORES_GRUPOS"
+            val isLibertadoresPrevia = qual == "LIBERTADORES_PREVIA"
+            val isSudamericana = qual == "SUDAMERICANA"
             
             val rowBgColor = when {
-                isLibertadores -> Color(0xFF2196F3).copy(alpha = 0.06f)
-                isSudamericana -> Color(0xFFFF9800).copy(alpha = 0.05f)
+                isCampeon -> Color(0xFFFFD54F).copy(alpha = 0.12f)
+                isLibertadoresGrupos -> Color(0xFF4CAF50).copy(alpha = 0.08f)
+                isLibertadoresPrevia -> Color(0xFF2196F3).copy(alpha = 0.08f)
+                isSudamericana -> Color(0xFFFF9800).copy(alpha = 0.08f)
+                isDescenso -> Color(0xFFF44336).copy(alpha = 0.08f)
                 else -> Color.Transparent
             }
 
@@ -446,21 +637,24 @@ fun AnnualStandingsTable(standings: List<AnnualStandingDto>) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${stats.pos}", 
+                    text = "$pos", 
                     modifier = Modifier.width(30.dp), 
                     textAlign = TextAlign.Center, 
                     style = MaterialTheme.typography.bodySmall, 
                     fontWeight = FontWeight.Bold,
                     color = when {
-                        isLibertadores -> Color(0xFF90CAF9)
-                        isSudamericana -> Color(0xFFFFCC80)
+                        isCampeon -> Color(0xFFFFD54F)
+                        isLibertadoresGrupos -> Color(0xFF81C784)
+                        isLibertadoresPrevia -> Color(0xFF64B5F6)
+                        isSudamericana -> Color(0xFFFFB74D)
+                        isDescenso -> Color(0xFFE57373)
                         else -> Color.White
                     }
                 )
                 
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(stats.logo_url)
+                        .data(dto.logo_url)
                         .crossfade(true)
                         .build(),
                     contentDescription = null,
@@ -469,35 +663,24 @@ fun AnnualStandingsTable(standings: List<AnnualStandingDto>) {
                 )
                 
                 Text(
-                    text = stats.team_name,
+                    text = dto.team_name + if (isCampeon) " 🏆" else "",
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp),
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isLibertadores || isSudamericana) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = if (isCampeon || isLibertadoresGrupos || isLibertadoresPrevia || isSudamericana || isDescenso) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                Text("${stats.pj}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
-                Text("${stats.g}", modifier = Modifier.width(22.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
-                Text("${stats.e}", modifier = Modifier.width(22.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
-                Text("${stats.p}", modifier = Modifier.width(22.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
-                Text("${stats.gf}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
-                Text("${stats.gc}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
-                Text("${stats.dg}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = if (stats.dg > 0) Color(0xFF81C784) else if (stats.dg < 0) Color(0xFFE57373) else Color.White)
-                Text(
-                    text = "${stats.pts}", 
-                    modifier = Modifier.width(30.dp), 
-                    textAlign = TextAlign.Center, 
-                    style = MaterialTheme.typography.bodySmall, 
-                    fontWeight = FontWeight.Black,
-                    color = when {
-                        isLibertadores -> Color(0xFF90CAF9)
-                        isSudamericana -> Color(0xFFFFCC80)
-                        else -> Color.White
-                    }
-                )
+                Text("${dto.pj}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text("${dto.g}", modifier = Modifier.width(22.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text("${dto.e}", modifier = Modifier.width(22.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text("${dto.p}", modifier = Modifier.width(22.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text("${dto.gf}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text("${dto.gc}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall)
+                Text("${dto.dg}", modifier = Modifier.width(24.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, color = if (dto.dg > 0) Color(0xFF81C784) else if (dto.dg < 0) Color(0xFFE57373) else Color.White)
+                Text("${dto.pts}", modifier = Modifier.width(30.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Black)
             }
             if (index < standings.size - 1) {
                 HorizontalDivider(thickness = 0.2.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

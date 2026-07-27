@@ -20,10 +20,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.animation.core.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.worldcup2026.ui.CelebrationScreen
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
+fun MainScreen(
+    viewModel: WorldCupViewModel = viewModel(),
+    initialMatchId: String? = null
+) {
     val context = LocalContext.current
     val infiniteTransition = rememberInfiniteTransition(label = "live_pulse")
     val livePulseAlpha by infiniteTransition.animateFloat(
@@ -53,6 +61,48 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
     val adFreeUntil by viewModel.adFreeUntil
     val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
     
+    val celebrationMatch by viewModel.celebrationMatch
+    
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context?, intent: Intent?) {
+                if (intent?.action == "com.example.worldcup2026.MATCH_EVENT") {
+                    val matchId = intent.getIntExtra("match_id", -1)
+                    val homeTeamStr = intent.getStringExtra("homeTeam") ?: "Lanús"
+                    val awayTeamStr = intent.getStringExtra("awayTeam") ?: "San Lorenzo"
+                    val homeScoreVal = intent.getStringExtra("homeScore")?.toIntOrNull() ?: 1
+                    val awayScoreVal = intent.getStringExtra("awayScore")?.toIntOrNull() ?: 0
+                    val eventTypeStr = intent.getStringExtra("eventType") ?: "goal"
+                    
+                    val fallbackMatch = com.example.worldcup2026.data.model.Match(
+                        id = if (matchId != -1) matchId else 9999,
+                        tournament_id = 5,
+                        homeTeam = com.example.worldcup2026.data.model.Team(id = 991, name = homeTeamStr, flagUrl = "", group = "Zona A"),
+                        awayTeam = com.example.worldcup2026.data.model.Team(id = 992, name = awayTeamStr, flagUrl = "", group = "Zona A"),
+                        homeScore = homeScoreVal,
+                        awayScore = awayScoreVal,
+                        date = "2026-07-26",
+                        status = if (eventTypeStr == "end") "Finished" else "LIVE",
+                        stadium = "Estadio Néstor Díaz Pérez"
+                    )
+                    
+                    if (eventTypeStr == "goal") {
+                        viewModel.triggerCelebration(if (matchId != -1) matchId else 9999, fallbackMatch)
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter("com.example.worldcup2026.MATCH_EVENT")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            context.registerReceiver(receiver, filter)
+        }
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
+    
     LaunchedEffect(selectedScreen) {
         val screenName = when (selectedScreen) {
             0 -> "Calendario"
@@ -64,11 +114,29 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
         com.example.worldcup2026.data.util.AnalyticsManager.logScreenView(screenName)
     }
 
+    LaunchedEffect(initialMatchId, uiState) {
+        if (initialMatchId != null && uiState is WorldCupUiState.Success) {
+            val state = uiState as WorldCupUiState.Success
+            val m = state.matches.find { it.id.toString() == initialMatchId }
+            if (m != null) {
+                selectedScreen = 0 // Navegar a la pantalla de partidos
+                try {
+                    val datePart = m.date?.substringBefore(" ")
+                    if (!datePart.isNullOrBlank()) {
+                        selectedDate = java.time.LocalDate.parse(datePart)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
     LaunchedEffect(uiState) {
         val state = uiState as? WorldCupUiState.Success ?: return@LaunchedEffect
         if (state.champion != null) {
-            // Siempre mostramos el festejo si hay un campeón
-            showCelebration = true
+            val hasShown = prefs.getBoolean("has_shown_celebration_${state.champion.id}", false)
+            showCelebration = !hasShown
         } else {
             showCelebration = false
         }
@@ -103,6 +171,12 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                         showCelebration = false 
                         prefs.edit().putBoolean("has_shown_celebration_${state.champion.id}", true).apply()
                     }
+                )
+            } else if (celebrationMatch != null) {
+                // Festejo individual (Gol o Final del partido recibido por notificación en primer plano)
+                com.example.worldcup2026.ui.GoalCelebrationDialog(
+                    match = celebrationMatch!!,
+                    onDismiss = { viewModel.dismissCelebration() }
                 )
             } else if (isWatchingAd) {
                 AdWatchingScreen(onComplete = {
@@ -281,7 +355,7 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                             selectedScreen = 4
                                         }
                                     )
-                                    1 -> ProdeScreen(onNavigateToSettings = { selectedScreen = 3 })
+                                    1 -> ProdeScreen(worldCupViewModel = viewModel, onNavigateToSettings = { selectedScreen = 3 })
                                     2 -> AboutScreen()
                                     3 -> SettingsContainer(viewModel)
                                     4 -> {
@@ -293,32 +367,49 @@ fun MainScreen(viewModel: WorldCupViewModel = viewModel()) {
                                                 onNavigateToTournament = { id ->
                                                     selectedTournamentForStandings = id
                                                     selectedScreen = 5
+                                                },
+                                                onShowVipStats = { match ->
+                                                    selectedMatchForVip = match
+                                                    if (isAdsEnabled) {
+                                                        com.example.worldcup2026.ui.AdManager.showInterstitialAd(context) {
+                                                            showVipDialog = true
+                                                        }
+                                                    } else {
+                                                        showVipDialog = true
+                                                    }
                                                 }
                                             )
                                         } else {
                                             selectedScreen = 0
                                         }
                                     }
-                                    5 -> {
-                                        if (selectedTournamentForStandings != null) {
-                                            val tMatches = state.matches.filter { it.tournament_id == selectedTournamentForStandings }
-                                            StandingsScreen(matches = tMatches)
-                                        } else {
-                                            selectedScreen = 0
-                                        }
-                                    }
-                                    5 -> StandingsScreen(matches = state.matches)
-                                }
- 
-                                if (showVipDialog && selectedMatchForVip != null) {
-                                    VipStatsDialog(
-                                        match = selectedMatchForVip!!,
-                                        onDismiss = { 
-                                            showVipDialog = false
-                                            selectedMatchForVip = null
-                                        }
-                                    )
-                                }
+                                     5 -> {
+                                         if (selectedTournamentForStandings != null) {
+                                             val tMatches = state.matches.filter { it.tournament_id == selectedTournamentForStandings }
+                                             val finalStandingsMatches = if (tMatches.isNotEmpty()) tMatches else state.matches.filter { it.tournament_id == 5 }
+                                             StandingsScreen(matches = if (finalStandingsMatches.isNotEmpty()) finalStandingsMatches else state.matches)
+                                         } else {
+                                             selectedScreen = 0
+                                         }
+                                     }
+                                 }
+
+                                 if (celebrationMatch != null) {
+                                     com.example.worldcup2026.ui.GoalCelebrationDialog(
+                                         match = celebrationMatch!!,
+                                         onDismiss = { viewModel.dismissCelebration() }
+                                     )
+                                 }
+
+                                 if (showVipDialog && selectedMatchForVip != null) {
+                                     VipStatsDialog(
+                                         match = selectedMatchForVip!!,
+                                         onDismiss = { 
+                                             showVipDialog = false
+                                             selectedMatchForVip = null
+                                         }
+                                     )
+                                 }
 
                                 if (pendingReward != null) {
                                     val reward = pendingReward!!
