@@ -57,10 +57,27 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
 
     fun getLocalLeagues(): Flow<List<LeagueEntity>> = leagueDao.getAllLeagues()
 
-    suspend fun createLeague(name: String): Boolean {
+    suspend fun createLeague(
+        name: String,
+        mode: String = "FULL_TOURNAMENT",
+        tournamentId: Int? = 5,
+        startMatchday: Int? = 1,
+        endMatchday: Int? = 5,
+        customPrize: String? = null
+    ): Boolean {
         val token = authToken ?: return false
         return try {
-            val dto = api.createLeague(token, CreateLeagueRequest(name))
+            val dto = api.createLeague(
+                token,
+                CreateLeagueRequest(
+                    name = name,
+                    mode = mode,
+                    tournament_id = tournamentId,
+                    start_matchday = startMatchday,
+                    end_matchday = endMatchday,
+                    custom_prize = customPrize
+                )
+            )
             leagueDao.insertLeague(LeagueEntity(dto.id, dto.name, dto.creatorId, dto.code))
             true
         } catch (e: Exception) {

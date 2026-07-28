@@ -98,9 +98,16 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         _currentUser.value = null
     }
 
-    fun createLeague(name: String) {
+    fun createLeague(
+        name: String,
+        mode: String = "FULL_TOURNAMENT",
+        tournamentId: Int? = 5,
+        startMatchday: Int? = 1,
+        endMatchday: Int? = 5,
+        customPrize: String? = null
+    ) {
         viewModelScope.launch {
-            prodeRepository.createLeague(name)
+            prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, customPrize)
         }
     }
 

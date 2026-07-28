@@ -446,7 +446,17 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
             confirmButton = {
                 Button(onClick = {
                     if (leagueNameInput.isNotBlank()) {
-                        viewModel.createLeague(leagueNameInput)
+                        val finalStart = if (selectedMode == "FULL_TOURNAMENT") null else startMatchday
+                        val finalEnd = if (selectedMode == "FULL_TOURNAMENT") null else if (selectedMode == "SINGLE_MATCHDAY") startMatchday else endMatchday
+
+                        viewModel.createLeague(
+                            name = leagueNameInput,
+                            mode = selectedMode,
+                            tournamentId = selectedTournamentId,
+                            startMatchday = finalStart,
+                            endMatchday = finalEnd,
+                            customPrize = customPrizeInput.ifBlank { null }
+                        )
                         leagueNameInput = ""
                         customPrizeInput = ""
                         showCreateDialog = false

@@ -65,9 +65,13 @@ fun LeagueDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
+                            val inviteMsg = "🏆 *¡Unite a mi Liga de Prode en El Loco del Pedal!*\n\n" +
+                                    "📌 *Liga:* ${league.name}\n" +
+                                    "🔑 *Código de Liga:* ${league.code}\n\n" +
+                                    "Entrá a la app -> Mis Ligas -> Unirse e ingresá el código: *${league.code}*"
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "¡Unite a mi Prode del Mundial! Mi código de liga es: ${league.code}. Descargá la app del Mundial 2026.")
+                                putExtra(Intent.EXTRA_TEXT, inviteMsg)
                                 type = "text/plain"
                             }
                             val shareIntent = Intent.createChooser(sendIntent, null)
