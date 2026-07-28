@@ -255,8 +255,8 @@ fun ReglasTab() {
                     Text("Ganas 22 MINUTOS SIN PUBLICIDAD por cada punto acumulado por fecha. Si acumulás 40 Pts en la fecha, obtendrás 880 Minutos (~14 Horas y 40 Minutos libre de anuncios).", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    Text("🏆 Ranking e Insignias:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
-                    Text("Las ligas compartidas tienen su propio Ranking en tiempo real con insignias digitales (🥇 🥈 🥉) para los ganadores.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                    Text("🏆 Ranking e Insignias (Ligas Compartidas):", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                    Text("Las insignias digitales (🥇 🥈 🥉) se disputan y otorgan ÚNICAMENTE en Ligas Privadas Compartidas con 2 o más jugadores. Si jugás en el Prode Solo / Individual, tu premio exclusivo es la acumulación de Tiempo Sin Publicidad por cada punto.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
                 }
             }
         }
