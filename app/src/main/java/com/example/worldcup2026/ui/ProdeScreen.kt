@@ -275,6 +275,8 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     var customPrizeInput by remember { mutableStateOf("") }
     var selectedTournamentId by remember { mutableIntStateOf(5) } // Default: Liga Profesional 2026
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
+    var startMatchday by remember { mutableIntStateOf(1) }
+    var endMatchday by remember { mutableIntStateOf(5) }
     
     val tournamentOptions = listOf(
         5 to "🏆 Liga Profesional 2026",
@@ -404,6 +406,40 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                             onClick = { selectedMode = "RANGE_MATCHDAYS" },
                             label = { Text("Rango Fechas", fontSize = 10.sp) }
                         )
+                    }
+
+                    if (selectedMode == "SINGLE_MATCHDAY") {
+                        Text("Elegir Fecha del Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
+                                Text("◀", color = Color.White, fontSize = 16.sp)
+                            }
+                            Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            IconButton(onClick = { if (startMatchday < 30) startMatchday++ }) {
+                                Text("▶", color = Color.White, fontSize = 16.sp)
+                            }
+                        }
+                    } else if (selectedMode == "RANGE_MATCHDAYS") {
+                        Text("Rango de Fechas:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Desde:", color = Color.Gray, fontSize = 12.sp)
+                            IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
+                                Text("◀", color = Color.White, fontSize = 14.sp)
+                            }
+                            Text("F. $startMatchday", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            IconButton(onClick = { if (startMatchday < endMatchday) startMatchday++ }) {
+                                Text("▶", color = Color.White, fontSize = 14.sp)
+                            }
+
+                            Text("Hasta:", color = Color.Gray, fontSize = 12.sp)
+                            IconButton(onClick = { if (endMatchday > startMatchday) endMatchday-- }) {
+                                Text("◀", color = Color.White, fontSize = 14.sp)
+                            }
+                            Text("F. $endMatchday", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            IconButton(onClick = { if (endMatchday < 30) endMatchday++ }) {
+                                Text("▶", color = Color.White, fontSize = 14.sp)
+                            }
+                        }
                     }
                 }
             },
