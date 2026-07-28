@@ -18,6 +18,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -47,6 +48,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -117,6 +119,9 @@ dependencies {
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Desugaring for older Android compatibility (Android 7.0/8.0 J7 Neo)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
