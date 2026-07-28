@@ -166,11 +166,15 @@ fun ProdeScreen(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
                                     )
-                                    Text(
-                                        text = user.email,
-                                        color = Color.White.copy(alpha = 0.6f),
-                                        fontSize = 12.sp
-                                    )
+                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("🥇 🥈 🥉", fontSize = 12.sp)
+                                        Text(
+                                            text = "⏱️ Sin Anuncios (22m/pt)",
+                                            color = Color(0xFFFFC107),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             }
                             TextButton(
@@ -224,33 +228,35 @@ fun ReglasTab() {
                 border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("📐 Sistema de Puntuación (3-2-1)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("📜 REGLAS OFICIALES DEL PRODE", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(10.dp))
                     
-                    Text("🎯 3 Puntos: Resultado exacto (ej. pronosticás 2-1 y sale 2-1)", color = Color.White, fontSize = 13.sp)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("📊 2 Puntos: Ganador + misma diferencia de gol (ej. pronosticás 2-0 y sale 3-1)", color = Color.White, fontSize = 13.sp)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("⚽ 1 Punto: Acertar ganador o empate (ej. pronosticás 1-0 y sale 3-1)", color = Color.White, fontSize = 13.sp)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("❌ 0 Puntos: Resultado no acertado", color = Color.Gray, fontSize = 13.sp)
+                    Text("📱 Participación:", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                    Text("Podés participar en el Prode Global directamente o crear una Liga Privada e invitar a tus amigos compartiendo el código por WhatsApp. Tenés tiempo hasta el inicio del partido para hacer tu pronóstico; luego se deshabilita y sumás 0 Pts en ese partido.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
                     
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("🔥 Partido de la Fecha (Global x2)", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("Cada fecha de torneo incluye un Partido Estelar. ¡Los puntos obtenidos en ese partido se DUPLICAN (x2) para todos!", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("⚡ Comodines Especiales", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("✌️ Doble Oportunidad: Hasta 2 partidos por fecha a tu elección. Ponés 2 marcadores y cuenta el que sume más.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("⚽ Puntuación:", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                    Text("• Apuesta L / E / V: Si acertás quién gana o si empatan, sumás 2 PUNTOS.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("⚡ Comodín Multiplicador x2: Duplica tus puntos en 1 partido a elección por fecha.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                    Text("• Apuesta Resultado Exacto: Si acertás el marcador correcto (ej. 2-1), sumás 3 PUNTOS.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("🌟 ¡Doble Acierto!: Si jugaste a las dos opciones y acertaste ambas, se te convalidan 5 PUNTOS (2 + 3).", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold, fontSize = 13.sp)
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("🏆 Ligas Privadas y Premios", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text("Participá sin red social en el Prode Global o creá ligas con amigos (Torneo Completo, Fecha Única o Rango) con premios personalizados e insignias (🥇 🥈 🥉).", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("✌️ Apuesta Doble (Hasta 3 partidos):", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                    Text("Tenés derecho a apostar doble (ej. L y V, o L y marcador 0-1) en sólo 3 partidos a tu elección por fecha. Si acertás en esta modalidad, te asegurás 1 PUNTO.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("🔥 Partido de la Fecha (Comodín x2):", fontWeight = FontWeight.Bold, color = Color(0xFFFF9800), fontSize = 14.sp)
+                    Text("Cada fecha tiene un partido designado con un ícono estelar 🔥. Si acertás en este partido, ¡tus puntos se DUPLICAN! (Ej: 5 Pts se cuentan como 10 Pts, 2 Pts como 4 Pts).", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("🎁 Premios Sin Publicidad:", fontWeight = FontWeight.Bold, color = Color(0xFFFFC107), fontSize = 14.sp)
+                    Text("Ganas 22 MINUTOS SIN PUBLICIDAD por cada punto acumulado por fecha. Si acumulás 40 Pts en la fecha, obtendrás 880 Minutos (~14 Horas y 40 Minutos libre de anuncios).", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("🏆 Ranking e Insignias:", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                    Text("Las ligas compartidas tienen su propio Ranking en tiempo real con insignias digitales (🥇 🥈 🥉) para los ganadores.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
                 }
             }
         }

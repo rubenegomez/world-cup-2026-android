@@ -251,94 +251,9 @@ fun SettingsMenuScreen(
             }
         }
         item {
-            SettingSection(title = "Gamificación") {
-                val isVip by worldCupViewModel.isVip
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        worldCupViewModel.toggleVipStatus()
-                    }.padding(vertical = 12.dp, horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Switch(checked = isVip, onCheckedChange = null)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Activar Modo VIP (Demo)", color = Color.White, fontWeight = FontWeight.Bold)
-                        Text("Simula la membresía VIP con marco dorado y sin anuncios.", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-        }
-        item {
-            SettingSection(title = "Personalización y Torneos") {
+            SettingSection(title = "Personalización del Calendario") {
                 val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
                 
-                // Selector de Torneo Favorito / Prode
-                var selectedTourneyId by remember { 
-                    mutableIntStateOf(sharedPrefs.getInt("favorite_tournament_id", 5)) 
-                }
-                var showTourneyDialog by remember { mutableStateOf(false) }
-
-                val tourneyMap = remember {
-                    mapOf(
-                        5 to "🇦🇷 Liga Profesional Argentina",
-                        1 to "🏆 Mundial 2026",
-                        3 to "🏆 Copa Libertadores",
-                        4 to "🏆 Copa Sudamericana",
-                        6 to "🇦🇷 Copa Argentina",
-                        8 to "🇦🇷 Primera Nacional Argentina",
-                        9 to "🇦🇷 Primera B Metropolitana",
-                        10 to "🇦🇷 Primera C"
-                    )
-                }
-
-                SettingItem(
-                    icon = Icons.Default.Star,
-                    title = "Torneo Favorito / Prode Activo",
-                    subtitle = tourneyMap[selectedTourneyId] ?: "🇦🇷 Liga Profesional Argentina",
-                    onClick = { showTourneyDialog = true }
-                )
-
-                if (showTourneyDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showTourneyDialog = false },
-                        title = { Text("Selecciona tu Torneo Favorito") },
-                        text = {
-                            Column {
-                                tourneyMap.forEach { (id, name) ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable {
-                                                selectedTourneyId = id
-                                                sharedPrefs.edit().putInt("favorite_tournament_id", id).apply()
-                                                showTourneyDialog = false
-                                            }
-                                            .padding(vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RadioButton(
-                                            selected = (selectedTourneyId == id),
-                                            onClick = {
-                                                selectedTourneyId = id
-                                                sharedPrefs.edit().putInt("favorite_tournament_id", id).apply()
-                                                showTourneyDialog = false
-                                            }
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showTourneyDialog = false }) {
-                                Text("Cerrar")
-                            }
-                        }
-                    )
-                }
-
                 var currentDefaultView by remember { 
                     mutableStateOf(sharedPrefs.getString("default_calendar_view", "MONTH") ?: "MONTH") 
                 }
