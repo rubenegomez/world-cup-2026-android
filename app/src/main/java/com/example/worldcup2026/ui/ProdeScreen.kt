@@ -272,8 +272,8 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     var customPrizeInput by remember { mutableStateOf("") }
     var selectedTournamentId by remember { mutableIntStateOf(5) } // Default: Liga Profesional 2026
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
-    var startMatchday by remember { mutableIntStateOf(1) }
-    var endMatchday by remember { mutableIntStateOf(5) }
+    var startMatchday by remember { mutableIntStateOf(18) }
+    var endMatchday by remember { mutableIntStateOf(22) }
     
     val tournamentOptions = listOf(
         5 to "🏆 Liga Profesional 2026",
@@ -443,7 +443,7 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
             confirmButton = {
                 Button(onClick = {
                     if (leagueNameInput.isNotBlank()) {
-                        val finalStart = if (selectedMode == "FULL_TOURNAMENT") null else startMatchday
+                        val finalStart = if (selectedMode == "FULL_TOURNAMENT") 18 else startMatchday
                         val finalEnd = if (selectedMode == "FULL_TOURNAMENT") null else if (selectedMode == "SINGLE_MATCHDAY") startMatchday else endMatchday
 
                         viewModel.createLeague(
