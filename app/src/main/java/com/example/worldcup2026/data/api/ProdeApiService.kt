@@ -1,6 +1,7 @@
 package com.example.worldcup2026.data.api
 
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -87,6 +88,12 @@ interface ProdeApiService {
     suspend fun getMyLeagues(
         @Header("Authorization") token: String
     ): List<LeagueDto>
+
+    @DELETE("api/prode/leagues/{id}")
+    suspend fun deleteLeague(
+        @Header("Authorization") token: String,
+        @Path("id") leagueId: String
+    )
 
     @GET("api/prode/leagues/{id}/standings")
     suspend fun getStandings(
