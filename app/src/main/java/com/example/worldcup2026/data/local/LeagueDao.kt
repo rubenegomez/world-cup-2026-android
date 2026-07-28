@@ -14,6 +14,9 @@ interface LeagueDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(leagues: List<LeagueEntity>)
 
+    @Query("DELETE FROM leagues WHERE id = :id")
+    suspend fun deleteById(id: String)
+
     @Query("DELETE FROM leagues")
     suspend fun clearLeagues()
 }

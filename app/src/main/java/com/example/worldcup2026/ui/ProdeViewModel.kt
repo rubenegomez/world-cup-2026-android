@@ -110,6 +110,12 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun deleteLeague(leagueId: String) {
+        viewModelScope.launch {
+            prodeRepository.deleteLeague(leagueId)
+        }
+    }
+
     suspend fun getStandings(leagueId: String): List<com.example.worldcup2026.data.api.StandingDto> {
         return prodeRepository.getStandings(leagueId)
     }

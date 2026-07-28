@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -211,36 +212,46 @@ fun ProdeScreen(
 
 @Composable
 fun ReglasTab() {
-    Column(
+    LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Sistema de Puntuación", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("1 Punto: Acertar el resultado (quién gana o si es empate)", color = Color.White)
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("📐 Sistema de Puntuación (3-2-1)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Text("🎯 3 Puntos: Resultado exacto (ej. pronosticás 2-1 y sale 2-1)", color = Color.White, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("📊 2 Puntos: Ganador + misma diferencia de gol (ej. pronosticás 2-0 y sale 3-1)", color = Color.White, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("⚽ 1 Punto: Acertar ganador o empate (ej. pronosticás 1-0 y sale 3-1)", color = Color.White, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("❌ 0 Puntos: Resultado no acertado", color = Color.Gray, fontSize = 13.sp)
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("🔥 Partido de la Fecha (Global x2)", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("Cada fecha de torneo incluye un Partido Estelar. ¡Los puntos obtenidos en ese partido se DUPLICAN (x2) para todos!", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("⚡ Comodines Especiales", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("✌️ Doble Oportunidad: Hasta 2 partidos por fecha a tu elección. Ponés 2 marcadores y cuenta el que sume más.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("⚡ Comodín Multiplicador x2: Duplica tus puntos en 1 partido a elección por fecha.", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("🏆 Ligas Privadas y Premios", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text("Participá sin red social en el Prode Global o creá ligas con amigos (Torneo Completo, Fecha Única o Rango) con premios personalizados e insignias (🥇 🥈 🥉).", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("3 Puntos: Acertar el resultado exacto (ej. 2-1)", color = Color.White)
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Recompensas", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Por cada punto obtenido, ganas 12 horas sin publicidad en la aplicación.", color = Color.White.copy(alpha = 0.8f))
             }
         }
     }
@@ -251,48 +262,74 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     val leagues by viewModel.leagues.collectAsState(initial = emptyList())
     var showCreateDialog by remember { mutableStateOf(false) }
     var showJoinDialog by remember { mutableStateOf(false) }
+    var leagueToDelete by remember { mutableStateOf<LeagueEntity?>(null) }
+
     var leagueNameInput by remember { mutableStateOf("") }
     var leagueCodeInput by remember { mutableStateOf("") }
     var customPrizeInput by remember { mutableStateOf("") }
+    var selectedTournamentId by remember { mutableIntStateOf(5) } // Default: Liga Profesional 2026
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
     
+    val tournamentOptions = listOf(
+        5 to "🏆 Liga Profesional 2026",
+        3 to "🌎 Copa Libertadores",
+        4 to "🌐 Copa Sudamericana",
+        8 to "⚽ Primera Nacional",
+        6 to "🇦🇷 Copa Argentina"
+    )
+
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Button(onClick = { showCreateDialog = true }, modifier = Modifier.weight(1f)) {
-                Text("Crear Liga")
+                Text("Crear Liga 🏆")
             }
             Button(onClick = { showJoinDialog = true }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)) {
-                Text("Unirse con Código", color = Color.White)
+                Text("Unirse con Código 🔑", color = Color.White)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
         
+        if (leagues.isEmpty()) {
+            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Text("No estás en ninguna liga privada aún.\n¡Creá una o unite con un código!", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            }
+        }
+
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(leagues) { league ->
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable { onLeagueClick(league) },
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp, modifier = Modifier.weight(1f))
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                Text(
-                                    text = when(league.name) {
-                                        else -> "🏆 Liga Prode"
-                                    },
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    fontWeight = FontWeight.Bold
-                                )
+                    Row(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Text(
+                                        text = "🏆 Liga Privada",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Código: ${league.code}", color = Color.Gray, fontSize = 13.sp)
                         }
-                        Text("Código: ${league.code}", color = Color.Gray, fontSize = 14.sp)
+                        
+                        IconButton(onClick = { leagueToDelete = league }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar Liga", tint = Color.Red.copy(alpha = 0.7f))
+                        }
                     }
                 }
             }
@@ -316,6 +353,21 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    Text("Seleccionar Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        tournamentOptions.chunked(2).forEach { rowTournaments ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                rowTournaments.forEach { (tId, tName) ->
+                                    FilterChip(
+                                        selected = selectedTournamentId == tId,
+                                        onClick = { selectedTournamentId = tId },
+                                        label = { Text(tName, fontSize = 10.sp) }
+                                    )
+                                }
+                            }
+                        }
+                    }
                     
                     OutlinedTextField(
                         value = customPrizeInput,
@@ -329,17 +381,22 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text("Modalidad de la Liga:", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Modalidad de Duración:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         FilterChip(
                             selected = selectedMode == "FULL_TOURNAMENT",
                             onClick = { selectedMode = "FULL_TOURNAMENT" },
-                            label = { Text("Torneo Completo", fontSize = 11.sp) }
+                            label = { Text("Torneo Completo", fontSize = 10.sp) }
                         )
                         FilterChip(
                             selected = selectedMode == "SINGLE_MATCHDAY",
                             onClick = { selectedMode = "SINGLE_MATCHDAY" },
-                            label = { Text("Fecha Única", fontSize = 11.sp) }
+                            label = { Text("Fecha Única", fontSize = 10.sp) }
+                        )
+                        FilterChip(
+                            selected = selectedMode == "RANGE_MATCHDAYS",
+                            onClick = { selectedMode = "RANGE_MATCHDAYS" },
+                            label = { Text("Rango Fechas", fontSize = 10.sp) }
                         )
                     }
                 }
@@ -358,6 +415,31 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
             },
             dismissButton = {
                 TextButton(onClick = { showCreateDialog = false }) {
+                    Text("Cancelar", color = Color.Gray)
+                }
+            },
+            containerColor = Color(0xFF1E1E1E)
+        )
+    }
+
+    if (leagueToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { leagueToDelete = null },
+            title = { Text("Eliminar / Salir de Liga", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("¿Estás seguro de que deseas salir o eliminar la liga '${leagueToDelete?.name}'?", color = Color.White) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        leagueToDelete?.let { l -> viewModel.deleteLeague(l.id) }
+                        leagueToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Eliminar", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { leagueToDelete = null }) {
                     Text("Cancelar", color = Color.Gray)
                 }
             },

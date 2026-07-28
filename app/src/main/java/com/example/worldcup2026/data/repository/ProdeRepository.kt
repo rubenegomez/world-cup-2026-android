@@ -81,6 +81,16 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         }
     }
 
+    suspend fun deleteLeague(leagueId: String): Boolean {
+        return try {
+            leagueDao.deleteById(leagueId)
+            true
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error deleting league", e)
+            false
+        }
+    }
+
     suspend fun getStandings(leagueId: String) = try {
         authToken?.let { api.getStandings(it, leagueId) } ?: emptyList()
     } catch (e: Exception) {
