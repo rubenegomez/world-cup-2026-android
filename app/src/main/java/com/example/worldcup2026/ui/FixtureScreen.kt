@@ -560,26 +560,18 @@ fun MatchCard(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (match.status.uppercase() == "FINISHED") {
-                        IconButton(
-                            onClick = { 
-                                onScoreChange(match.id, null, null)
-                                onPredictionChange(match.id, null, null, null, null, null)
-                            },
-                            modifier = Modifier.size(24.dp)
+                    if (match.is_featured) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFFF9800).copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF9800))
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Limpiar", tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
-                        }
-                    } else if (match.status.uppercase() == "SCHEDULED" || match.status.uppercase() == "LIVE" || match.status.uppercase() == "HALFTIME" || match.status.uppercase() == "ENTREETIEMPO" || match.status.uppercase() == "PAUSA" || match.status.uppercase() == "PAUSE") {
-                        TextButton(
-                            onClick = { onStatusChange(match.id, "Finished") },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(24.dp),
-                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = "Finalizar", modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("FINALIZAR", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🔥 PARTIDO DE LA FECHA (COMODÍN x2)", color = Color(0xFFFF9800), fontWeight = FontWeight.Black, fontSize = 10.sp)
+                            }
                         }
                     }
                 }

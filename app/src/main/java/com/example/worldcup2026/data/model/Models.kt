@@ -49,5 +49,6 @@ data class Match(
     val scorers: List<String> = emptyList(),
     val events: List<String> = emptyList(),
     val vipStats: String? = null,
-    val clock: String? = null
+    val clock: String? = null,
+    val is_featured: Boolean = false
 )
