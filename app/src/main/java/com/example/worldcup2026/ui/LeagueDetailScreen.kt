@@ -99,19 +99,21 @@ fun LeagueDetailScreen(
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     itemsIndexed(standings) { index, standing ->
-                        val medalColor = when {
-                            standing.points >= 61 -> Color(0xFFFFD700) // Oro
-                            standing.points >= 31 -> Color(0xFFC0C0C0) // Plata
-                            standing.points >= 11 -> Color(0xFFCD7F32) // Bronce
-                            else -> Color(0xFF1E1E1E)
-                        }
+                        val badgeEmoji = if (standings.size > 1) {
+                            when (index) {
+                                0 -> "🥇"
+                                1 -> "🥈"
+                                2 -> "🥉"
+                                else -> null
+                            }
+                        } else null
                         
                         val isCurrentUser = currentUser?.fullName == standing.name
                         
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isCurrentUser) Color(0xFF2E7D32).copy(alpha = 0.3f) else if (standing.points >= 11) medalColor.copy(alpha = 0.2f) else Color(0xFF1E1E1E)
+                                containerColor = if (isCurrentUser) Color(0xFF2E7D32).copy(alpha = 0.3f) else Color(0xFF1E1E1E)
                             ),
                             border = if (isCurrentUser) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50)) else null
                         ) {
@@ -126,12 +128,10 @@ fun LeagueDetailScreen(
                                     color = Color.Gray,
                                     modifier = Modifier.width(32.dp)
                                 )
-                                if (standing.points >= 11) {
-                                    Icon(
-                                        imageVector = Icons.Default.Star,
-                                        contentDescription = "Medalla",
-                                        tint = medalColor,
-                                        modifier = Modifier.size(20.dp)
+                                if (badgeEmoji != null) {
+                                    Text(
+                                        text = badgeEmoji,
+                                        fontSize = 20.sp
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }

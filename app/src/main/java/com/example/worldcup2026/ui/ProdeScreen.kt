@@ -166,15 +166,12 @@ fun ProdeScreen(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
                                     )
-                                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("🥇 🥈 🥉", fontSize = 12.sp)
-                                        Text(
-                                            text = "⏱️ Sin Anuncios (22m/pt)",
-                                            color = Color(0xFFFFC107),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
+                                    Text(
+                                        text = "⏱️ Sin Anuncios (22m/pt)",
+                                        color = Color(0xFFFFC107),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
                                 }
                             }
                             TextButton(
