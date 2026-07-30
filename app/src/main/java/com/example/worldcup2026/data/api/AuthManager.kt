@@ -59,12 +59,15 @@ class AuthManager(private val context: Context) {
         } catch (e: Throwable) {
             Log.e("AuthManager", "Error getCredential", e)
             android.os.Handler(android.os.Looper.getMainLooper()).post {
+                val detailMsg = e.message ?: e.localizedMessage ?: e.javaClass.simpleName
                 val userFriendlyMessage = when {
-                    e.message?.contains("No credentials available", ignoreCase = true) == true -> 
-                        "No se encontró una cuenta de Google activa. Verifica tu cuenta en el dispositivo."
-                    else -> "No se pudo iniciar sesión con Google. Intenta nuevamente."
+                    detailMsg.contains("No credentials available", ignoreCase = true) -> 
+                        "No se encontró una cuenta de Google activa en el teléfono. Por favor agrega tu cuenta de Google en Ajustes del Celular."
+                    detailMsg.contains("cancellation", ignoreCase = true) ->
+                        "Inicio de sesión cancelado."
+                    else -> "Error de inicio de sesión: $detailMsg"
                 }
-                android.widget.Toast.makeText(context, userFriendlyMessage, android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, userFriendlyMessage, android.widget.Toast.LENGTH_LONG).show()
             }
             return null
         }
