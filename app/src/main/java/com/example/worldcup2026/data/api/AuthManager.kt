@@ -53,16 +53,18 @@ class AuthManager(private val context: Context) {
             )
             handleSignIn(result)
         } catch (e: androidx.credentials.exceptions.GetCredentialCancellationException) {
-            // Cancelado por el usuario o por el sistema
-            Log.e("AuthManager", "Cancelado por el usuario", e)
-            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(context, "Operación cancelada", android.widget.Toast.LENGTH_LONG).show()
-            }
+            // Cancelado amigablemente por el usuario
+            Log.d("AuthManager", "Inicio de sesión cancelado por el usuario")
             return null
         } catch (e: Throwable) {
             Log.e("AuthManager", "Error getCredential", e)
             android.os.Handler(android.os.Looper.getMainLooper()).post {
-                android.widget.Toast.makeText(context, "Error CredentialManager: ${e.message ?: e.javaClass.simpleName}", android.widget.Toast.LENGTH_LONG).show()
+                val userFriendlyMessage = when {
+                    e.message?.contains("No credentials available", ignoreCase = true) == true -> 
+                        "No se encontró una cuenta de Google activa. Verifica tu cuenta en el dispositivo."
+                    else -> "No se pudo iniciar sesión con Google. Intenta nuevamente."
+                }
+                android.widget.Toast.makeText(context, userFriendlyMessage, android.widget.Toast.LENGTH_SHORT).show()
             }
             return null
         }
