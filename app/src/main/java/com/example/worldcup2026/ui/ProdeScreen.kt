@@ -270,12 +270,13 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     var leagueNameInput by remember { mutableStateOf("") }
     var leagueCodeInput by remember { mutableStateOf("") }
     var customPrizeInput by remember { mutableStateOf("") }
-    var selectedTournamentId by remember { mutableIntStateOf(5) } // Default: Liga Profesional 2026
+    var selectedTournamentId by remember { mutableStateOf<Int?>(null) } // Default: null (Todos los Torneos)
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
     var startMatchday by remember { mutableIntStateOf(18) }
     var endMatchday by remember { mutableIntStateOf(22) }
     
     val tournamentOptions = listOf(
+        null to "🌐 Todos los Torneos",
         5 to "🏆 Liga Profesional 2026",
         3 to "🌎 Copa Libertadores",
         4 to "🌐 Copa Sudamericana",
