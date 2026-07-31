@@ -67,20 +67,38 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         startLiveTournamentsChecker()
     }
 
-    fun getCurrentMatchdayForTournament(tournamentId: Int): Int {
-        val matchesState = _uiState.value
-        if (matchesState is WorldCupUiState.Success) {
-            val upcoming = matchesState.matches
-                .filter { it.tournament_id == tournamentId && (it.status == "Scheduled" || it.status == "LIVE") }
-                .sortedBy { it.date }
-            val firstUpcoming = upcoming.firstOrNull()
-            if (firstUpcoming != null && firstUpcoming.matchday != null && firstUpcoming.matchday > 0) {
-                return firstUpcoming.matchday
-            }
-        }
-        return 1
-    }
+    private var cachedGlobalMatches: List<Match> = emptyList()
 
+    fun getCurrentMatchdayForTournament(tournamentId: Int): Int {
+        val matches = if (cachedGlobalMatches.isNotEmpty()) {
+            cachedGlobalMatches
+        } else {
+            val state = _uiState.value
+            if (state is WorldCupUiState.Success) state.matches else emptyList()
+        }
+
+        val upcoming = matches
+            .filter { it.tournament_id == tournamentId && (it.status == "Scheduled" || it.status == "LIVE") }
+            .sortedBy { it.date }
+        
+        val firstUpcoming = upcoming.firstOrNull()
+        if (firstUpcoming != null && firstUpcoming.matchday != null && firstUpcoming.matchday > 0) {
+            return firstUpcoming.matchday
+        }
+
+        // Defaults actualizados con las fechas activas reales por torneo:
+        return when (tournamentId) {
+            5 -> 2   // Liga Profesional (Fecha 2)
+            7 -> 22  // Primera Nacional (Fecha 22)
+            8 -> 28  // Primera B Metropolitana (Fecha 28)
+            9 -> 22  // Primera C (Fecha 22)
+            3 -> 7   // Copa Libertadores (Octavos de Final)
+            4 -> 7   // Copa Sudamericana (Octavos de Final)
+            6 -> 4   // Copa Argentina (Octavos)
+            2 -> 7   // Eliminatorias Conmebol
+            else -> 1
+        }
+    }
 
     fun setTournament(id: Int) {
         currentTournamentId.value = id
@@ -97,6 +115,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     _isServerConnected.value = success
                     if (success) {
                         val globalMatches = repository.getAllMatchesGlobal()
+                        cachedGlobalMatches = globalMatches
                         val worldCupMatches = globalMatches.filter { it.tournament_id == currentTournamentId.value }
                         val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
                         val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
@@ -108,6 +127,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 }
 
                 val globalMatches = repository.getAllMatchesGlobal()
+                cachedGlobalMatches = globalMatches
                 val worldCupMatches = globalMatches.filter { it.tournament_id == currentTournamentId.value }
                 val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
                 val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
