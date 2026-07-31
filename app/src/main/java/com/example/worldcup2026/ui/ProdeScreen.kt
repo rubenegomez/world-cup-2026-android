@@ -38,14 +38,13 @@ import kotlinx.coroutines.launch
 fun ProdeScreen(
     viewModel: ProdeViewModel = viewModel(),
     worldCupViewModel: WorldCupViewModel? = null,
+    initialJoinCode: String? = null,
     onNavigateToSettings: () -> Unit = {}
 ) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
     val coroutineScope = rememberCoroutineScope()
-
-    // Google Sign-In movido a Ajustes para unificar la UX
 
     if (!isAuthenticated) {
         // Pantalla de Login
@@ -102,41 +101,37 @@ fun ProdeScreen(
                         ) {
                             Row(
                                 modifier = Modifier
-                                    .padding(16.dp)
+                                    .padding(12.dp)
                                     .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "¡Tienes recompensas pendientes!",
-                                        color = Color(0xFF4E360F),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                    Text(
-                                        text = "Toca aquí para reclamarlas",
-                                        color = Color(0xFF4E360F).copy(alpha = 0.8f),
+                                        text = "🎁 ¡Recompensa Lista!",
+                                        color = Color.Black,
+                                        fontWeight = FontWeight.Black,
                                         fontSize = 14.sp
                                     )
                                 }
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = "Reclamar",
-                                    tint = Color(0xFF4E360F),
-                                    modifier = Modifier.size(32.dp)
+                                Text(
+                                    text = "Reclamar 🎁",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
                                 )
                             }
                         }
                     }
                 }
 
-                // Cabecera de Perfil del Usuario Logueado
-                currentUser?.let { user ->
+                // Header de Perfil / Status VIP
+                if (currentUser != null) {
+                    val user = currentUser!!
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
                         shape = RoundedCornerShape(16.dp),
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
@@ -181,7 +176,7 @@ fun ProdeScreen(
                                 onClick = { viewModel.signOut() },
                                 colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
                             ) {
-                                Text("SALIR", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("Salir", fontSize = 12.sp)
                             }
                         }
                     }
@@ -205,7 +200,7 @@ fun ProdeScreen(
                 }
                 
                 when (selectedTab) {
-                    0 -> MisLigasTab(viewModel, worldCupViewModel, onLeagueClick = { selectedLeague = it })
+                    0 -> MisLigasTab(viewModel, worldCupViewModel, initialJoinCode, onLeagueClick = { selectedLeague = it })
                     1 -> RankingTab(viewModel)
                     2 -> ReglasTab()
                 }
@@ -264,13 +259,21 @@ fun ReglasTab() {
 }
 
 @Composable
-fun MisLigasTab(viewModel: ProdeViewModel, worldCupViewModel: WorldCupViewModel? = null, onLeagueClick: (LeagueEntity) -> Unit) {
+fun MisLigasTab(
+    viewModel: ProdeViewModel,
+    worldCupViewModel: WorldCupViewModel? = null,
+    initialJoinCode: String? = null,
+    onLeagueClick: (LeagueEntity) -> Unit
+) {
     val leagues by viewModel.leagues.collectAsState(initial = emptyList())
     var showCreateDialog by remember { mutableStateOf(false) }
     var showJoinDialog by remember { mutableStateOf(false) }
     var leagueToDelete by remember { mutableStateOf<LeagueEntity?>(null) }
 
     val context = LocalContext.current
+    val clipboardManager = remember { context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager }
+    var detectedClipboardCode by remember { mutableStateOf<String?>(null) }
+    
     val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
     val favTournament = remember { sharedPrefs.getInt("favorite_tournament_id", 5) }
 
@@ -281,6 +284,28 @@ fun MisLigasTab(viewModel: ProdeViewModel, worldCupViewModel: WorldCupViewModel?
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
     var startMatchday by remember { mutableIntStateOf(1) }
     var endMatchday by remember { mutableIntStateOf(5) }
+
+    LaunchedEffect(initialJoinCode) {
+        if (!initialJoinCode.isNullOrBlank()) {
+            viewModel.joinLeague(initialJoinCode)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val clip = clipboardManager?.primaryClip
+        if (clip != null && clip.itemCount > 0) {
+            val text = clip.getItemAt(0).text?.toString()?.trim() ?: ""
+            val extractedCode = if (text.contains("code=")) {
+                text.substringAfter("code=").substringBefore("&").substringBefore(" ").take(10)
+            } else if (text.length in 4..10 && text.all { it.isLetterOrDigit() }) {
+                text
+            } else null
+            
+            if (!extractedCode.isNullOrBlank()) {
+                detectedClipboardCode = extractedCode
+            }
+        }
+    }
     
     val tournamentOptions = listOf(
         5 to "🏆 Liga Profesional",
@@ -297,20 +322,52 @@ fun MisLigasTab(viewModel: ProdeViewModel, worldCupViewModel: WorldCupViewModel?
         12 to "🏆 Finalíssima"
     )
 
-    val minActiveMatchday = remember(selectedTournamentId) {
+    val minActiveMatchday = remember(selectedTournamentId, showCreateDialog) {
         worldCupViewModel?.getCurrentMatchdayForTournament(selectedTournamentId ?: 5) ?: 1
     }
 
-    LaunchedEffect(minActiveMatchday) {
-        if (startMatchday < minActiveMatchday) {
-            startMatchday = minActiveMatchday
-        }
-        if (endMatchday < startMatchday) {
-            endMatchday = startMatchday + 1
-        }
+    LaunchedEffect(selectedTournamentId, showCreateDialog) {
+        startMatchday = minActiveMatchday
+        endMatchday = minActiveMatchday + 4
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        if (detectedClipboardCode != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+                    .clickable {
+                        viewModel.joinLeague(detectedClipboardCode!!)
+                        detectedClipboardCode = null
+                    },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC107).copy(alpha = 0.15f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.6f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("📋 Código detectado en portapapeles:", color = Color(0xFFFFC107), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(detectedClipboardCode!!, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.joinLeague(detectedClipboardCode!!)
+                            detectedClipboardCode = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+                    ) {
+                        Text("Unirme", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Button(onClick = { showCreateDialog = true }, modifier = Modifier.weight(1f)) {
                 Text("Crear Liga 🏆")
@@ -419,6 +476,20 @@ fun MisLigasTab(viewModel: ProdeViewModel, worldCupViewModel: WorldCupViewModel?
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFFC107).copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "📍 Jornada actual o próxima: Fecha $minActiveMatchday",
+                            color = Color(0xFFFFC107),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
 
                     Text("Modalidad de Duración:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

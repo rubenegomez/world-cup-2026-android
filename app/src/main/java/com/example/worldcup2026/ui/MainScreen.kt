@@ -30,7 +30,8 @@ import android.os.Build
 @Composable
 fun MainScreen(
     viewModel: WorldCupViewModel = viewModel(),
-    initialMatchId: String? = null
+    initialMatchId: String? = null,
+    initialJoinCode: String? = null
 ) {
     val context = LocalContext.current
     val infiniteTransition = rememberInfiniteTransition(label = "live_pulse")
@@ -112,6 +113,12 @@ fun MainScreen(
             else -> "Desconocido"
         }
         com.example.worldcup2026.data.util.AnalyticsManager.logScreenView(screenName)
+    }
+
+    LaunchedEffect(initialJoinCode) {
+        if (!initialJoinCode.isNullOrBlank()) {
+            selectedScreen = 1
+        }
     }
 
     LaunchedEffect(initialMatchId, uiState) {
@@ -341,9 +348,7 @@ fun MainScreen(
                         Box(modifier = Modifier.weight(1f)) {
                             when (val state = uiState) {
                             is WorldCupUiState.Loading -> {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                }
+                                SplashScreen(isLoading = true)
                             }
                             is WorldCupUiState.Success -> {
                                 when (selectedScreen) {
@@ -355,7 +360,7 @@ fun MainScreen(
                                             selectedScreen = 4
                                         }
                                     )
-                                    1 -> ProdeScreen(worldCupViewModel = viewModel, onNavigateToSettings = { selectedScreen = 3 })
+                                    1 -> ProdeScreen(worldCupViewModel = viewModel, initialJoinCode = initialJoinCode, onNavigateToSettings = { selectedScreen = 3 })
                                     2 -> AboutScreen()
                                     3 -> SettingsContainer(viewModel)
                                     4 -> {

@@ -35,6 +35,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="ellocodelpedal.duckdns.org" android:pathPrefix="/join" />
+                <data android:scheme="arenaprode" android:host="join" />
+            </intent-filter>
         </activity>
 
         <!-- BroadcastReceiver para las notificaciones de prode y recordatorios de partidos -->

@@ -59,7 +59,9 @@ class MainActivity : ComponentActivity() {
                 Log.d("FCM", "Subscribed to upcoming_matches_30m: ${task.isSuccessful}")
             }
             
-        val navMatchId = intent.getStringExtra("nav_match_id")
+        val navMatchId = intent?.getStringExtra("nav_match_id")
+        val dataUri = intent?.data
+        val joinCodeFromUri = dataUri?.getQueryParameter("code") ?: dataUri?.lastPathSegment?.takeIf { it != "join" }
         
         setContent {
             WorldCup2026Theme {
@@ -67,7 +69,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(initialMatchId = navMatchId)
+                    MainScreen(initialMatchId = navMatchId, initialJoinCode = joinCodeFromUri)
                 }
             }
         }

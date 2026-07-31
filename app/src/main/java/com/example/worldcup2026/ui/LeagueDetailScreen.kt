@@ -65,10 +65,10 @@ fun LeagueDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
-                            val inviteMsg = "🏆 *¡Unite a mi Liga de Prode en El Loco del Pedal!*\n\n" +
-                                    "📌 *Liga:* ${league.name}\n" +
-                                    "🔑 *Código de Liga:* ${league.code}\n\n" +
-                                    "Entrá a la app -> Mis Ligas -> Unirse e ingresá el código: *${league.code}*"
+                            val directUrl = "https://ellocodelpedal.duckdns.org/join?code=${league.code}"
+                            val inviteMsg = "🏆 *¡Unite a mi Liga Privada '${league.name}' en Arena Prode!*\n\n" +
+                                    "👉 Tocá este enlace para unirte automáticamente:\n$directUrl\n\n" +
+                                    "🔑 O ingresá el código de liga: *${league.code}*"
                             val sendIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 putExtra(Intent.EXTRA_TEXT, inviteMsg)

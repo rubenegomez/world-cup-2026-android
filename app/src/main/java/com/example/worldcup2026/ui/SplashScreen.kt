@@ -21,16 +21,21 @@ import com.example.worldcup2026.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(onTimeout: () -> Unit) {
+fun SplashScreen(
+    isLoading: Boolean = false,
+    onTimeout: () -> Unit = {}
+) {
     val alpha = remember { Animatable(0f) }
 
     LaunchedEffect(key1 = true) {
         alpha.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 1500)
+            animationSpec = tween(durationMillis = 1000)
         )
-        delay(1500) // Esperar 1.5 segundos con la pantalla a tope
-        onTimeout()
+        if (!isLoading) {
+            delay(1500)
+            onTimeout()
+        }
     }
 
     Box(
@@ -54,8 +59,8 @@ fun SplashScreen(onTimeout: () -> Unit) {
                 .fillMaxSize()
                 .background(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                        startY = 500f
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
+                        startY = 400f
                     )
                 )
         )
@@ -63,7 +68,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp)
+                .padding(bottom = 64.dp, start = 24.dp, end = 24.dp)
                 .alpha(alpha.value),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -76,24 +81,44 @@ fun SplashScreen(onTimeout: () -> Unit) {
                 Text(
                     text = firstPart.uppercase(),
                     color = Color.White,
-                    fontSize = 32.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 3.sp
                 )
                 Text(
                     text = lastPart.uppercase(),
                     color = Color(0xFFE5B842),
-                    fontSize = 40.sp,
+                    fontSize = 38.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 6.sp
+                    letterSpacing = 5.sp
                 )
             } else {
                 Text(
                     text = appName.uppercase(),
                     color = Color.White,
-                    fontSize = 36.sp,
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 4.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            if (isLoading) {
+                androidx.compose.material3.LinearProgressIndicator(
+                    modifier = Modifier
+                        .width(200.dp)
+                        .height(6.dp)
+                        .padding(vertical = 2.dp),
+                    color = Color(0xFFE5B842),
+                    trackColor = Color.White.copy(alpha = 0.2f)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "Cargando partidos y fixture en vivo...",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
