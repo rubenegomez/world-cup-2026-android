@@ -56,11 +56,11 @@ class WorldCupRepository(private val matchDao: MatchDao) {
     }
 
     private fun createTeam(id: Int, name: String, flagCode: String, group: String): Team {
-        return Team(id, name, "https://flagcdn.com/w160/$flagCode.png", group, emptyList())
+        return Team(id, name, "https://flagcdn.com/w160/$flagCode.png", group, players = emptyList())
     }
 
     private fun createPlaceholderTeam(name: String): Team {
-        return Team(-1, name, "", "Final", emptyList())
+        return Team(-1, name, "", "Final", players = emptyList())
     }
 
     suspend fun getAllMatchesGlobal(): List<Match> {

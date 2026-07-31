@@ -59,10 +59,26 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val prefs = application.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
         _isVip.value = prefs.getBoolean("is_vip_status", false)
+        val favTournament = prefs.getInt("favorite_tournament_id", 5) // 5 = Liga Profesional por defecto
+        currentTournamentId.value = favTournament
         loadData()
         checkPendingRewardDialog()
         checkClaimableRounds()
         startLiveTournamentsChecker()
+    }
+
+    fun getCurrentMatchdayForTournament(tournamentId: Int): Int {
+        val matchesState = _uiState.value
+        if (matchesState is WorldCupUiState.Success) {
+            val upcoming = matchesState.matches
+                .filter { it.tournament_id == tournamentId && (it.status == "Scheduled" || it.status == "LIVE") }
+                .sortedBy { it.date }
+            val firstUpcoming = upcoming.firstOrNull()
+            if (firstUpcoming != null && firstUpcoming.matchday != null && firstUpcoming.matchday > 0) {
+                return firstUpcoming.matchday
+            }
+        }
+        return 1
     }
 
 

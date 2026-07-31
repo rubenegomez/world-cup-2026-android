@@ -390,25 +390,37 @@ fun TeamsListScreen(
 ) {
     val context = LocalContext.current
     val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
-    var updateTrigger by remember { mutableStateOf(0) }
-    
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var favoriteTournamentId by remember { mutableIntStateOf(sharedPrefs.getInt("favorite_tournament_id", 5)) }
+    var updateTrigger by remember { mutableIntStateOf(0) }
+
     val uiState = viewModel.uiState.value
     val allTeams = remember(uiState) {
         if (uiState is WorldCupUiState.Success) {
             val matches = (uiState as WorldCupUiState.Success).matches
             matches.flatMap { listOf(it.homeTeam, it.awayTeam) }
                 .filter { it.name.isNotBlank() && it.name.lowercase() != "por definir" && !it.name.contains("Ganador", ignoreCase = true) }
-                .sortedByDescending { !it.flagUrl.isNullOrBlank() }
                 .distinctBy { it.name.trim().lowercase() }
-                .sortedBy { it.name }
                 .sortedBy { it.name }
         } else {
             emptyList()
         }
     }
 
+    val tournamentsList = listOf(
+        TournamentInfo(5, "Liga Profesional Argentina", "🏆 Liga Profesional"),
+        TournamentInfo(6, "Primera Nacional (B)", "⚽ Primera Nacional"),
+        TournamentInfo(7, "Copa Argentina", "🏆 Copa Argentina"),
+        TournamentInfo(3, "Copa Libertadores", "🌎 Copa Libertadores"),
+        TournamentInfo(4, "Copa Sudamericana", "🌎 Copa Sudamericana"),
+        TournamentInfo(8, "Primera B Metropolitana", "⚽ Primera B"),
+        TournamentInfo(9, "Primera C", "⚽ Primera C"),
+        TournamentInfo(1, "Mundial FIFA 2026", "🌍 Mundial 2026"),
+        TournamentInfo(2, "Eliminatorias Conmebol", "🌍 Eliminatorias")
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             IconButton(onClick = onBack) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
             }
@@ -419,75 +431,163 @@ fun TeamsListScreen(
                 fontWeight = FontWeight.Bold
             )
         }
-        
-        if (allTeams.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            }
-        } else {
-            val checkFavorite: (com.example.worldcup2026.data.model.Team) -> Boolean = { t ->
-                sharedPrefs.getBoolean("favorite_team_${t.id}", false) ||
-                sharedPrefs.getBoolean("favorite_team_${t.name.lowercase().trim()}", false)
-            }
 
-            val sortedTeams = remember(allTeams, updateTrigger) {
-                allTeams.sortedWith(
-                    compareByDescending<com.example.worldcup2026.data.model.Team> { checkFavorite(it) }
-                        .thenBy { it.name }
-                )
+        ScrollableTabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = Color.Transparent,
+            contentColor = Color.White,
+            edgePadding = 0.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
+                Text("🏆 Torneos", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
+            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
+                Text("🇦🇷 Selecciones", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+            Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
+                Text("⚽ Equipos Nac.", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+            Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }) {
+                Text("🌎 Equipos Int.", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+        }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (selectedTab == 0) {
+            // TAB TORNEOS FAVORITOS
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(sortedTeams, key = { it.name }) { team ->
-                    val isFavorite = remember(updateTrigger, team.id, team.name) {
-                        checkFavorite(team)
-                    }
-                    
+                items(tournamentsList, key = { it.id }) { t ->
+                    val isFav = t.id == favoriteTournamentId
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                            .padding(vertical = 4.dp, horizontal = 4.dp)
                             .clickable {
-                                val nextState = !isFavorite
-                                sharedPrefs.edit()
-                                    .putBoolean("favorite_team_${team.id}", nextState)
-                                    .putBoolean("favorite_team_${team.name.lowercase().trim()}", nextState)
-                                    .commit()
-                                updateTrigger++ // Force recomposition and immediate re-sorting
+                                favoriteTournamentId = t.id
+                                sharedPrefs.edit().putInt("favorite_tournament_id", t.id).apply()
+                                viewModel.setTournament(t.id)
                             },
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
+                        )
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            AsyncImage(
-                                model = team.flagUrl,
-                                contentDescription = team.name,
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = team.name,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Text(text = t.displayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = "Favorito",
-                                tint = if (isFavorite) Color(0xFFFF5252) else Color.White.copy(alpha = 0.2f),
+                                imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                contentDescription = "Torneo Favorito",
+                                tint = if (isFav) Color(0xFFFFC107) else Color.Gray,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
                     }
                 }
             }
+        } else {
+            // TAB EQUIPOS / SELECCIONES
+            val checkFavorite: (com.example.worldcup2026.data.model.Team) -> Boolean = { team ->
+                sharedPrefs.getBoolean("favorite_team_${team.id}", false) ||
+                sharedPrefs.getBoolean("favorite_team_${team.name.lowercase().trim()}", false)
+            }
+
+            val filteredTeams = remember(allTeams, selectedTab) {
+                when (selectedTab) {
+                    1 -> allTeams.filter { t -> t.tournament_id in listOf(1, 2) || isNationalSelection(t.name) }
+                    2 -> allTeams.filter { t -> t.tournament_id in listOf(5, 6, 7, 8, 9) && !isNationalSelection(t.name) && isArgentineTeam(t.name) }
+                    3 -> allTeams.filter { t -> (!isArgentineTeam(t.name) && !isNationalSelection(t.name)) || t.tournament_id in listOf(3, 4) }
+                    else -> allTeams
+                }
+            }
+
+            val sortedTeams = remember(filteredTeams, updateTrigger) {
+                filteredTeams.sortedWith(
+                    compareByDescending<com.example.worldcup2026.data.model.Team> { checkFavorite(it) }
+                        .thenBy { it.name }
+                )
+            }
+
+            if (sortedTeams.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Cargando equipos...", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(sortedTeams, key = { it.name }) { team ->
+                        val isFavorite = remember(updateTrigger, team.id, team.name) {
+                            checkFavorite(team)
+                        }
+                        
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp)
+                                .clickable {
+                                    val nextState = !isFavorite
+                                    sharedPrefs.edit()
+                                        .putBoolean("favorite_team_${team.id}", nextState)
+                                        .putBoolean("favorite_team_${team.name.lowercase().trim()}", nextState)
+                                        .apply()
+                                    updateTrigger++
+                                },
+                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = team.flagUrl,
+                                    contentDescription = team.name,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = team.name,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.Favorite,
+                                    contentDescription = "Favorito",
+                                    tint = if (isFavorite) Color(0xFFFF5252) else Color.White.copy(alpha = 0.2f),
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
+}
+
+private data class TournamentInfo(val id: Int, val fullName: String, val displayName: String)
+
+private fun isNationalSelection(name: String): Boolean {
+    val selections = listOf(
+        "argentina", "brasil", "uruguay", "colombia", "chile", "perú", "ecuador", "paraguay", "venezuela", "bolivia",
+        "españa", "francia", "alemania", "inglaterra", "italia", "holanda", "países bajos", "portugal", "méxico", "estados unidos"
+    )
+    return selections.any { name.lowercase().trim() == it }
+}
+
+private fun isArgentineTeam(name: String): Boolean {
+    val nonArg = listOf(
+        "flamengo", "palmeiras", "sao paulo", "gremio", "botafogo", "fluminense", "inter de porto alegre",
+        "colo colo", "universidad de chile", "peñarol", "nacional", "bolivar", "the strongest", "olimpia", "libertad",
+        "barcelona sc", "ldu quito", "independiente del valle"
+    )
+    return nonArg.none { name.lowercase().contains(it) }
 }

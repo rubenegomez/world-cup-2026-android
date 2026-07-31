@@ -1,5 +1,6 @@
 package com.example.worldcup2026.ui
 
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -267,21 +268,28 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     var showJoinDialog by remember { mutableStateOf(false) }
     var leagueToDelete by remember { mutableStateOf<LeagueEntity?>(null) }
 
+    val context = LocalContext.current
+    val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
+    val favTournament = remember { sharedPrefs.getInt("favorite_tournament_id", 5) }
+
     var leagueNameInput by remember { mutableStateOf("") }
     var leagueCodeInput by remember { mutableStateOf("") }
     var customPrizeInput by remember { mutableStateOf("") }
-    var selectedTournamentId by remember { mutableStateOf<Int?>(null) } // Default: null (Todos los Torneos)
+    var selectedTournamentId by remember { mutableStateOf<Int?>(favTournament) }
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
-    var startMatchday by remember { mutableIntStateOf(18) }
-    var endMatchday by remember { mutableIntStateOf(22) }
+    var startMatchday by remember { mutableIntStateOf(1) }
+    var endMatchday by remember { mutableIntStateOf(5) }
     
     val tournamentOptions = listOf(
-        null to "🌐 Todos los Torneos",
-        5 to "🏆 Liga Profesional 2026",
+        5 to "🏆 Liga Profesional",
+        6 to "⚽ Primera Nacional",
+        7 to "🏆 Copa Argentina",
         3 to "🌎 Copa Libertadores",
-        4 to "🌐 Copa Sudamericana",
-        8 to "⚽ Primera Nacional",
-        6 to "🇦🇷 Copa Argentina"
+        4 to "🌎 Copa Sudamericana",
+        8 to "⚽ Primera B",
+        9 to "⚽ Primera C",
+        1 to "🌍 Mundial 2026",
+        2 to "🌍 Eliminatorias"
     )
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {

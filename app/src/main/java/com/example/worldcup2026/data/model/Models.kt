@@ -5,6 +5,7 @@ data class Team(
     val name: String,
     val flagUrl: String?,
     val group: String,
+    val tournament_id: Int? = null,
     val players: List<Player>? = emptyList()
 )
 
@@ -25,6 +26,7 @@ data class Group(
 data class Match(
     val id: Int,
     val tournament_id: Int? = null,
+    val matchday: Int? = null,
     val homeTeam: Team,
     val awayTeam: Team,
     val homeScore: Int?,
