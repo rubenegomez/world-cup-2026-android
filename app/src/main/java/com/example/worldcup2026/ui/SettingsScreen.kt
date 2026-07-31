@@ -244,9 +244,39 @@ fun SettingsMenuScreen(
 
                 SettingItem(
                     icon = Icons.Default.BatteryAlert,
-                    title = "Optimización de Batería",
-                    subtitle = "Permite a la app actualizar en segundo plano",
-                    onClick = { /* TODO */ }
+                    title = "Optimización de Batería (Sin Restricciones)",
+                    subtitle = "Configurar fondo sin restricciones para no perder goles",
+                    onClick = {
+                        try {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = android.net.Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
+                            }
+                        } catch (e: Exception) {
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                    }
+                )
+
+                SettingItem(
+                    icon = Icons.Default.Notifications,
+                    title = "Ajustes de Notificaciones del Sistema",
+                    subtitle = "Abrir configuración de avisos y sonido del sistema",
+                    onClick = {
+                        val intent = android.content.Intent().apply {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                action = android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            } else {
+                                action = android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                data = android.net.Uri.parse("package:${context.packageName}")
+                            }
+                        }
+                        context.startActivity(intent)
+                    }
                 )
             }
         }
