@@ -3,6 +3,8 @@ package com.example.worldcup2026.ui
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -203,7 +205,7 @@ fun ProdeScreen(
                 }
                 
                 when (selectedTab) {
-                    0 -> MisLigasTab(viewModel, onLeagueClick = { selectedLeague = it })
+                    0 -> MisLigasTab(viewModel, worldCupViewModel, onLeagueClick = { selectedLeague = it })
                     1 -> RankingTab(viewModel)
                     2 -> ReglasTab()
                 }
@@ -262,7 +264,7 @@ fun ReglasTab() {
 }
 
 @Composable
-fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit) {
+fun MisLigasTab(viewModel: ProdeViewModel, worldCupViewModel: WorldCupViewModel? = null, onLeagueClick: (LeagueEntity) -> Unit) {
     val leagues by viewModel.leagues.collectAsState(initial = emptyList())
     var showCreateDialog by remember { mutableStateOf(false) }
     var showJoinDialog by remember { mutableStateOf(false) }
@@ -282,15 +284,31 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     
     val tournamentOptions = listOf(
         5 to "🏆 Liga Profesional",
-        6 to "⚽ Primera Nacional",
-        7 to "🏆 Copa Argentina",
+        7 to "⚽ Primera Nacional",
+        6 to "🏆 Copa Argentina",
         3 to "🌎 Copa Libertadores",
         4 to "🌎 Copa Sudamericana",
         8 to "⚽ Primera B",
         9 to "⚽ Primera C",
+        2 to "🌍 Eliminatorias",
         1 to "🌍 Mundial 2026",
-        2 to "🌍 Eliminatorias"
+        10 to "🏆 Intercontinental",
+        11 to "🏆 Mundial Clubes",
+        12 to "🏆 Finalíssima"
     )
+
+    val minActiveMatchday = remember(selectedTournamentId) {
+        worldCupViewModel?.getCurrentMatchdayForTournament(selectedTournamentId ?: 5) ?: 1
+    }
+
+    LaunchedEffect(minActiveMatchday) {
+        if (startMatchday < minActiveMatchday) {
+            startMatchday = minActiveMatchday
+        }
+        if (endMatchday < startMatchday) {
+            endMatchday = startMatchday + 1
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -351,11 +369,18 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
     }
 
     if (showCreateDialog) {
+        val scrollState = rememberScrollState()
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
             title = { Text("Crear Nueva Liga de Prode", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 450.dp)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     OutlinedTextField(
                         value = leagueNameInput,
                         onValueChange = { leagueNameInput = it },
@@ -417,11 +442,11 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                     if (selectedMode == "SINGLE_MATCHDAY") {
                         Text("Elegir Fecha del Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
-                                Text("◀", color = Color.White, fontSize = 16.sp)
+                            IconButton(onClick = { if (startMatchday > minActiveMatchday) startMatchday-- }) {
+                                Text("◀", color = if (startMatchday > minActiveMatchday) Color.White else Color.Gray, fontSize = 16.sp)
                             }
                             Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            IconButton(onClick = { if (startMatchday < 30) startMatchday++ }) {
+                            IconButton(onClick = { if (startMatchday < 38) startMatchday++ }) {
                                 Text("▶", color = Color.White, fontSize = 16.sp)
                             }
                         }
@@ -430,8 +455,8 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Desde:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
-                                IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
-                                    Text("◀", color = Color.White, fontSize = 16.sp)
+                                IconButton(onClick = { if (startMatchday > minActiveMatchday) startMatchday-- }) {
+                                    Text("◀", color = if (startMatchday > minActiveMatchday) Color.White else Color.Gray, fontSize = 16.sp)
                                 }
                                 Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 IconButton(onClick = { if (startMatchday < endMatchday) startMatchday++ }) {
@@ -442,10 +467,10 @@ fun MisLigasTab(viewModel: ProdeViewModel, onLeagueClick: (LeagueEntity) -> Unit
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("Hasta:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
                                 IconButton(onClick = { if (endMatchday > startMatchday) endMatchday-- }) {
-                                    Text("◀", color = Color.White, fontSize = 16.sp)
+                                    Text("◀", color = if (endMatchday > startMatchday) Color.White else Color.Gray, fontSize = 16.sp)
                                 }
                                 Text("Fecha $endMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                IconButton(onClick = { if (endMatchday < 30) endMatchday++ }) {
+                                IconButton(onClick = { if (endMatchday < 38) endMatchday++ }) {
                                     Text("▶", color = Color.White, fontSize = 16.sp)
                                 }
                             }
