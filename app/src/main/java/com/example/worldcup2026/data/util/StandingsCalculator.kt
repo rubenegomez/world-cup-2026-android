@@ -42,7 +42,9 @@ object StandingsCalculator {
         }
 
         groupMatches.forEach { match ->
-            if (match.status.uppercase() == "SCHEDULED") return@forEach
+            val statusUpper = match.status.uppercase()
+            if (statusUpper == "SCHEDULED" || statusUpper.contains("POSTP") || statusUpper.contains("SUSPEND") || statusUpper.contains("CANCEL")) return@forEach
+            if (match.status != "Finished" && !statusUpper.contains("LIVE") && !statusUpper.contains("HALFTIME")) return@forEach
             val homeId = match.homeTeam?.id
             val awayId = match.awayTeam?.id
             if (homeId == team.id || awayId == team.id) {

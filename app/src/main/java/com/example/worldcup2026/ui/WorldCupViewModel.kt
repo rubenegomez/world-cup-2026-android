@@ -53,18 +53,61 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     
     private var autoSyncJob: kotlinx.coroutines.Job? = null
 
+    private val _favoriteTournamentIds = mutableStateOf<Set<Int>>(setOf(5))
+    val favoriteTournamentIds: State<Set<Int>> = _favoriteTournamentIds
+
+    private val _favoriteTeamNames = mutableStateOf<Set<String>>(emptySet())
+    val favoriteTeamNames: State<Set<String>> = _favoriteTeamNames
+
     init {
         val database = WorldCupDatabase.getDatabase(application)
         repository = WorldCupRepository(database.matchDao())
         val prefs = application.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
         _isVip.value = prefs.getBoolean("is_vip_status", false)
-        val favTournament = prefs.getInt("favorite_tournament_id", 5) // 5 = Liga Profesional por defecto
-        currentTournamentId.value = favTournament
+        
+        val favTournamentsSaved = prefs.getStringSet("favorite_tournament_ids", null)
+        if (favTournamentsSaved != null) {
+            _favoriteTournamentIds.value = favTournamentsSaved.mapNotNull { it.toIntOrNull() }.toSet()
+        } else {
+            val singleFav = prefs.getInt("favorite_tournament_id", 5)
+            _favoriteTournamentIds.value = setOf(singleFav)
+        }
+        
+        _favoriteTeamNames.value = prefs.getStringSet("favorite_team_names", emptySet()) ?: emptySet()
+
+        val primaryFav = _favoriteTournamentIds.value.firstOrNull() ?: 5
+        currentTournamentId.value = primaryFav
         loadData()
         checkPendingRewardDialog()
         checkClaimableRounds()
         startLiveTournamentsChecker()
+    }
+
+    fun toggleFavoriteTournament(tournamentId: Int) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val currentSet = _favoriteTournamentIds.value.toMutableSet()
+        if (currentSet.contains(tournamentId)) {
+            if (currentSet.size > 1) {
+                currentSet.remove(tournamentId)
+            }
+        } else {
+            currentSet.add(tournamentId)
+        }
+        _favoriteTournamentIds.value = currentSet
+        prefs.edit().putStringSet("favorite_tournament_ids", currentSet.map { it.toString() }.toSet()).apply()
+    }
+
+    fun toggleFavoriteTeam(teamName: String) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val currentSet = _favoriteTeamNames.value.toMutableSet()
+        if (currentSet.contains(teamName)) {
+            currentSet.remove(teamName)
+        } else {
+            currentSet.add(teamName)
+        }
+        _favoriteTeamNames.value = currentSet
+        prefs.edit().putStringSet("favorite_team_names", currentSet).apply()
     }
 
     private var cachedGlobalMatches: List<Match> = emptyList()

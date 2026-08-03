@@ -65,17 +65,39 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             val body = remoteMessage.notification?.body ?: "${homeTeam} vs ${awayTeam}"
 
             val prefs = getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
-            val receiveAll = prefs.getBoolean("notif_all", true)
-            val receiveGoals = prefs.getBoolean("notif_goals", true)
-            val receiveStartEnd = prefs.getBoolean("notif_start_end", true)
+            val notifScope = prefs.getString("notif_scope", "ALL") ?: "ALL"
 
-            var shouldShow = receiveAll
-            if (!shouldShow) {
-                if (eventType == "goal" && receiveGoals) shouldShow = true
-                if ((eventType == "start" || eventType == "end") && receiveStartEnd) shouldShow = true
+            // 1. Filtrado por tipo de evento
+            val eventAllowed = when (eventType) {
+                "goal" -> prefs.getBoolean("notif_goals", true)
+                "start" -> prefs.getBoolean("notif_start", true)
+                "end" -> prefs.getBoolean("notif_end", true)
+                "yellow_card", "yellow" -> prefs.getBoolean("notif_yellow", true)
+                "red_card", "red" -> prefs.getBoolean("notif_red", true)
+                "sub", "substitution" -> prefs.getBoolean("notif_subs", true)
+                "penalty" -> prefs.getBoolean("notif_penalties", true)
+                "extra_time" -> prefs.getBoolean("notif_extra_time", true)
+                "shootout" -> prefs.getBoolean("notif_shootout", true)
+                else -> true
             }
 
-            if (shouldShow) {
+            // 2. Filtrado por alcance (Torneos / Equipos Favoritos)
+            val tournamentId = remoteMessage.data["tournamentId"]?.toIntOrNull() ?: remoteMessage.data["tournament_id"]?.toIntOrNull() ?: 0
+            val favTournaments = prefs.getStringSet("favorite_tournament_ids", emptySet()) ?: emptySet()
+            val favTeams = prefs.getStringSet("favorite_team_names", emptySet()) ?: emptySet()
+
+            val isTournamentFav = tournamentId != 0 && favTournaments.contains(tournamentId.toString())
+            val isTeamFav = (homeTeam.isNotBlank() && favTeams.any { homeTeam.contains(it, ignoreCase = true) }) ||
+                            (awayTeam.isNotBlank() && favTeams.any { awayTeam.contains(it, ignoreCase = true) })
+
+            val scopeAllowed = when (notifScope) {
+                "FAV_TOURNAMENTS" -> isTournamentFav
+                "FAV_TEAMS" -> isTeamFav
+                "FAV_BOTH" -> isTournamentFav || isTeamFav
+                else -> true // "ALL"
+            }
+
+            if (eventAllowed && scopeAllowed) {
                 sendNotification(title, body, matchId, eventType)
                 
                 // Broadcast intent to show popup if app is in foreground

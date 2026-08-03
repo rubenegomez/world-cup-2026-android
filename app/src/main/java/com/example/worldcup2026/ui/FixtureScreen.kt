@@ -594,6 +594,16 @@ fun MatchCard(
                     val isLiveLocal = statusUpper == "LIVE" || statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" || statusUpper == "PAUSA" || statusUpper == "PAUSE"
 
                     when {
+                        statusUpper.contains("POSTP") || statusUpper.contains("SUSPEND") || statusUpper.contains("CANCEL") -> {
+                            Text(
+                                text = "POSTERGADO / SUSPENDIDO",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFFF9800),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
                         statusUpper == "FINISHED" -> {
                             Text(
                                 text = "FINALIZADO",

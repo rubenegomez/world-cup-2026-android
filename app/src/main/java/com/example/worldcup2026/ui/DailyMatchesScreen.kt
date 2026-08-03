@@ -114,6 +114,7 @@ fun DailyMatchesScreen(
         }
 
         // Filtro Por Torneo (Chips horizontales scrollables)
+        val favTournaments by viewModel.favoriteTournamentIds
         LazyRow(
             modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -121,22 +122,24 @@ fun DailyMatchesScreen(
         ) {
             items(allTournamentsList) { (tId, tName) ->
                 val isSelected = selectedTournamentId == tId
+                val isFav = tId in favTournaments
+                val labelText = if (isFav && tId != 0) "$tName ⭐" else tName
                 FilterChip(
                     selected = isSelected,
                     onClick = { selectedTournamentId = tId },
                     label = { 
                         Text(
-                            text = tName, 
+                            text = labelText, 
                             fontSize = 11.sp, 
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, 
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f)
+                            fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
+                            color = if (isSelected) Color.White else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.7f)
                         ) 
                     },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        containerColor = Color.White.copy(alpha = 0.08f)
+                        containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
                     ),
-                    border = null,
+                    border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
                     shape = RoundedCornerShape(12.dp)
                 )
             }

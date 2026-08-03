@@ -1,6 +1,8 @@
 package com.example.worldcup2026.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -186,59 +188,108 @@ fun SettingsMenuScreen(
                 )
                 
                 if (showNotifSettings) {
-                    var receiveAll by remember { mutableStateOf(sharedPrefs.getBoolean("notif_all", true)) }
+                    var notifScope by remember { mutableStateOf(sharedPrefs.getString("notif_scope", "ALL") ?: "ALL") }
                     var receiveGoals by remember { mutableStateOf(sharedPrefs.getBoolean("notif_goals", true)) }
-                    var receiveStartEnd by remember { mutableStateOf(sharedPrefs.getBoolean("notif_start_end", true)) }
+                    var receiveStart by remember { mutableStateOf(sharedPrefs.getBoolean("notif_start", true)) }
+                    var receiveEnd by remember { mutableStateOf(sharedPrefs.getBoolean("notif_end", true)) }
+                    var receiveYellow by remember { mutableStateOf(sharedPrefs.getBoolean("notif_yellow", true)) }
+                    var receiveRed by remember { mutableStateOf(sharedPrefs.getBoolean("notif_red", true)) }
+                    var receiveSubs by remember { mutableStateOf(sharedPrefs.getBoolean("notif_subs", true)) }
+                    var receivePenalties by remember { mutableStateOf(sharedPrefs.getBoolean("notif_penalties", true)) }
+                    var receiveExtraTime by remember { mutableStateOf(sharedPrefs.getBoolean("notif_extra_time", true)) }
+                    var receiveShootout by remember { mutableStateOf(sharedPrefs.getBoolean("notif_shootout", true)) }
 
                     AlertDialog(
                         onDismissRequest = { showNotifSettings = false },
-                        title = { Text("Configurar Notificaciones") },
+                        title = { Text("Configurar Notificaciones", color = Color.White, fontWeight = FontWeight.Bold) },
                         text = {
-                            Column {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        receiveAll = !receiveAll
-                                        sharedPrefs.edit().putBoolean("notif_all", receiveAll).apply()
-                                    }.padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Switch(checked = receiveAll, onCheckedChange = null)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text("Recibir todas las notificaciones")
-                                }
+                            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                                Text("🎯 Alcance de Notificaciones:", color = Color(0xFFFFC107), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
                                 
-                                if (!receiveAll) {
+                                val scopes = listOf(
+                                    "ALL" to "🌐 Todos los partidos y torneos",
+                                    "FAV_TOURNAMENTS" to "🏆 Solo mis Torneos Favoritos",
+                                    "FAV_TEAMS" to "⚽ Solo mis Equipos Favoritos",
+                                    "FAV_BOTH" to "⭐ Torneos o Equipos Favoritos"
+                                )
+                                scopes.forEach { (scopeKey, scopeLabel) ->
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            receiveGoals = !receiveGoals
-                                            sharedPrefs.edit().putBoolean("notif_goals", receiveGoals).apply()
-                                        }.padding(vertical = 8.dp, horizontal = 16.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                notifScope = scopeKey
+                                                sharedPrefs.edit().putString("notif_scope", scopeKey).apply()
+                                            }
+                                            .padding(vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Switch(checked = receiveGoals, onCheckedChange = null)
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text("Goles y eventos de score")
+                                        RadioButton(
+                                            selected = notifScope == scopeKey,
+                                            onClick = null
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(scopeLabel, fontSize = 12.sp, color = Color.White)
                                     }
-                                    
+                                }
+
+                                Divider(color = Color.White.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 10.dp))
+
+                                Text("🔔 Tipos de Eventos / Alertas:", color = Color(0xFFFFC107), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                val eventsList = listOf(
+                                    "notif_goals" to ("⚽ Goles y marcador" to receiveGoals),
+                                    "notif_start" to ("🚀 Inicio de partido" to receiveStart),
+                                    "notif_end" to ("🏁 Final del partido" to receiveEnd),
+                                    "notif_yellow" to ("🟨 Tarjeta amarilla" to receiveYellow),
+                                    "notif_red" to ("🟥 Tarjeta roja" to receiveRed),
+                                    "notif_subs" to ("🔄 Cambios de jugadores" to receiveSubs),
+                                    "notif_penalties" to ("🎯 Penal en partido" to receivePenalties),
+                                    "notif_extra_time" to ("⏱️ Alargue / Prórroga" to receiveExtraTime),
+                                    "notif_shootout" to ("🥅 Tanda de penales" to receiveShootout)
+                                )
+
+                                eventsList.forEach { (key, pair) ->
+                                    val (label, isChecked) = pair
                                     Row(
-                                        modifier = Modifier.fillMaxWidth().clickable {
-                                            receiveStartEnd = !receiveStartEnd
-                                            sharedPrefs.edit().putBoolean("notif_start_end", receiveStartEnd).apply()
-                                        }.padding(vertical = 8.dp, horizontal = 16.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                val next = !isChecked
+                                                when (key) {
+                                                    "notif_goals" -> receiveGoals = next
+                                                    "notif_start" -> receiveStart = next
+                                                    "notif_end" -> receiveEnd = next
+                                                    "notif_yellow" -> receiveYellow = next
+                                                    "notif_red" -> receiveRed = next
+                                                    "notif_subs" -> receiveSubs = next
+                                                    "notif_penalties" -> receivePenalties = next
+                                                    "notif_extra_time" -> receiveExtraTime = next
+                                                    "notif_shootout" -> receiveShootout = next
+                                                }
+                                                sharedPrefs.edit().putBoolean(key, next).apply()
+                                            }
+                                            .padding(vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Switch(checked = receiveStartEnd, onCheckedChange = null)
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text("Inicios y finales de partido")
+                                        Switch(
+                                            checked = isChecked,
+                                            onCheckedChange = null,
+                                            colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFFFC107))
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(label, fontSize = 13.sp, color = Color.White)
                                     }
                                 }
                             }
                         },
                         confirmButton = {
                             TextButton(onClick = { showNotifSettings = false }) {
-                                Text("Aceptar")
+                                Text("Aceptar", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
                             }
-                        }
+                        },
+                        containerColor = Color(0xFF1E1E1E)
                     )
                 }
 
@@ -487,17 +538,16 @@ fun TeamsListScreen(
 
         if (selectedTab == 0) {
             // TAB TORNEOS FAVORITOS
+            val favIds = viewModel.favoriteTournamentIds.value
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(tournamentsList, key = { it.id }) { t ->
-                    val isFav = t.id == favoriteTournamentId
+                    val isFav = t.id in favIds
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp, horizontal = 4.dp)
                             .clickable {
-                                favoriteTournamentId = t.id
-                                sharedPrefs.edit().putInt("favorite_tournament_id", t.id).apply()
-                                viewModel.setTournament(t.id)
+                                viewModel.toggleFavoriteTournament(t.id)
                             },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
@@ -521,10 +571,7 @@ fun TeamsListScreen(
             }
         } else {
             // TAB EQUIPOS / SELECCIONES
-            val checkFavorite: (com.example.worldcup2026.data.model.Team) -> Boolean = { team ->
-                sharedPrefs.getBoolean("favorite_team_${team.id}", false) ||
-                sharedPrefs.getBoolean("favorite_team_${team.name.lowercase().trim()}", false)
-            }
+            val favTeamNames = viewModel.favoriteTeamNames.value
 
             val filteredTeams = remember(allTeams, selectedTab) {
                 when (selectedTab) {
@@ -535,9 +582,9 @@ fun TeamsListScreen(
                 }
             }
 
-            val sortedTeams = remember(filteredTeams, updateTrigger) {
+            val sortedTeams = remember(filteredTeams, favTeamNames) {
                 filteredTeams.sortedWith(
-                    compareByDescending<com.example.worldcup2026.data.model.Team> { checkFavorite(it) }
+                    compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
                         .thenBy { it.name }
                 )
             }
@@ -549,49 +596,39 @@ fun TeamsListScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(sortedTeams, key = { it.name }) { team ->
-                        val isFavorite = remember(updateTrigger, team.id, team.name) {
-                            checkFavorite(team)
-                        }
+                        val isFavorite = team.name in favTeamNames
                         
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 4.dp, vertical = 4.dp)
                                 .clickable {
-                                    val nextState = !isFavorite
-                                    sharedPrefs.edit()
-                                        .putBoolean("favorite_team_${team.id}", nextState)
-                                        .putBoolean("favorite_team_${team.name.lowercase().trim()}", nextState)
-                                        .apply()
-                                    updateTrigger++
+                                    viewModel.toggleFavoriteTeam(team.name)
                                 },
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isFavorite) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
+                            )
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                AsyncImage(
-                                    model = team.flagUrl,
-                                    contentDescription = team.name,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = team.name,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.weight(1f)
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (!team.flagUrl.isNullOrBlank()) {
+                                        coil.compose.AsyncImage(
+                                            model = team.flagUrl,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                    }
+                                    Text(text = team.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                }
                                 Icon(
-                                    imageVector = Icons.Default.Favorite,
+                                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
                                     contentDescription = "Favorito",
-                                    tint = if (isFavorite) Color(0xFFFF5252) else Color.White.copy(alpha = 0.2f),
+                                    tint = if (isFavorite) Color(0xFFFFC107) else Color.Gray,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
