@@ -34,18 +34,28 @@ fun DailyMatchesScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var filterLiveOnly by remember { mutableStateOf(false) }
-    var selectedTournamentId by remember { mutableIntStateOf(0) }
+    val favTournaments by viewModel.favoriteTournamentIds
+    var selectedTournamentId by remember(favTournaments) { 
+        mutableIntStateOf(favTournaments.firstOrNull() ?: 0) 
+    }
 
     val allTournamentsList = remember {
         listOf(0 to "🏆 Todos") + (internacionales + nacionales).map { it.id to it.name }
     }
 
-    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentId) {
+    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentId, favTournaments) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
             .filter { it.date?.startsWith(dateStr) == true }
             .filter { match ->
-                if (selectedTournamentId != 0) (match.tournament_id ?: 1) == selectedTournamentId else true
+                val mId = match.tournament_id ?: 1
+                if (selectedTournamentId != 0) {
+                    mId == selectedTournamentId
+                } else if (favTournaments.isNotEmpty()) {
+                    mId in favTournaments
+                } else {
+                    true
+                }
             }
             .filter { match ->
                 val statusUpper = match.status.uppercase()
@@ -114,7 +124,6 @@ fun DailyMatchesScreen(
         }
 
         // Filtro Por Torneo (Chips horizontales scrollables)
-        val favTournaments by viewModel.favoriteTournamentIds
         LazyRow(
             modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
