@@ -180,7 +180,8 @@ fun DailyMatchesScreen(
                         onShowVipStats = onShowVipStats,
                         onPredictionChange = { matchId, winner, h, a, hp, ap -> viewModel.updateMatchPrediction(matchId, winner, h, a, hp, ap) },
                         onNavigateToTournament = { id -> onNavigateToTournament(id) },
-                        tournamentName = tName
+                        tournamentName = tName,
+                        allMatches = matches
                     )
                 }
             }

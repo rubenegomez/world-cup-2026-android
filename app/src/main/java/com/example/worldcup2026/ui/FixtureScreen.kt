@@ -263,7 +263,7 @@ fun KnockoutBracket(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(filteredMatches) { index, match ->
-                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches)
                 }
             }
         }
@@ -437,7 +437,7 @@ fun DayFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches)
             }
         }
     }
@@ -483,7 +483,7 @@ fun GroupFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches)
             }
         }
     }
@@ -498,7 +498,8 @@ fun MatchCard(
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     onNavigateToTournament: ((Int) -> Unit)? = null,
-    tournamentName: String? = null
+    tournamentName: String? = null,
+    allMatches: List<Match> = emptyList()
 ) {
     var showPlayerHelp by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
@@ -1050,10 +1051,10 @@ fun MatchCard(
                     if (showPlayerHelp) {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
-                        AyudaJugadorView(match = match)
+                        AyudaJugadorView(match = match, allMatches = allMatches)
                     }
                 } else {
-                    val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore) {
+                    val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.homePenalties, match.awayPenalties) {
                         if (match.predictedWinner == null && match.predictedHomeScore == null && match.predictedAwayScore == null) {
                             0
                         } else {
@@ -1093,28 +1094,40 @@ fun MatchCard(
                         }
                     }
                     
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                if (pointsData > 0) Color(0xFF4CAF50).copy(alpha = 0.15f)
+                                else Color.White.copy(alpha = 0.05f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            "Ganador: ${match.predictedWinner ?: "-"} | Marcador: ${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (pointsData > 0) Color(0xFF4CAF50).copy(alpha = 0.2f) else Color.Red.copy(alpha = 0.1f))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                if (pointsData > 0) "+$pointsData PUNTOS" else "0 PUNTOS",
-                                style = MaterialTheme.typography.labelSmall,
+                                text = "Tu Pronóstico: ${match.predictedWinner ?: "-"} (${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0})",
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = if (pointsData > 0) Color(0xFF81C784) else Color.Red.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.9f)
                             )
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (pointsData > 0) Color(0xFF4CAF50) else Color.Gray.copy(alpha = 0.3f)
+                            ) {
+                                Text(
+                                    text = if (isLive) "⚡ EN VIVO: +$pointsData PTS" else if (pointsData > 0) "🏆 ¡+$pointsData PTS SUMADOS!" else "❌ 0 PTS",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1344,32 +1357,27 @@ fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
 
 
 @Composable
-fun AyudaJugadorView(match: Match) {
-    val homeRnd = remember(match.id) { java.util.Random((match.homeTeam.name.hashCode()).toLong()) }
-    val awayRnd = remember(match.id) { java.util.Random((match.awayTeam.name.hashCode()).toLong()) }
-    
-    val homePos = remember(match.id) { homeRnd.nextInt(20) + 1 }
-    val awayPos = remember(match.id) { awayRnd.nextInt(20) + 1 }
-    
-    val getForm = { rnd: java.util.Random -> 
-        List(5) { 
-            val v = rnd.nextInt(3)
-            if (v == 0) "V" else if (v == 1) "E" else "D"
-        }
+fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
+    val homeForm = remember(match.id, allMatches.size) { 
+        computeRealTeamForm(match.homeTeam.name, allMatches)
     }
-    
-    val homeForm = remember(match.id) { getForm(homeRnd) }
-    val awayForm = remember(match.id) { getForm(awayRnd) }
+    val awayForm = remember(match.id, allMatches.size) { 
+        computeRealTeamForm(match.awayTeam.name, allMatches)
+    }
 
-    val homeFormPts = homeForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) } + 2
+    val homeFormPts = homeForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) }
     val awayFormPts = awayForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) }
-    val drawWeight = 5
+    val drawWeight = 4
 
-    val totalPts = (homeFormPts + awayFormPts + drawWeight).toFloat()
-    val homeProb = ((homeFormPts / totalPts) * 100).toInt()
-    val awayProb = ((awayFormPts / totalPts) * 100).toInt()
-    val drawProb = 100 - homeProb - awayProb
+    val totalPts = (homeFormPts + awayFormPts + drawWeight).coerceAtLeast(1).toFloat()
+    val homeProb = (((homeFormPts + 2) / totalPts) * 100).toInt().coerceIn(10, 80)
+    val awayProb = ((awayFormPts / totalPts) * 100).toInt().coerceIn(10, 80)
+    val drawProb = (100 - homeProb - awayProb).coerceAtLeast(10)
     
+    val h2hSummary = remember(match.id, allMatches.size) {
+        computeRealH2H(match.homeTeam.name, match.awayTeam.name, allMatches)
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -1395,16 +1403,10 @@ fun AyudaJugadorView(match: Match) {
             Text("• Totales Combinados por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
             Text("   - Simple acertado + Marcador exacto = 5 PUNTOS", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
             Text("   - Doble acertado + Marcador exacto = 4 PUNTOS", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Apuestas independientes: Podés apostar solo a signo, solo a goles o a ambos.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("• Recompensas Sin Publicidad:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold)
-            Text("   - 22 MINUTOS sin publicidad por cada punto ganado.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - ¡1 SEMANA ENTERA sin publicidad por fecha perfecta! (todos los aciertos)", style = MaterialTheme.typography.bodySmall, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
         }
         
         Column {
-            Text("Probabilidad de victoria", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Probabilidad estimada", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))
             Row(modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp))) {
                 Box(modifier = Modifier.weight(homeProb.toFloat()).fillMaxHeight().background(Color(0xFF4CAF50)))
@@ -1422,14 +1424,18 @@ fun AyudaJugadorView(match: Match) {
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
         
         Column {
-            Text("Racha últimos 5 partidos", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Racha últimos partidos (Reales)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("🏠 ${match.homeTeam.name}: ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(110.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    homeForm.forEach { 
-                        FormCircle(result = it)
-                        Spacer(modifier = Modifier.width(4.dp))
+                    if (homeForm.isEmpty()) {
+                        Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
+                    } else {
+                        homeForm.forEach { 
+                            FormCircle(result = it)
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
                     }
                 }
             }
@@ -1437,9 +1443,13 @@ fun AyudaJugadorView(match: Match) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("✈️ ${match.awayTeam.name}: ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(110.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    awayForm.forEach { 
-                        FormCircle(result = it)
-                        Spacer(modifier = Modifier.width(4.dp))
+                    if (awayForm.isEmpty()) {
+                        Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
+                    } else {
+                        awayForm.forEach { 
+                            FormCircle(result = it)
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
                     }
                 }
             }
@@ -1450,9 +1460,55 @@ fun AyudaJugadorView(match: Match) {
         Column {
             Text("Historial Directo (H2H entre sí)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Últimos cruces: 2 victorias ${match.homeTeam.name}, 1 empate, 2 victorias ${match.awayTeam.name}", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+            Text(h2hSummary, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
         }
     }
+}
+
+fun computeRealTeamForm(teamName: String, allMatches: List<Match>): List<String> {
+    if (teamName.isBlank() || allMatches.isEmpty()) return emptyList()
+    val finishedMatches = allMatches.filter { 
+        it.status == "Finished" && 
+        (it.homeTeam.name.equals(teamName, ignoreCase = true) || it.awayTeam.name.equals(teamName, ignoreCase = true))
+    }.sortedByDescending { it.date ?: "" }.take(5)
+
+    return finishedMatches.map { match ->
+        val isHome = match.homeTeam.name.equals(teamName, ignoreCase = true)
+        val hScore = match.homeScore ?: 0
+        val aScore = match.awayScore ?: 0
+        when {
+            hScore == aScore -> "E"
+            (isHome && hScore > aScore) || (!isHome && aScore > hScore) -> "V"
+            else -> "D"
+        }
+    }
+}
+
+fun computeRealH2H(homeName: String, awayName: String, allMatches: List<Match>): String {
+    if (homeName.isBlank() || awayName.isBlank() || allMatches.isEmpty()) return "Sin enfrentamientos previos registrados."
+    val h2h = allMatches.filter { 
+        it.status == "Finished" && 
+        ((it.homeTeam.name.equals(homeName, ignoreCase = true) && it.awayTeam.name.equals(awayName, ignoreCase = true)) ||
+         (it.homeTeam.name.equals(awayName, ignoreCase = true) && it.awayTeam.name.equals(homeName, ignoreCase = true)))
+    }
+    if (h2h.isEmpty()) return "Sin enfrentamientos previos registrados."
+
+    var homeWins = 0
+    var draws = 0
+    var awayWins = 0
+
+    h2h.forEach { m ->
+        val h = m.homeScore ?: 0
+        val a = m.awayScore ?: 0
+        val homeIsTarget = m.homeTeam.name.equals(homeName, ignoreCase = true)
+        when {
+            h == a -> draws++
+            (homeIsTarget && h > a) || (!homeIsTarget && a > h) -> homeWins++
+            else -> awayWins++
+        }
+    }
+
+    return "Últimos ${h2h.size} cruces: $homeWins victorias $homeName, $draws empates, $awayWins victorias $awayName"
 }
 
 @Composable
