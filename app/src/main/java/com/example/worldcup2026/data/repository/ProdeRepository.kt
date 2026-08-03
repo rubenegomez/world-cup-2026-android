@@ -91,7 +91,20 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     custom_prize = customPrize
                 )
             )
-            leagueDao.insertLeague(LeagueEntity(dto.id, dto.name, dto.creatorId, dto.code))
+            leagueDao.insertLeague(
+                LeagueEntity(
+                    id = dto.id,
+                    name = dto.name,
+                    creatorId = dto.creatorId,
+                    code = dto.code,
+                    tournamentId = dto.tournament_id ?: (tournamentId ?: 5),
+                    mode = dto.mode ?: mode,
+                    startMatchday = dto.start_matchday ?: startMatchday,
+                    endMatchday = dto.end_matchday ?: endMatchday,
+                    customPrize = dto.custom_prize ?: customPrize,
+                    status = dto.status ?: "ACTIVE"
+                )
+            )
             true
         } catch (e: Exception) {
             Log.e("ProdeRepo", "Error creating league", e)
@@ -103,7 +116,20 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         val token = authToken ?: return false
         return try {
             val dto = api.joinLeague(token, JoinLeagueRequest(code))
-            leagueDao.insertLeague(LeagueEntity(dto.id, dto.name, dto.creatorId, dto.code))
+            leagueDao.insertLeague(
+                LeagueEntity(
+                    id = dto.id,
+                    name = dto.name,
+                    creatorId = dto.creatorId,
+                    code = dto.code,
+                    tournamentId = dto.tournament_id ?: 5,
+                    mode = dto.mode ?: "FULL_TOURNAMENT",
+                    startMatchday = dto.start_matchday,
+                    endMatchday = dto.end_matchday,
+                    customPrize = dto.custom_prize,
+                    status = dto.status ?: "ACTIVE"
+                )
+            )
             true
         } catch (e: Exception) {
             Log.e("ProdeRepo", "Error joining league", e)
