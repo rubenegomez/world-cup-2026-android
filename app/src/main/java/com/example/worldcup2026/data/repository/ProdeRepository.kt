@@ -48,7 +48,20 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         val token = authToken ?: return
         try {
             val leaguesDto = api.getMyLeagues(token)
-            val entities = leaguesDto.map { LeagueEntity(it.id, it.name, it.creatorId, it.code) }
+            val entities = leaguesDto.map { 
+                LeagueEntity(
+                    id = it.id,
+                    name = it.name,
+                    creatorId = it.creatorId,
+                    code = it.code,
+                    tournamentId = it.tournament_id ?: 5,
+                    mode = it.mode ?: "FULL_TOURNAMENT",
+                    startMatchday = it.start_matchday,
+                    endMatchday = it.end_matchday,
+                    customPrize = it.custom_prize,
+                    status = it.status ?: "ACTIVE"
+                )
+            }
             leagueDao.insertAll(entities)
         } catch (e: Exception) {
             Log.e("ProdeRepo", "Error fetching leagues", e)

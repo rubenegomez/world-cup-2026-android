@@ -53,7 +53,52 @@ fun LeagueDetailScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         )
 
+        val modeDesc = when (league.mode) {
+            "SINGLE_MATCHDAY" -> "Fecha ${league.startMatchday ?: 1}"
+            "RANGE_MATCHDAYS" -> "Fechas ${league.startMatchday ?: 1} a ${league.endMatchday ?: 5}"
+            else -> "Torneo Completo"
+        }
+        val isFinished = league.status?.uppercase() == "FINISHED"
+
         Column(modifier = Modifier.padding(16.dp)) {
+            // Detalle de la Liga (Torneo, Rango de Fechas, Premio)
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                color = Color.White.copy(alpha = 0.08f),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("ℹ️ Configuración de Liga", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("• Modalidad: $modeDesc", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                    if (!league.customPrize.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("• 🎁 Premio Configurado: ${league.customPrize}", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+
+            if (isFinished && standings.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFD700).copy(alpha = 0.15f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("🏆 LIGA FINALIZADA - PODIO FINAL", color = Color(0xFFFFD700), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val winner = standings.firstOrNull()?.name ?: "-"
+                        val second = standings.getOrNull(1)?.name
+                        val third = standings.getOrNull(2)?.name
+                        Text("🥇 1º Puesto: $winner (${standings.firstOrNull()?.points ?: 0} Pts)", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        if (second != null) Text("🥈 2º Puesto: $second", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                        if (third != null) Text("🥉 3º Puesto: $third", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                    }
+                }
+            }
+
             // Tarjeta de Invitación
             Card(
                 modifier = Modifier.fillMaxWidth(),

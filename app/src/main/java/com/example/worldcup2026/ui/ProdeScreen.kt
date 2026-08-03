@@ -165,7 +165,7 @@ fun ProdeScreen(
                                         fontSize = 15.sp
                                     )
                                     Text(
-                                        text = "⏱️ Sin Anuncios (22m/pt)",
+                                        text = "👋 Bienvenid@ • ⏱️ Sin Anuncios (22m/pt)",
                                         color = Color(0xFFFFC107),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold
@@ -284,6 +284,26 @@ fun MisLigasTab(
     var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
     var startMatchday by remember { mutableIntStateOf(1) }
     var endMatchday by remember { mutableIntStateOf(5) }
+    var minActiveMatchday by remember { mutableIntStateOf(1) }
+    var leaguePointsMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+
+    val currentUser by viewModel.currentUser.collectAsState()
+
+    LaunchedEffect(leagues, currentUser) {
+        val newMap = mutableMapOf<String, Int>()
+        leagues.forEach { l ->
+            try {
+                val standings = viewModel.getStandings(l.id)
+                val myStanding = standings.find { it.name == currentUser?.fullName } ?: standings.firstOrNull()
+                if (myStanding != null) {
+                    newMap[l.id] = myStanding.points
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        leaguePointsMap = newMap
+    }
 
     LaunchedEffect(initialJoinCode) {
         if (!initialJoinCode.isNullOrBlank()) {
@@ -322,11 +342,8 @@ fun MisLigasTab(
         12 to "🏆 Finalíssima"
     )
 
-    val minActiveMatchday = remember(selectedTournamentId, showCreateDialog) {
-        worldCupViewModel?.getCurrentMatchdayForTournament(selectedTournamentId ?: 5) ?: 1
-    }
-
     LaunchedEffect(selectedTournamentId, showCreateDialog) {
+        minActiveMatchday = worldCupViewModel?.getCurrentMatchdayForTournament(selectedTournamentId ?: 5) ?: 1
         startMatchday = minActiveMatchday
         endMatchday = minActiveMatchday + 4
     }
@@ -386,9 +403,19 @@ fun MisLigasTab(
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(leagues) { league ->
+                val myPts = leaguePointsMap[league.id] ?: 0
+                val tName = tournamentOptions.find { it.first == league.tournamentId }?.second ?: "🏆 Liga General"
+                val modeDesc = when (league.mode) {
+                    "SINGLE_MATCHDAY" -> "📅 Fecha ${league.startMatchday ?: 1}"
+                    "RANGE_MATCHDAYS" -> "📅 Fechas ${league.startMatchday ?: 1} a ${league.endMatchday ?: 5}"
+                    else -> "📅 Torneo Completo"
+                }
+                val isFinished = league.status?.uppercase() == "FINISHED"
+
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable { onLeagueClick(league) },
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+                    colors = CardDefaults.cardColors(containerColor = if (isFinished) Color(0xFF2D2610) else Color(0xFF1E1E1E)),
+                    border = if (isFinished) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)) else null
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -400,20 +427,31 @@ fun MisLigasTab(
                                 Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                    color = Color(0xFFFFC107).copy(alpha = 0.2f),
                                     modifier = Modifier.padding(start = 8.dp)
                                 ) {
                                     Text(
-                                        text = "🏆 Liga Privada",
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontSize = 11.sp,
+                                        text = "⭐ $myPts PTS",
+                                        color = Color(0xFFFFC107),
+                                        fontSize = 12.sp,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Black
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.height(4.dp))
+                            Text("$tName • $modeDesc", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text("Código: ${league.code}", color = Color.Gray, fontSize = 13.sp)
+                            
+                            if (!league.customPrize.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("🎁 Premio: ${league.customPrize}", color = Color(0xFFFF9800), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                            if (isFinished) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("🏆 LIGA FINALIZADA", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            }
                         }
                         
                         IconButton(onClick = { leagueToDelete = league }) {
