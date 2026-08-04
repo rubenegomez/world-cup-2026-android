@@ -76,18 +76,22 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 // Sincronizar pronósticos locales existentes con el servidor al iniciar sesión si hubiera nuevos
-                launch {
-                    try {
-                        val matches = worldCupRepository.getMatches(1)
-                        val localPredictions = matches.filter { it.predictedHomeScore != null && it.predictedAwayScore != null }
-                            .map { SubmitPredictionRequest(it.id, it.predictedHomeScore ?: 0, it.predictedAwayScore ?: 0, it.predictedHomePenalties, it.predictedAwayPenalties) }
-                        if (localPredictions.isNotEmpty()) {
-                            prodeRepository.submitPredictions(localPredictions)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                syncAllLocalPredictions()
+            }
+        }
+    }
+
+    fun syncAllLocalPredictions() {
+        viewModelScope.launch {
+            try {
+                val matches = worldCupRepository.getAllMatchesGlobal()
+                val localPredictions = matches.filter { it.predictedHomeScore != null && it.predictedAwayScore != null }
+                    .map { SubmitPredictionRequest(it.id, it.predictedHomeScore ?: 0, it.predictedAwayScore ?: 0, it.predictedHomePenalties, it.predictedAwayPenalties) }
+                if (localPredictions.isNotEmpty()) {
+                    prodeRepository.submitPredictions(localPredictions)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

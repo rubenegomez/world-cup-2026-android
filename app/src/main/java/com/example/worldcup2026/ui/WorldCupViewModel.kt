@@ -88,9 +88,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         val currentSet = _favoriteTournamentIds.value.toMutableSet()
         if (currentSet.contains(tournamentId)) {
-            if (currentSet.size > 1) {
-                currentSet.remove(tournamentId)
-            }
+            currentSet.remove(tournamentId)
         } else {
             currentSet.add(tournamentId)
         }

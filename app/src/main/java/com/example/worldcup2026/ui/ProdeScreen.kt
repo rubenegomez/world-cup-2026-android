@@ -290,11 +290,15 @@ fun MisLigasTab(
     val currentUser by viewModel.currentUser.collectAsState()
 
     LaunchedEffect(leagues, currentUser) {
+        viewModel.syncAllLocalPredictions()
         val newMap = mutableMapOf<String, Int>()
         leagues.forEach { l ->
             try {
                 val standings = viewModel.getStandings(l.id)
-                val myStanding = standings.find { it.name == currentUser?.fullName } ?: standings.firstOrNull()
+                val myStanding = standings.find { 
+                    it.name.trim().equals(currentUser?.fullName?.trim(), ignoreCase = true) ||
+                    (currentUser?.email?.isNotBlank() == true && currentUser?.email?.startsWith(it.name, ignoreCase = true) == true)
+                } ?: standings.firstOrNull()
                 if (myStanding != null) {
                     newMap[l.id] = myStanding.points
                 }
