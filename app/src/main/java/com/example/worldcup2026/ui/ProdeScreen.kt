@@ -131,14 +131,14 @@ fun ProdeScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
                     ) {
                         Row(
                             modifier = Modifier
-                                .padding(12.dp)
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
                                 .fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -151,18 +151,18 @@ fun ProdeScreen(
                                         .build(),
                                     contentDescription = null,
                                     modifier = Modifier
-                                        .size(44.dp)
+                                        .size(36.dp)
                                         .clip(androidx.compose.foundation.shape.CircleShape)
                                         .background(Color.White.copy(alpha = 0.1f)),
                                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Column {
                                     Text(
                                         text = user.fullName,
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp
+                                        fontSize = 14.sp
                                     )
                                     Text(
                                         text = "👋 Bienvenid@ • ⏱️ Sin Anuncios (22m/pt)",
@@ -348,60 +348,66 @@ fun MisLigasTab(
         endMatchday = minActiveMatchday + 4
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         if (detectedClipboardCode != null) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-                    .clickable {
-                        viewModel.joinLeague(detectedClipboardCode!!)
-                        detectedClipboardCode = null
-                    },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC107).copy(alpha = 0.15f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.6f))
-            ) {
-                Row(
+            item {
+                Card(
                     modifier = Modifier
-                        .padding(12.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("📋 Código detectado en portapapeles:", color = Color(0xFFFFC107), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text(detectedClipboardCode!!, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                    }
-                    Button(
-                        onClick = {
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp)
+                        .clickable {
                             viewModel.joinLeague(detectedClipboardCode!!)
                             detectedClipboardCode = null
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFC107).copy(alpha = 0.15f)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.6f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Unirme", color = Color.Black, fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("📋 Código detectado en portapapeles:", color = Color(0xFFFFC107), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(detectedClipboardCode!!, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                        }
+                        Button(
+                            onClick = {
+                                viewModel.joinLeague(detectedClipboardCode!!)
+                                detectedClipboardCode = null
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+                        ) {
+                            Text("Unirme", color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            Button(onClick = { showCreateDialog = true }, modifier = Modifier.weight(1f)) {
-                Text("Crear Liga 🏆")
-            }
-            Button(onClick = { showJoinDialog = true }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)) {
-                Text("Unirse con Código 🔑", color = Color.White)
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        if (leagues.isEmpty()) {
-            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("No estás en ninguna liga privada aún.\n¡Creá una o unite con un código!", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { showCreateDialog = true }, modifier = Modifier.weight(1f)) {
+                    Text("Crear Liga 🏆", fontSize = 13.sp)
+                }
+                Button(onClick = { showJoinDialog = true }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)) {
+                    Text("Unirse con Código 🔑", color = Color.White, fontSize = 13.sp)
+                }
             }
         }
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (leagues.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Text("No estás en ninguna liga privada aún.\n¡Creá una o unite con un código!", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+        } else {
             items(leagues) { league ->
                 val myPts = leaguePointsMap[league.id] ?: 0
                 val tName = tournamentOptions.find { it.first == league.tournamentId }?.second ?: "🏆 Liga General"
@@ -418,13 +424,13 @@ fun MisLigasTab(
                     border = if (isFinished) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)) else null
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        modifier = Modifier.padding(14.dp).fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
                                     color = Color(0xFFFFC107).copy(alpha = 0.2f),
@@ -434,7 +440,7 @@ fun MisLigasTab(
                                         text = "⭐ $myPts PTS",
                                         color = Color(0xFFFFC107),
                                         fontSize = 12.sp,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                         fontWeight = FontWeight.Black
                                     )
                                 }

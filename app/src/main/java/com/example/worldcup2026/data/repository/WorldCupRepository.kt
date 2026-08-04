@@ -109,22 +109,31 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
             
-            var status = if (baseMatch.status != "Scheduled") baseMatch.status else saved.status
+            var status = baseMatch.status
             
-            // Forzar a LIVE solo si el partido comenzó recientemente (hace menos de 2.5 horas)
-            if (status == "Scheduled") {
-                try {
-                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-                    val matchDate = sdf.parse(baseMatch.date)
-                    if (matchDate != null) {
-                        val diff = System.currentTimeMillis() - matchDate.time
-                        if (diff in 0..(2 * 3600 * 1000 + 30 * 60 * 1000)) {
+            try {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                val matchDate = sdf.parse(baseMatch.date)
+                if (matchDate != null) {
+                    val diff = System.currentTimeMillis() - matchDate.time
+                    // Si comenzó hace entre 0 y 2.5 horas y no está finalizado, marcar LIVE
+                    if (diff in 0..(2 * 3600 * 1000 + 30 * 60 * 1000)) {
+                        if (status != "Finished") {
                             status = "LIVE"
                         }
+                    } else if (diff > 2 * 3600 * 1000 + 30 * 60 * 1000) {
+                        // Si transcurrieron más de 2.5 horas desde el inicio, expira el estado LIVE a Finished
+                        if (status == "LIVE" || saved.status == "LIVE" || status == "Scheduled") {
+                            status = "Finished"
+                        }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            if (baseMatch.status == "Finished" || saved.status == "Finished") {
+                status = "Finished"
             }
 
             val homePossession = baseMatch.homePossession ?: saved.homePossession

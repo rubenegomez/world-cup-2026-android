@@ -51,8 +51,6 @@ fun DailyMatchesScreen(
                 val mId = match.tournament_id ?: 1
                 if (selectedTournamentId != 0) {
                     mId == selectedTournamentId
-                } else if (favTournaments.isNotEmpty()) {
-                    mId in favTournaments
                 } else {
                     true
                 }
