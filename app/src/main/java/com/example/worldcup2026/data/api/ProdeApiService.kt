@@ -60,6 +60,7 @@ data class SubmitPredictionRequest(
     val predictedAwayScore: Int,
     val predictedHomePenalties: Int? = null,
     val predictedAwayPenalties: Int? = null,
+    val predictedWinner: String? = null,
     val isDoubleChance: Boolean? = false,
     val secHomeScore: Int? = null,
     val secAwayScore: Int? = null,

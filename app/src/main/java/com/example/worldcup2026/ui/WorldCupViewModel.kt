@@ -484,7 +484,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                                 predictedHomeScore = homePredict ?: 0,
                                 predictedAwayScore = awayPredict ?: 0,
                                 predictedHomePenalties = homePenaltiesPredict,
-                                predictedAwayPenalties = awayPenaltiesPredict
+                                predictedAwayPenalties = awayPenaltiesPredict,
+                                predictedWinner = winner
                             )
                         ))
                     } catch (e: Exception) {
