@@ -1073,7 +1073,14 @@ fun MatchCard(
                             }
                             
                             val isDouble = isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)
-                            val predictedSigns = (match.predictedWinner ?: "").split(",").map { it.trim() }.filter { it.isNotBlank() }.toMutableSet()
+                            val predictedSigns = (match.predictedWinner ?: "").split(",").map { s ->
+                                when (s.trim()) {
+                                    "home" -> "L"
+                                    "away" -> "V"
+                                    "draw" -> "E"
+                                    else -> s.trim()
+                                }
+                            }.filter { it.isNotBlank() }.toMutableSet()
                             if (match.predictedHomeScore != null && match.predictedAwayScore != null) {
                                 val scoreSign = when {
                                     match.predictedHomeScore!! > match.predictedAwayScore!! -> "L"
@@ -1110,8 +1117,14 @@ fun MatchCard(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val displayWinner = when (match.predictedWinner) {
+                                "home" -> "L"
+                                "away" -> "V"
+                                "draw" -> "E"
+                                else -> match.predictedWinner ?: "-"
+                            }
                             Text(
-                                text = "Tu Pronóstico: ${match.predictedWinner ?: "-"} (${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0})",
+                                text = "Tu Pronóstico: $displayWinner (${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0})",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White.copy(alpha = 0.9f)
@@ -1293,7 +1306,14 @@ fun isDoubleBet(predictedWinner: String?, homeScore: Int?, awayScore: Int?): Boo
     if (predictedWinner.isNullOrBlank()) {
         return false
     }
-    val signs = predictedWinner.split(",").map { it.trim() }.filter { it.isNotBlank() }
+    val signs = predictedWinner.split(",").map { s ->
+        when (s.trim()) {
+            "home" -> "L"
+            "away" -> "V"
+            "draw" -> "E"
+            else -> s.trim()
+        }
+    }.filter { it.isNotBlank() }
     
     // Caso 1: Se eligieron 2 fichas (ej: L + V, L + E, E + V)
     if (signs.size >= 2) return true
@@ -1306,9 +1326,7 @@ fun isDoubleBet(predictedWinner: String?, homeScore: Int?, awayScore: Int?): Boo
             awayScore > homeScore -> "V"
             else -> "E"
         }
-        if (winnerSign != scoreOutcome) {
-            return true // Es una apuesta doble por contradicción (ej: Apuesta L pero marcador 0-1)
-        }
+        return winnerSign != scoreOutcome
     }
     return false
 }
