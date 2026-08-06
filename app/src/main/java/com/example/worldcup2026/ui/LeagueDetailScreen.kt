@@ -2,6 +2,7 @@ package com.example.worldcup2026.ui
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.worldcup2026.data.api.StandingDto
 import com.example.worldcup2026.data.local.LeagueEntity
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,15 +34,108 @@ fun LeagueDetailScreen(
     val context = LocalContext.current
     var standings by remember { mutableStateOf<List<StandingDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    val coroutineScope = rememberCoroutineScope()
+    
+    var selectedStandingForBreakdown by remember { mutableStateOf<StandingDto?>(null) }
+    var breakdownList by remember { mutableStateOf<List<com.example.worldcup2026.data.api.MatchBreakdownDto>>(emptyList()) }
+    var isBreakdownLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(league.id) {
         isLoading = true
         standings = viewModel.getStandings(league.id)
         isLoading = false
     }
+
+    LaunchedEffect(selectedStandingForBreakdown) {
+        selectedStandingForBreakdown?.let { standing ->
+            isBreakdownLoading = true
+            breakdownList = viewModel.getMemberBreakdown(league.id, standing.id)
+            isBreakdownLoading = false
+        }
+    }
     
     val currentUser by viewModel.currentUser.collectAsState()
+
+    if (selectedStandingForBreakdown != null) {
+        val standing = selectedStandingForBreakdown!!
+        AlertDialog(
+            onDismissRequest = { selectedStandingForBreakdown = null },
+            confirmButton = {
+                TextButton(onClick = { selectedStandingForBreakdown = null }) {
+                    Text("CERRAR", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                }
+            },
+            title = {
+                Column {
+                    Text("🔍 Desglose de Puntos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("${standing.name} (${standing.points} Pts acumulados)", style = MaterialTheme.typography.bodySmall, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                if (isBreakdownLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                } else if (breakdownList.isEmpty()) {
+                    Text("No hay partidos computados registrados aún para este participante.", color = Color.Gray, fontSize = 13.sp)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(breakdownList) { _, item ->
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White.copy(alpha = 0.08f),
+                                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (item.matchday != null) "Fecha ${item.matchday}" else "Partido",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = if (item.points > 0) Color(0xFF4CAF50) else Color.Gray.copy(alpha = 0.3f)
+                                        ) {
+                                            Text(
+                                                text = if (item.points > 0) "+${item.points} PTS" else "0 PTS",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "${item.homeTeamName} ${item.homeScore ?: "-"} - ${item.awayScore ?: "-"} ${item.awayTeamName}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Pronóstico: ${item.predictedWinner ?: "-"} (${item.predictedHomeScore ?: 0}-${item.predictedAwayScore ?: 0})",
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            containerColor = Color(0xFF1E1E1E)
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -66,7 +159,6 @@ fun LeagueDetailScreen(
             modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Detalle de la Liga (Torneo, Rango de Fechas, Premio)
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
@@ -108,7 +200,6 @@ fun LeagueDetailScreen(
                 }
             }
 
-            // Tarjeta de Invitación
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -144,7 +235,14 @@ fun LeagueDetailScreen(
 
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Tabla de Posiciones", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Tabla de Posiciones", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("💡 Tocá un jugador para ver desglose", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+                }
             }
 
             if (isLoading) {
@@ -171,7 +269,9 @@ fun LeagueDetailScreen(
                     val isCurrentUser = currentUser?.fullName?.trim()?.equals(standing.name.trim(), ignoreCase = true) == true
                     
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedStandingForBreakdown = standing },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isCurrentUser) Color(0xFF2E7D32).copy(alpha = 0.3f) else Color(0xFF1E1E1E)
                         ),

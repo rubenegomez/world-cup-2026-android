@@ -130,4 +130,8 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun getStandings(leagueId: String): List<com.example.worldcup2026.data.api.StandingDto> {
         return prodeRepository.getStandings(leagueId)
     }
+
+    suspend fun getMemberBreakdown(leagueId: String, memberUserId: String): List<com.example.worldcup2026.data.api.MatchBreakdownDto> {
+        return prodeRepository.getMemberBreakdown(leagueId, memberUserId)
+    }
 }

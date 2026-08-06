@@ -67,6 +67,20 @@ data class SubmitPredictionRequest(
     val isDoublePointsMultiplier: Boolean? = false
 )
 
+data class MatchBreakdownDto(
+    val matchId: Int,
+    val homeTeamName: String,
+    val awayTeamName: String,
+    val homeScore: Int? = null,
+    val awayScore: Int? = null,
+    val predictedHomeScore: Int? = null,
+    val predictedAwayScore: Int? = null,
+    val predictedWinner: String? = null,
+    val points: Int,
+    val status: String,
+    val matchday: Int? = null
+)
+
 // --- API Service ---
 
 interface ProdeApiService {
@@ -101,6 +115,13 @@ interface ProdeApiService {
         @Header("Authorization") token: String,
         @Path("id") leagueId: String
     ): List<StandingDto>
+
+    @GET("api/prode/leagues/{league_id}/members/{member_user_id}/breakdown")
+    suspend fun getMemberBreakdown(
+        @Header("Authorization") token: String,
+        @Path("league_id") leagueId: String,
+        @Path("member_user_id") memberUserId: String
+    ): List<MatchBreakdownDto>
 
     @POST("api/prode/predictions")
     suspend fun submitPredictions(

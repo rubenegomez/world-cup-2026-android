@@ -158,6 +158,13 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         emptyList()
     }
 
+    suspend fun getMemberBreakdown(leagueId: String, memberUserId: String) = try {
+        authToken?.let { api.getMemberBreakdown(it, leagueId, memberUserId) } ?: emptyList()
+    } catch (e: Exception) {
+        Log.e("ProdeRepo", "Error fetching member breakdown", e)
+        emptyList()
+    }
+
     suspend fun submitPredictions(predictions: List<SubmitPredictionRequest>): Boolean {
         val token = authToken ?: return false
         return try {
