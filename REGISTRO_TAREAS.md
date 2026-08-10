@@ -27,29 +27,23 @@ Este documento sirve para realizar el seguimiento del desarrollo de **world-cup-
 | **[x]** | Siembra y utilidad de actualización de llaves eliminatorias | Servidor / BD | 2026-06-27 | Scripts `seed_knockouts.py`, `knockout_updater.py` y llamada integrada en `sync_db.py`. |
 | **[x]** | Completar cálculo de llaves eliminatorias en Android | Android / Lógica | 2026-06-27 | Mapeo completo de las 16 llaves de dieciseisavos (101-116) con mejores terceros en `KnockoutCalculator.kt`. |
 | **[x]** | Centrado automático de fechas y sub-pestañas de días en fase eliminatoria | Android / UI | 2026-06-27 | Scroll al día actual en LazyRow y pestañas por día para Dieciseisavos, Octavos, etc. |
-| **[x]** | Corrección de mapeo de llaves Dieciseisavos (Canchallena) | Android y Backend | 2026-06-27 | Alineación del actualizador de llaves en servidor y cliente según gráfico oficial de Canchallena. |
-| **[x]** | Ajuste y cascada de Octavos de final (Canchallena) | Android y Backend | 2026-06-27 | Configuración de las fechas, horas y flujo en cascada de los 8 partidos de octavos en el cliente y servidor. |
-| **[x]** | Ajuste de horario del Tercer Puesto y Final | Android y Backend | 2026-06-27 | Actualización del horario del partido de 3er puesto (18:00 hs) y final (16:00 hs) en el servidor y cliente. |
+| **[x]** | Comodín ⭐ x2 compacto, interactivo y con auto-asignación por fecha | Android y Backend | 2026-08-10 | Chip ⭐ x2 en esquina superior derecha de la tarjeta con toggle táctil y asignación automática al primer pronóstico. |
+| **[x]** | Regla de Misma Diferencia de Gol (+1 punto) | Android y Backend | 2026-08-10 | Se suma +1 punto extra al acertar el ganador/empate con la misma diferencia de gol no exacta. |
+| **[x]** | Separación limpia de canales y sonidos de notificaciones (silbato vs gooolll) | Android / Notif. | 2026-08-10 | Canales `_v3` en Android con sonido de silbato para incidencias/cambios y gol exclusivo para goles. |
+
+---
+
+## 📌 Políticas Clave de Producción
+* **Cambios de Reglas del Prode**: Cualquier modificación futura en la lógica o escala de puntuación se aplicará **estrictamente entre ligas o torneos**, nunca a mitad de una competencia activa.
+* **Publicación en Samsung Galaxy Store**: Programada para el **Viernes 14 de Agosto de 2026**.
 
 ---
 
 ## 🔮 Próxima Planificación (Roadmap)
 
-### 🏆 Prode Social
-*   **Enfoque Sin Registro**: Compartir desafíos 1v1 y predicciones del día directamente por WhatsApp a través de tarjetas con formato premium.
-*   **Ligas Privadas (Con Registro)**: Creación de ligas de amigos por invitación mediante un código único, con tabla de posiciones y evolución del puntaje en tiempo real.
+### 🚀 Lanzamiento Oficial (Viernes)
+* Generar paquete final firmado (AAB / APK) y completar la ficha técnica en la tienda Samsung.
 
-### 🌐 Distribución y Landing Page
-*   **Servicio de Descarga Directa**: Subir el APK de producción al servidor de Oracle Cloud y añadir un botón premium de descarga en `index.html` servido de forma nativa mediante Caddy.
-
----
-
-## 🛠️ Tareas Planificadas (Próxima Sesión)
-
-- [ ] **Prode Social**:
-  - [ ] Diseñar el formato premium de las tarjetas de predicciones 1v1 para compartir por WhatsApp.
-- [ ] **Automatización de Despliegue**:
-  - [ ] Configurar script de copia automática del APK compilado al servidor web.
 
 
 
