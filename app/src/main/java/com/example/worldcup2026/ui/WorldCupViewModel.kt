@@ -308,9 +308,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             }
         }
         return 9
-    }
-
-    private fun calculatePointsForMatch(match: Match): Int {
+    }    private fun calculatePointsForMatch(match: Match): Int {
         if (match.status != "Finished") return 0
         val h = match.homeScore ?: 0
         val a = match.awayScore ?: 0
@@ -325,22 +323,38 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             else -> "E"
         }
         var points = 0
+        var isWinnerHit = false
         val predW = match.predictedWinner ?: ""
         if (predW.isNotEmpty()) {
             if (predW.contains(",")) {
                 val choices = predW.split(",")
                 if (choices.contains(realWinner)) {
                     points += 1 // 1 punto por acierto en apuesta doble
+                    isWinnerHit = true
                 }
             } else if (predW == realWinner) {
                 points += 2 // 2 puntos por acierto en apuesta simple
+                isWinnerHit = true
             }
         }
 
-        if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
-            match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) {
-            points += 3 // 3 puntos por resultado de marcador exacto
+        if (match.predictedHomeScore != null && match.predictedAwayScore != null) {
+            if (match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) {
+                points += 3 // 3 puntos por resultado de marcador exacto
+            } else if (isWinnerHit) {
+                // +1 punto por misma diferencia de gol al acertar el ganador o empate
+                val diffReal = h - a
+                val diffPred = match.predictedHomeScore!! - match.predictedAwayScore!!
+                if (diffReal == diffPred) {
+                    points += 1
+                }
+            }
         }
+
+        if (match.is_featured) {
+            points *= 2
+        }
+
         return points
     }
 
@@ -348,18 +362,18 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         val matchesByRound = matches.groupBy { getMatchRound(it.id) }
         val editor = prefs.edit()
-
         var hasChanges = false
-        for (round in 1..8) {
-            val roundMatches = matchesByRound[round] ?: continue
-            val keyRewarded = "round_rewarded_$round"
+        
+        matchesByRound.forEach { (round, roundMatches) ->
+            if (round <= 0) return@forEach
             val keyReady = "round_ready_to_claim_$round"
+            val keyRewarded = "round_rewarded_$round"
             
-            // Ya est recompensado (reclamado)
-            if (prefs.getBoolean(keyRewarded, false)) continue
+            // Ya fue reclamado
+            if (prefs.getBoolean(keyRewarded, false)) return@forEach
             
-            // Ya est listo para reclamar (pero no lo reclam an)
-            if (prefs.getBoolean(keyReady, false)) continue
+            // Ya está listo para reclamar (pero no lo reclamó aún)
+            if (prefs.getBoolean(keyReady, false)) return@forEach
 
             val allFinished = roundMatches.all { it.status == "Finished" }
             if (allFinished && roundMatches.isNotEmpty()) {
@@ -464,9 +478,61 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun toggleComodin(matchId: Int) {
+        viewModelScope.launch {
+            val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
+            val targetMatch = currentState.matches.find { it.id == matchId } ?: return@launch
+            val targetMatchday = targetMatch.matchday ?: 1
+            val targetTournament = targetMatch.tournament_id ?: currentTournamentId.value
+
+            val willBeFeatured = !targetMatch.is_featured
+
+            val updatedList = currentState.matches.map { m ->
+                val mDay = m.matchday ?: 1
+                val mT = m.tournament_id ?: currentTournamentId.value
+                if (mT == targetTournament && mDay == targetMatchday) {
+                    if (m.id == matchId) m.copy(is_featured = willBeFeatured)
+                    else m.copy(is_featured = false)
+                } else m
+            }
+
+            _uiState.value = currentState.copy(matches = updatedList)
+
+            if (com.example.worldcup2026.data.repository.ProdeRepository.authToken != null) {
+                launch {
+                    try {
+                        val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(
+                            com.example.worldcup2026.data.local.WorldCupDatabase.getDatabase(getApplication()).leagueDao()
+                        )
+                        val matchToSync = updatedList.find { it.id == matchId } ?: targetMatch
+                        prodeRepo.submitPredictions(listOf(
+                            com.example.worldcup2026.data.api.SubmitPredictionRequest(
+                                matchId = matchId,
+                                predictedHomeScore = matchToSync.predictedHomeScore ?: 0,
+                                predictedAwayScore = matchToSync.predictedAwayScore ?: 0,
+                                predictedHomePenalties = matchToSync.predictedHomePenalties,
+                                predictedAwayPenalties = matchToSync.predictedAwayPenalties,
+                                predictedWinner = matchToSync.predictedWinner,
+                                isDoublePointsMultiplier = willBeFeatured
+                            )
+                        ))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
     fun updateMatchPrediction(matchId: Int, winner: String?, homePredict: Int?, awayPredict: Int?, homePenaltiesPredict: Int? = null, awayPenaltiesPredict: Int? = null) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
+            val currentMatch = currentState.matches.find { it.id == matchId }
+            val targetMatchday = currentMatch?.matchday ?: 1
+            val targetTournament = currentMatch?.tournament_id ?: currentTournamentId.value
+
+            val hasComodinInDate = currentState.matches.any { (it.matchday ?: 1) == targetMatchday && (it.tournament_id ?: currentTournamentId.value) == targetTournament && it.is_featured }
+            val autoFeatured = if (!hasComodinInDate && (winner != null || homePredict != null || awayPredict != null)) true else (currentMatch?.is_featured ?: false)
             
             AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict, pens=$homePenaltiesPredict-$awayPenaltiesPredict")
             repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict, homePenaltiesPredict, awayPenaltiesPredict)
@@ -485,7 +551,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                                 predictedAwayScore = awayPredict ?: 0,
                                 predictedHomePenalties = homePenaltiesPredict,
                                 predictedAwayPenalties = awayPenaltiesPredict,
-                                predictedWinner = winner
+                                predictedWinner = winner,
+                                isDoublePointsMultiplier = autoFeatured
                             )
                         ))
                     } catch (e: Exception) {
@@ -495,7 +562,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             }
 
             val updatedList = currentState.matches.map {
-                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict, predictedHomePenalties = homePenaltiesPredict, predictedAwayPenalties = awayPenaltiesPredict) else it
+                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict, predictedHomePenalties = homePenaltiesPredict, predictedAwayPenalties = awayPenaltiesPredict, is_featured = autoFeatured) else it
             }
             _uiState.value = currentState.copy(matches = updatedList)
         }

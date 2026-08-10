@@ -55,7 +55,8 @@ fun FixtureScreen(
     onStatusChange: (Int, String) -> Unit = { _, _ -> },
     onShowVipStats: (Match) -> Unit = {},
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _, _, _ -> },
-    showAds: Boolean = true
+    showAds: Boolean = true,
+    onToggleComodin: ((Int) -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val tabs = remember(isWorldCup) {
@@ -110,9 +111,8 @@ fun FixtureScreen(
                 Tab(
                     selected = selectedTab == index,
                     onClick = { 
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
+                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) } 
                     },
                     text = { 
                         Text(
@@ -131,10 +131,10 @@ fun FixtureScreen(
             modifier = Modifier.weight(1f)
         ) { page ->
             when (page) {
-                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
-                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
+                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
+                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
                 2 -> if (isWorldCup) {
-                    KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds)
+                    KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
                 }
             }
         }
@@ -149,7 +149,8 @@ fun KnockoutBracket(
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
-    showAds: Boolean
+    showAds: Boolean,
+    onToggleComodin: ((Int) -> Unit)? = null
 ) {
     val rounds = remember { com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.map { it.name } }
     var selectedRound by remember(rounds) { mutableStateOf(rounds.firstOrNull() ?: "") }
@@ -263,7 +264,7 @@ fun KnockoutBracket(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(filteredMatches) { index, match ->
-                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches)
+                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin)
                 }
             }
         }
@@ -300,7 +301,8 @@ fun DayFilteredFixture(
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
-    showAds: Boolean
+    showAds: Boolean,
+    onToggleComodin: ((Int) -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val dates = matches.filter { if (isWorldCup) it.id <= 72 else true }
@@ -440,7 +442,7 @@ fun DayFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin)
             }
         }
     }
@@ -454,7 +456,8 @@ fun GroupFilteredFixture(
     onStatusChange: (Int, String) -> Unit,
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
-    showAds: Boolean
+    showAds: Boolean,
+    onToggleComodin: ((Int) -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val groups = matches.filter { if (isWorldCup) it.id <= 72 else true }.map { it.homeTeam.group }.distinct().sorted()
@@ -485,8 +488,8 @@ fun GroupFilteredFixture(
             contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches)
+            items(filteredMatches) { match ->
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin)
             }
         }
     }
@@ -502,7 +505,8 @@ fun MatchCard(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     onNavigateToTournament: ((Int) -> Unit)? = null,
     tournamentName: String? = null,
-    allMatches: List<Match> = emptyList()
+    allMatches: List<Match> = emptyList(),
+    onToggleComodin: ((Int) -> Unit)? = null
 ) {
     var showPlayerHelp by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
@@ -564,18 +568,38 @@ fun MatchCard(
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (match.is_featured) {
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFF9800).copy(alpha = 0.2f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF9800))
+                    val isComodin = match.is_featured
+                    val canToggleComodin = statusUpper == "SCHEDULED" && onToggleComodin != null
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isComodin) Color(0xFFFFD700) else Color.White.copy(alpha = 0.06f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, 
+                            if (isComodin) Color(0xFFFFD700) else Color(0xFFFFD700).copy(alpha = 0.35f)
+                        ),
+                        modifier = Modifier.clickable(enabled = canToggleComodin) {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            onToggleComodin?.invoke(match.id)
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("🔥 PARTIDO DE LA FECHA (COMODÍN x2)", color = Color(0xFFFF9800), fontWeight = FontWeight.Black, fontSize = 10.sp)
-                            }
+                            Icon(
+                                Icons.Default.Star, 
+                                contentDescription = "Comodín", 
+                                tint = if (isComodin) Color.Black else Color(0xFFFFD700),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = if (isComodin) "COMODÍN x2" else "x2", 
+                                color = if (isComodin) Color.Black else Color(0xFFFFD700), 
+                                fontWeight = FontWeight.Black, 
+                                fontSize = 10.sp
+                            )
                         }
                     }
                 }
@@ -1097,14 +1121,22 @@ fun MatchCard(
                                 predictedSigns.add(scoreSign)
                             }
 
-                            val signPoints = if (predictedSigns.contains(realWinner)) {
+                            val isWinnerHit = predictedSigns.contains(realWinner)
+                            val signPoints = if (isWinnerHit) {
                                 if (isDouble) 1 else 2
                             } else 0
 
                             val scorePoints = if (match.predictedHomeScore != null && match.predictedAwayScore != null &&
                                 h == match.predictedHomeScore && a == match.predictedAwayScore) 3 else 0
 
-                            signPoints + scorePoints
+                            val diffPoints = if (scorePoints == 0 && isWinnerHit && match.predictedHomeScore != null && match.predictedAwayScore != null) {
+                                val diffReal = h - a
+                                val diffPred = match.predictedHomeScore!! - match.predictedAwayScore!!
+                                if (diffReal == diffPred) 1 else 0
+                            } else 0
+
+                            val rawTotal = signPoints + scorePoints + diffPoints
+                            if (match.is_featured) rawTotal * 2 else rawTotal
                         }
                     }
                     
@@ -1424,13 +1456,19 @@ fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
             Text("   - Apuesta Doble: 1 PUNTO al acertar (ej: L+E, máx 3 por fecha)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
             
             Spacer(modifier = Modifier.height(4.dp))
-            Text("• Apuesta de Marcador Exacto:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-            Text("   - Resultado Exacto: 3 PUNTOS al acertar goles", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("• Diferencia de Gol y Marcador Exacto:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+            Text("   - Misma Diferencia de Gol: +1 PUNTO extra al acertar ganador/empate (ej: pusiste 2-0 y fue 3-1, o 1-1 y fue 2-2)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Resultado Exacto: +3 PUNTOS al acertar goles exactos", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
             
             Spacer(modifier = Modifier.height(4.dp))
-            Text("• Totales Combinados por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
-            Text("   - Simple acertado + Marcador exacto = 5 PUNTOS", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Doble acertado + Marcador exacto = 4 PUNTOS", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("• Comodín de la Fecha (⭐ x2):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+            Text("   - ¡DUPLICA todo el puntaje obtenido en ese partido (hasta 10 pts)!", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Se activa tocando la estrella ⭐ en la esquina superior del partido.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("• Totales Máximos por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+            Text("   - Simple + Misma Diferencia: 3 PUNTOS (x2 Comodín = 6 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Simple + Marcador Exacto: 5 PUNTOS (x2 Comodín = 10 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
         }
         
         Column {

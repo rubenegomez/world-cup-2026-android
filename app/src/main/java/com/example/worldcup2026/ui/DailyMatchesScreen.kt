@@ -188,7 +188,8 @@ fun DailyMatchesScreen(
                         onPredictionChange = { matchId, winner, h, a, hp, ap -> viewModel.updateMatchPrediction(matchId, winner, h, a, hp, ap) },
                         onNavigateToTournament = { id -> onNavigateToTournament(id) },
                         tournamentName = tName,
-                        allMatches = matches
+                        allMatches = matches,
+                        onToggleComodin = { matchId -> viewModel.toggleComodin(matchId) }
                     )
                 }
             }
