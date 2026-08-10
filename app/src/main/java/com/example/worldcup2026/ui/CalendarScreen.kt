@@ -34,6 +34,7 @@ import android.content.Context
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.*
+import com.example.worldcup2026.data.util.SoundManager
 
 enum class CalendarViewMode {
     MONTH, WEEK, DAY
@@ -70,11 +71,18 @@ fun CalendarScreen(
         CalendarHeader(
             selectedDate = selectedDate,
             viewMode = viewMode,
-            onViewModeChanged = { viewMode = it },
+            onViewModeChanged = { 
+                SoundManager.playTic()
+                viewMode = it 
+            },
             onDateSelected = { 
+                SoundManager.playTic()
                 selectedDate = it 
             },
-            onNavigateToMatches = onNavigateToMatches
+            onNavigateToMatches = {
+                SoundManager.playTic()
+                onNavigateToMatches(it)
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -85,13 +93,20 @@ fun CalendarScreen(
                 CalendarViewMode.DAY -> DaySelector(
                     selectedDate = selectedDate,
                     globalMatches = matches,
-                    onDateChange = { selectedDate = it },
-                    onNavigateToMatches = { onNavigateToMatches(selectedDate) }
+                    onDateChange = { 
+                        SoundManager.playTic()
+                        selectedDate = it 
+                    },
+                    onNavigateToMatches = { 
+                        SoundManager.playTic()
+                        onNavigateToMatches(selectedDate) 
+                    }
                 )
                 CalendarViewMode.WEEK -> WeekSelector(
                     selectedDate = selectedDate,
                     globalMatches = matches,
                     onDateChange = { 
+                        SoundManager.playTic()
                         selectedDate = it
                         onNavigateToMatches(it)
                     }
@@ -100,6 +115,7 @@ fun CalendarScreen(
                     selectedDate = selectedDate,
                     globalMatches = matches,
                     onDateChange = { 
+                        SoundManager.playTic()
                         selectedDate = it
                         onNavigateToMatches(it)
                     }
@@ -128,6 +144,7 @@ fun CalendarHeader(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = {
+                    SoundManager.playTic()
                     val newDate = when (viewMode) {
                         CalendarViewMode.MONTH -> selectedDate.minusMonths(1)
                         CalendarViewMode.WEEK -> selectedDate.minusWeeks(1)
@@ -144,6 +161,7 @@ fun CalendarHeader(
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
                 IconButton(onClick = {
+                    SoundManager.playTic()
                     val newDate = when (viewMode) {
                         CalendarViewMode.MONTH -> selectedDate.plusMonths(1)
                         CalendarViewMode.WEEK -> selectedDate.plusWeeks(1)
@@ -156,6 +174,7 @@ fun CalendarHeader(
             }
             IconButton(
                 onClick = { 
+                    SoundManager.playTic()
                     val now = LocalDate.now()
                     onDateSelected(now)
                     onNavigateToMatches(now)
@@ -189,7 +208,10 @@ fun CalendarHeader(
                         .weight(1f)
                         .clip(RoundedCornerShape(24.dp))
                         .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .clickable { onViewModeChanged(mode) }
+                        .clickable { 
+                            SoundManager.playTic()
+                            onViewModeChanged(mode) 
+                        }
                         .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -232,40 +254,36 @@ fun DaySelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChang
         ),
         label = "pulse"
     )
-    
+
     Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { onDateChange(selectedDate.minusDays(1)) }) {
+            IconButton(onClick = { 
+                SoundManager.playTic()
+                onDateChange(selectedDate.minusDays(1)) 
+            }) {
                 Icon(Icons.Default.ChevronLeft, contentDescription = "Día anterior", modifier = Modifier.size(32.dp))
             }
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable { onNavigateToMatches() }
-                    .padding(horizontal = 32.dp, vertical = 16.dp)
-            ) {
-                Text(
-                    text = selectedDate.dayOfMonth.toString(),
-                    style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = dayOfWeek,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = selectedDate.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.ExtraBold),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 if (hasMatch) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -287,7 +305,10 @@ fun DaySelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChang
                 }
             }
 
-            IconButton(onClick = { onDateChange(selectedDate.plusDays(1)) }) {
+            IconButton(onClick = { 
+                SoundManager.playTic()
+                onDateChange(selectedDate.plusDays(1)) 
+            }) {
                 Icon(Icons.Default.ChevronRight, contentDescription = "Día siguiente", modifier = Modifier.size(32.dp))
             }
         }
@@ -295,7 +316,10 @@ fun DaySelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChang
         Spacer(modifier = Modifier.height(32.dp))
         
         Button(
-            onClick = onNavigateToMatches,
+            onClick = {
+                SoundManager.playTic()
+                onNavigateToMatches()
+            },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.padding(16.dp)
@@ -328,7 +352,6 @@ fun WeekSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChan
         weekDays.forEach { date ->
             val isSelected = date == selectedDate
             val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("es", "ES")).take(3)
-            
             val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             val hasMatch = remember(globalMatches, dateStr) { globalMatches.any { it.date?.startsWith(dateStr) == true } }
             val hasLiveMatch = remember(globalMatches, dateStr) { 
@@ -337,24 +360,28 @@ fun WeekSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateChan
                     it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") 
                 } 
             }
-            
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                    .clickable { onDateChange(date) }
-                    .padding(8.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { 
+                        SoundManager.playTic()
+                        onDateChange(date) 
+                    }
+                    .padding(vertical = 12.dp, horizontal = 8.dp)
             ) {
                 Text(
                     text = dayName.replaceFirstChar { it.uppercase() },
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.labelSmall,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = date.dayOfMonth.toString(),
-                    fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
                 // Indicador de partido
@@ -444,12 +471,32 @@ fun MonthSelector(selectedDate: LocalDate, globalMatches: List<Match>, onDateCha
                         },
                         shape = CircleShape
                     )
-                    .clickable { onDateChange(date) }
+                    .clickable { 
+                        SoundManager.playTic()
+                        onDateChange(date) 
+                    }
             ) {
                 Text(
                     text = date.dayOfMonth.toString(),
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                 )
+                
+                // Indicador de partido
+                if (hasMatch || hasLiveMatch) {
+                    Box(
+                        modifier = Modifier
+                            .size(4.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    hasLiveMatch -> Color.Red.copy(alpha = pulseAlpha)
+                                    isSelected -> MaterialTheme.colorScheme.onPrimary
+                                    else -> MaterialTheme.colorScheme.tertiary
+                                }
+                            )
+                    )
+                }
             }
         }
     }

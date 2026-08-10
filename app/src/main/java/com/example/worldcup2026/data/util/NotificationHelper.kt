@@ -11,25 +11,25 @@ import androidx.core.app.NotificationCompat
 import com.example.worldcup2026.R
 
 object NotificationHelper {
-    private const val CHANNEL_GENERAL_ID = "world_cup_2026_notifications_v2"
-    private const val CHANNEL_GOALS_ID = "world_cup_2026_goals_v2"
-    private const val CHANNEL_INCIDENTS_ID = "world_cup_2026_incidents_v2"
+    private const val CHANNEL_GENERAL_ID = "world_cup_2026_notifications_v3"
+    private const val CHANNEL_GOALS_ID = "world_cup_2026_goals_v3"
+    private const val CHANNEL_INCIDENTS_ID = "world_cup_2026_incidents_v3"
     private const val NOTIFICATION_ID = 2026
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             
-            // 1. Canal General (Whistle / Countdown)
-            val soundGeneralUri = Uri.parse(
-                ContentResolver.SCHEME_ANDROID_RESOURCE + 
-                "://" + context.packageName + "/" + R.raw.world_cup_whistle
-            )
             val attributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .build()
-            
+
+            // 1. Canal General (Silbato)
+            val soundGeneralUri = Uri.parse(
+                ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                "://" + context.packageName + "/" + R.raw.silbato
+            )
             val generalChannel = NotificationChannel(
                 CHANNEL_GENERAL_ID,
                 "Mundial 2026 General",
@@ -41,7 +41,7 @@ object NotificationHelper {
             }
             manager.createNotificationChannel(generalChannel)
 
-            // 2. Canal de Goles (Goolll)
+            // 2. Canal de Goles (Exclusivo gooolll.mp3)
             val soundGoalUri = Uri.parse(
                 ContentResolver.SCHEME_ANDROID_RESOURCE + 
                 "://" + context.packageName + "/" + R.raw.gooolll
@@ -57,7 +57,7 @@ object NotificationHelper {
             }
             manager.createNotificationChannel(goalChannel)
 
-            // 3. Canal de Incidentes (Silbato)
+            // 3. Canal de Incidentes y Eventos (Silbato)
             val soundIncidentUri = Uri.parse(
                 ContentResolver.SCHEME_ANDROID_RESOURCE + 
                 "://" + context.packageName + "/" + R.raw.silbato
@@ -67,7 +67,7 @@ object NotificationHelper {
                 "Mundial 2026 Incidentes",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificaciones de tarjetas rojas, fin de partido y eventos"
+                description = "Notificaciones de tarjetas, fin de partido y recordatorios"
                 setSound(soundIncidentUri, attributes)
                 enableVibration(true)
             }
@@ -78,7 +78,7 @@ object NotificationHelper {
     fun showStartNotification(context: Context) {
         val soundUri = Uri.parse(
             ContentResolver.SCHEME_ANDROID_RESOURCE + 
-            "://" + context.packageName + "/" + R.raw.world_cup_whistle
+            "://" + context.packageName + "/" + R.raw.silbato
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_GENERAL_ID)

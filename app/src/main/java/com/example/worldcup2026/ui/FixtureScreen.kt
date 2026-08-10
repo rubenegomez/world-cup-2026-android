@@ -414,7 +414,10 @@ fun DayFilteredFixture(
                 val (formattedDate, dayName) = remember(date) { formatChipDate(date) }
                 FilterChip(
                     selected = selectedDate == date, 
-                    onClick = { selectedDate = date }, 
+                    onClick = { 
+                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                        selectedDate = date 
+                    }, 
                     label = { 
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 2.dp)) {
                             Text(text = formattedDate, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -967,7 +970,10 @@ fun MatchCard(
 
                             if (!isEditingProde) {
                                 Button(
-                                    onClick = { isEditingProde = true },
+                                    onClick = { 
+                                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                                        isEditingProde = true 
+                                    },
                                     modifier = Modifier.height(28.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
@@ -977,6 +983,7 @@ fun MatchCard(
                             } else {
                                 Button(
                                     onClick = { 
+                                        com.example.worldcup2026.data.util.SoundManager.playTic()
                                         isEditingProde = false
                                         onPredictionChange(
                                             match.id,
@@ -1286,7 +1293,10 @@ fun PredictionChip(label: String, selected: Boolean, enabled: Boolean = true, on
     Surface(
         modifier = Modifier
             .size(32.dp)
-            .clickable(enabled = enabled) { onClick() },
+            .clickable(enabled = enabled) { 
+                com.example.worldcup2026.data.util.SoundManager.playTic()
+                onClick() 
+            },
         shape = CircleShape,
         color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (enabled) 0.1f else 0.05f),
         border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) 0.2f else 0.05f)) else null

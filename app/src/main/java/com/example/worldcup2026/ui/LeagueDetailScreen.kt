@@ -271,7 +271,10 @@ fun LeagueDetailScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { selectedStandingForBreakdown = standing },
+                            .clickable { 
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                selectedStandingForBreakdown = standing 
+                            },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isCurrentUser) Color(0xFF2E7D32).copy(alpha = 0.3f) else Color(0xFF1E1E1E)
                         ),

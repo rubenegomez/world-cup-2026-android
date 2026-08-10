@@ -267,7 +267,10 @@ fun MainScreen(
                                                 )
                                             }
                                         }
-                                        IconButton(onClick = { selectedScreen = 3 }) {
+                                        IconButton(onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 3 
+                                        }) {
                                             Icon(Icons.Default.Settings, contentDescription = "Ajustes", tint = androidx.compose.ui.graphics.Color.White)
                                         }
                                     }
@@ -285,7 +288,10 @@ fun MainScreen(
                                 ) {
                                     NavigationBarItem(
                                         selected = selectedScreen == 0,
-                                        onClick = { selectedScreen = 0 },
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 0 
+                                        },
                                         icon = { Icon(Icons.Default.Today, contentDescription = null) },
                                         label = { Text("Calendario", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
@@ -295,7 +301,10 @@ fun MainScreen(
                                     )
                                     NavigationBarItem(
                                         selected = selectedScreen == 1,
-                                        onClick = { selectedScreen = 1 },
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 1 
+                                        },
                                         icon = { Icon(Icons.Default.Star, contentDescription = null) },
                                         label = { Text("Prode", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
@@ -305,7 +314,10 @@ fun MainScreen(
                                     )
                                     NavigationBarItem(
                                         selected = selectedScreen == 2,
-                                        onClick = { selectedScreen = 2 },
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 2 
+                                        },
                                         icon = { Icon(Icons.Default.Info, contentDescription = null) },
                                         label = { Text("Acerca de", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.*
 import com.example.worldcup2026.data.sync.SyncWorker
 import com.example.worldcup2026.data.util.NotificationHelper
+import com.example.worldcup2026.data.util.SoundManager
 import com.google.android.gms.ads.MobileAds
 import com.example.worldcup2026.data.util.AnalyticsManager
 import java.util.concurrent.TimeUnit
@@ -13,6 +14,7 @@ class WorldCupApplication : Application() {
         super.onCreate()
         MobileAds.initialize(this) {}
         AnalyticsManager.initialize(this)
+        SoundManager.init(this)
         
         // Inicializar canales de notificaciones
         NotificationHelper.createNotificationChannel(this)
