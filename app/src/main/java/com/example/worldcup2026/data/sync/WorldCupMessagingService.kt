@@ -61,8 +61,8 @@ class WorldCupMessagingService : FirebaseMessagingService() {
                 return // Do not process standard live events
             }
 
-            val title = remoteMessage.notification?.title ?: "World Cup Update"
-            val body = remoteMessage.notification?.body ?: "${homeTeam} vs ${awayTeam}"
+            val title = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "El Loco del Prode"
+            val body = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: "${homeTeam} vs ${awayTeam}"
 
             val prefs = getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
             val notifScope = prefs.getString("notif_scope", "ALL") ?: "ALL"
