@@ -233,10 +233,11 @@ fun StandingsScreen(matches: List<Match>) {
                         teamsByGroup
                     }
 
-                    val filteredMatches = remember(matches, tournamentFormat) {
+                    val filteredMatches = remember(matches, tournamentFormat, tournamentId) {
                         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
                             matches.filter { match ->
-                                match.id >= 2000 || (match.date != null && (
+                                (match.tournament_id == null || match.tournament_id == 5) &&
+                                (match.date != null && (
                                     match.date.contains("-07-") || match.date.contains("2026-07") || match.date.contains("/07/") ||
                                     match.date.contains("-08-") || match.date.contains("2026-08") || match.date.contains("/08/") ||
                                     match.date.contains("-09-") || match.date.contains("2026-09") || match.date.contains("/09/") ||
@@ -246,7 +247,7 @@ fun StandingsScreen(matches: List<Match>) {
                                 ))
                             }
                         } else {
-                            matches
+                            matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
                         }
                     }
 
