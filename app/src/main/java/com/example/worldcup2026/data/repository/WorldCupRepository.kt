@@ -104,8 +104,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val saved = savedEntities.find { it.id == baseMatch.id }
         if (saved != null) {
             // Si el remoto tiene score, preferimos SIEMPRE el remoto. Si no, usamos el local guardado.
-            val homeScore = baseMatch.homeScore ?: (if (baseMatch.status == "Finished") 0 else saved.homeScore)
-            val awayScore = baseMatch.awayScore ?: (if (baseMatch.status == "Finished") 0 else saved.awayScore)
+            val homeScore = baseMatch.homeScore ?: saved.homeScore
+            val awayScore = baseMatch.awayScore ?: saved.awayScore
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
             
@@ -122,8 +122,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                             status = "LIVE"
                         }
                     } else if (diff > 2 * 3600 * 1000 + 30 * 60 * 1000) {
-                        // Si transcurrieron más de 2.5 horas desde el inicio, expira el estado LIVE a Finished
-                        if (status == "LIVE" || saved.status == "LIVE" || status == "Scheduled") {
+                        // Si transcurrieron más de 2.5 horas desde el inicio y estaba LIVE, expira a Finished
+                        if (status == "LIVE" || saved.status == "LIVE") {
                             status = "Finished"
                         }
                     }
@@ -132,7 +132,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 e.printStackTrace()
             }
 
-            if (baseMatch.status == "Finished" || saved.status == "Finished") {
+            if (baseMatch.status == "Finished") {
                 status = "Finished"
             }
 

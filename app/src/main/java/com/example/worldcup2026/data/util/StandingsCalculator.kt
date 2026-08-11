@@ -41,19 +41,36 @@ object StandingsCalculator {
             matches
         }
 
+        val seenFixtureKeys = mutableSetOf<String>()
+        val targetTeamName = team.name.trim().lowercase()
+
         groupMatches.forEach { match ->
             val statusUpper = match.status.uppercase()
             if (statusUpper == "SCHEDULED" || statusUpper.contains("POSTP") || statusUpper.contains("SUSPEND") || statusUpper.contains("CANCEL")) return@forEach
             if (match.status != "Finished" && !statusUpper.contains("LIVE") && !statusUpper.contains("HALFTIME")) return@forEach
+            
+            val homeName = match.homeTeam?.name?.trim()?.lowercase() ?: ""
+            val awayName = match.awayTeam?.name?.trim()?.lowercase() ?: ""
             val homeId = match.homeTeam?.id
             val awayId = match.awayTeam?.id
-            if (homeId == team.id || awayId == team.id) {
+
+            val isHome = homeId == team.id || (homeName.isNotEmpty() && homeName == targetTeamName)
+            val isAway = awayId == team.id || (awayName.isNotEmpty() && awayName == targetTeamName)
+
+            if (isHome || isAway) {
                 val hScore = match.homeScore
                 val aScore = match.awayScore
                 
                 if (hScore != null && aScore != null) {
+                    val opponentName = if (isHome) awayName else homeName
+                    val datePrefix = match.date?.take(7) ?: ""
+                    val fixtureKey = "${opponentName}_$datePrefix"
+                    if (!seenFixtureKeys.add(fixtureKey)) {
+                        return@forEach // Evitar computar duplicados del mismo partido
+                    }
+
                     pj++
-                    val (teamScore, opponentScore) = if (homeId == team.id) hScore to aScore else aScore to hScore
+                    val (teamScore, opponentScore) = if (isHome) hScore to aScore else aScore to hScore
                     
                     gf += teamScore
                     ga += opponentScore
