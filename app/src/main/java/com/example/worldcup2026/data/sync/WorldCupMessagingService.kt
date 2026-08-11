@@ -67,7 +67,7 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             val prefs = getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
             val notifScope = prefs.getString("notif_scope", "ALL") ?: "ALL"
 
-            // 1. Filtrado por tipo de evento
+            // 1. Filtrado por tipo de evento (estrictamente los tipos configurados)
             val eventAllowed = when (eventType) {
                 "goal" -> prefs.getBoolean("notif_goals", true)
                 "start" -> prefs.getBoolean("notif_start", true)
@@ -78,7 +78,7 @@ class WorldCupMessagingService : FirebaseMessagingService() {
                 "penalty" -> prefs.getBoolean("notif_penalties", true)
                 "extra_time" -> prefs.getBoolean("notif_extra_time", true)
                 "shootout" -> prefs.getBoolean("notif_shootout", true)
-                else -> true
+                else -> false // Ignorar cualquier otro evento no configurado
             }
 
             // 2. Filtrado por alcance (Torneos / Equipos Favoritos)
