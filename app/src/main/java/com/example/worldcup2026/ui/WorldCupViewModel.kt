@@ -118,8 +118,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             if (state is WorldCupUiState.Success) state.matches else emptyList()
         }
 
-        val upcoming = matches
-            .filter { it.tournament_id == tournamentId && (it.status == "Scheduled" || it.status == "LIVE") }
+        val tournamentMatches = matches.filter { it.tournament_id == tournamentId }
+
+        val upcoming = tournamentMatches
+            .filter { it.status == "Scheduled" || it.status == "LIVE" }
             .sortedBy { it.date }
         
         val firstUpcoming = upcoming.firstOrNull()
@@ -127,12 +129,21 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             return firstUpcoming.matchday
         }
 
+        // Estimación dinámica a partir de partidos finalizados si matchday no viene explícito
+        if (tournamentId == 5) {
+            val finishedCount = tournamentMatches.count { it.status == "Finished" }
+            val estimatedMatchday = (finishedCount / 15) + 1
+            if (estimatedMatchday in 1..30) {
+                return estimatedMatchday
+            }
+        }
+
         // Defaults actualizados con las fechas activas reales por torneo:
         return when (tournamentId) {
-            5 -> 2   // Liga Profesional (Fecha 2)
-            7 -> 22  // Primera Nacional (Fecha 22)
-            8 -> 28  // Primera B Metropolitana (Fecha 28)
-            9 -> 22  // Primera C (Fecha 22)
+            5 -> 5   // Liga Profesional (Fecha 5)
+            7 -> 23  // Primera Nacional (Fecha 23)
+            8 -> 29  // Primera B Metropolitana (Fecha 29)
+            9 -> 23  // Primera C (Fecha 23)
             3 -> 7   // Copa Libertadores (Octavos de Final)
             4 -> 7   // Copa Sudamericana (Octavos de Final)
             6 -> 4   // Copa Argentina (Octavos)
