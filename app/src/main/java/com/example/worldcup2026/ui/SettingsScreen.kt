@@ -497,8 +497,9 @@ fun TeamsListScreen(
         TournamentInfo(8, "Primera B Metropolitana", "⚽ Primera B"),
         TournamentInfo(9, "Primera C", "⚽ Primera C"),
         TournamentInfo(13, "Torneo Promocional Amateur", "⚽ Promocional Amateur"),
-        TournamentInfo(1, "Mundial FIFA 2026", "🌍 Mundial 2026"),
-        TournamentInfo(2, "Eliminatorias Conmebol", "🌍 Eliminatorias")
+        TournamentInfo(2, "Eliminatorias Sudamericanas", "🌍 Eliminatorias"),
+        TournamentInfo(12, "Finalíssima", "🏆 Finalíssima"),
+        TournamentInfo(14, "Amistosos Internacionales", "🌍 Amistosos FIFA")
     )
 
     Column(modifier = Modifier.fillMaxSize()) {

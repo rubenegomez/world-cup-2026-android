@@ -341,10 +341,9 @@ fun MisLigasTab(
         9 to "⚽ Primera C",
         13 to "⚽ Promocional Amateur",
         2 to "🌍 Eliminatorias",
-        1 to "🌍 Mundial 2026",
-        10 to "🏆 Intercontinental",
-        11 to "🏆 Mundial Clubes",
-        12 to "🏆 Finalíssima"
+        12 to "🏆 Finalíssima",
+        14 to "🌍 Amistosos FIFA",
+        11 to "🏆 Mundial Clubes"
     )
 
     LaunchedEffect(selectedTournamentId, showCreateDialog) {

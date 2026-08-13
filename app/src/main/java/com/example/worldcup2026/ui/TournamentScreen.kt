@@ -48,10 +48,12 @@ data class TournamentItem(
 )
 
 val internacionales = listOf(
-    TournamentItem(1, "Campeonato Mundial", "Internacional", active = true),
-    TournamentItem(2, "Torneos Regionales", "Internacional", active = true),
+    TournamentItem(2, "Eliminatorias Sudamericanas", "Internacional", active = true),
     TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = true),
-    TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true)
+    TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true),
+    TournamentItem(12, "Finalíssima", "Internacional", active = true),
+    TournamentItem(14, "Amistosos Internacionales", "Internacional", active = true),
+    TournamentItem(1, "Campeonato Mundial", "Internacional", active = false)
 )
 
 val nacionales = listOf(
@@ -236,8 +238,8 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
             }
         }
 
-        // Obtener lista y ordenar prioritariamente por favorito
-        val baseList = if (selectedTabIndex == 0) internacionales else nacionales
+        // Obtener lista filtrando solo torneos activos y ordenar por favorito
+        val baseList = (if (selectedTabIndex == 0) internacionales else nacionales).filter { it.active }
         val tournamentsToList = remember(baseList, favoriteTournaments) {
             baseList.sortedWith(
                 compareByDescending<TournamentItem> { favoriteTournaments.contains(it.id.toString()) }
@@ -265,6 +267,8 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
                         5 -> Icons.Default.Leaderboard
                         6 -> Icons.Default.EmojiEvents
                         7 -> Icons.Default.EmojiEvents
+                        12 -> Icons.Default.EmojiEvents
+                        14 -> Icons.Default.Public
                         else -> Icons.Default.Book
                     }
                     val isLive = liveStatuses[tournament.id] == true
