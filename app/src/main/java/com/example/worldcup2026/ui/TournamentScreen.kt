@@ -57,11 +57,10 @@ val internacionales = listOf(
 val nacionales = listOf(
     TournamentItem(5, "Liga Profesional", "Nacional", active = true),
     TournamentItem(6, "Copa Argentina", "Nacional", active = true),
-    TournamentItem(7, "Supercopa Argentina", "Nacional", active = true),
-    TournamentItem(8, "Primera Nacional", "Nacional", active = true),
-    TournamentItem(9, "Primera B Metropolitana", "Nacional", active = true),
-    TournamentItem(10,"Primera C Metropolitana", "Nacional", active = true),
-    TournamentItem(11,"Primera D Metropolitana", "Nacional", active = true)
+    TournamentItem(7, "Primera Nacional", "Nacional", active = true),
+    TournamentItem(8, "Primera B Metropolitana", "Nacional", active = true),
+    TournamentItem(9, "Primera C Metropolitana", "Nacional", active = true),
+    TournamentItem(13, "Torneo Promocional Amateur", "Nacional", active = true)
 )
 
 @Composable

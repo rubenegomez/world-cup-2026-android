@@ -339,6 +339,7 @@ fun MisLigasTab(
         4 to "🌎 Copa Sudamericana",
         8 to "⚽ Primera B",
         9 to "⚽ Primera C",
+        13 to "⚽ Promocional Amateur",
         2 to "🌍 Eliminatorias",
         1 to "🌍 Mundial 2026",
         10 to "🏆 Intercontinental",
