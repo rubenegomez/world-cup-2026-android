@@ -490,12 +490,13 @@ fun TeamsListScreen(
 
     val tournamentsList = listOf(
         TournamentInfo(5, "Liga Profesional Argentina", "🏆 Liga Profesional"),
-        TournamentInfo(6, "Primera Nacional (B)", "⚽ Primera Nacional"),
-        TournamentInfo(7, "Copa Argentina", "🏆 Copa Argentina"),
+        TournamentInfo(7, "Primera Nacional (B)", "⚽ Primera Nacional"),
+        TournamentInfo(6, "Copa Argentina", "🏆 Copa Argentina"),
         TournamentInfo(3, "Copa Libertadores", "🌎 Copa Libertadores"),
         TournamentInfo(4, "Copa Sudamericana", "🌎 Copa Sudamericana"),
         TournamentInfo(8, "Primera B Metropolitana", "⚽ Primera B"),
         TournamentInfo(9, "Primera C", "⚽ Primera C"),
+        TournamentInfo(13, "Torneo Promocional Amateur", "⚽ Promocional Amateur"),
         TournamentInfo(1, "Mundial FIFA 2026", "🌍 Mundial 2026"),
         TournamentInfo(2, "Eliminatorias Conmebol", "🌍 Eliminatorias")
     )
