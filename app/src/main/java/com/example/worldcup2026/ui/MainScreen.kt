@@ -167,7 +167,7 @@ fun MainScreen(
             )
             
             // Capa de oscurecimiento para legibilidad
-            Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f)))
+            Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.82f)))
  
             if (uiState is WorldCupUiState.Success && (uiState as WorldCupUiState.Success).champion != null && showCelebration) {
                 // Pantalla de Celebración EXCLUYENTE
@@ -207,13 +207,13 @@ fun MainScreen(
                                             }
                                         }
                                         Text(
-                                            text = "ARENA PRODE Y TORNEOS",
+                                            text = "ARENA PRODE",
                                             fontWeight = FontWeight.Black,
                                             color = androidx.compose.ui.graphics.Color.White,
                                             fontSize = 18.sp,
                                             maxLines = 1,
                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false).padding(start = 16.dp)
+                                            modifier = Modifier.padding(start = 16.dp)
                                         )
                                         if (hasLiveMatches) {
                                             Spacer(modifier = Modifier.width(8.dp))

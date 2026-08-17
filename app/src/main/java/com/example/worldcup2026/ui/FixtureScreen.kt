@@ -528,11 +528,11 @@ fun MatchCard(
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF141924).copy(alpha = 0.95f)),
         border = androidx.compose.foundation.BorderStroke(
-            width = if (isLive) 2.dp else 0.5.dp,
-            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else Color.White.copy(alpha = 0.15f)
+            width = if (isLive) 1.5.dp else 1.dp,
+            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else Color.White.copy(alpha = 0.12f)
         )
     ) {
         Column(
@@ -959,7 +959,8 @@ fun MatchCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
+                    .background(Color(0xFF0D121B))
+                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
                     .padding(12.dp)
             ) {
                 val matchHasStarted = match.status.uppercase() != "SCHEDULED"
@@ -1313,20 +1314,21 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier
             .background(
-                color = Color.White.copy(alpha = if (enabled) 0.12f else 0.04f),
-                shape = RoundedCornerShape(8.dp)
+                color = Color(0xFF1E2536),
+                shape = RoundedCornerShape(10.dp)
             )
             .border(
                 width = 1.dp,
-                color = Color.White.copy(alpha = if (enabled) 0.25f else 0.05f),
-                shape = RoundedCornerShape(8.dp)
+                color = if (value != null) Color(0xFFFFD700).copy(alpha = 0.5f) else Color.White.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(10.dp)
             )
-            .padding(horizontal = 2.dp, vertical = 2.dp)
+            .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(26.dp)
+                .size(28.dp)
                 .clip(CircleShape)
+                .background(Color.White.copy(alpha = if (enabled && value != null) 0.08f else 0.02f))
                 .clickable(enabled = enabled && value != null) {
                     com.example.worldcup2026.data.util.SoundManager.playTic()
                     if (current > 0) {
@@ -1340,31 +1342,32 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
             Icon(
                 imageVector = Icons.Default.Remove,
                 contentDescription = "Menos",
-                tint = if (enabled && value != null) Color.White else Color.White.copy(alpha = 0.2f),
+                tint = if (enabled && value != null) Color.White else Color.White.copy(alpha = 0.25f),
                 modifier = Modifier.size(16.dp)
             )
         }
 
         Box(
             modifier = Modifier
-                .widthIn(min = 22.dp)
-                .padding(horizontal = 2.dp),
+                .widthIn(min = 28.dp)
+                .padding(horizontal = 4.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = value?.toString() ?: "-",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = if (value != null) (if (enabled) Color.White else Color.White.copy(alpha = 0.6f)) else Color.White.copy(alpha = 0.35f),
+                fontWeight = FontWeight.Black,
+                fontSize = 17.sp,
+                color = if (value != null) Color(0xFFFFD700) else Color.White.copy(alpha = 0.4f),
                 textAlign = TextAlign.Center
             )
         }
 
         Box(
             modifier = Modifier
-                .size(26.dp)
+                .size(28.dp)
                 .clip(CircleShape)
+                .background(Color.White.copy(alpha = if (enabled) 0.08f else 0.02f))
                 .clickable(enabled = enabled && (value == null || current < 20)) {
                     com.example.worldcup2026.data.util.SoundManager.playTic()
                     if (value == null) {
@@ -1378,7 +1381,7 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Más",
-                tint = if (enabled && (value == null || current < 20)) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f),
+                tint = if (enabled && (value == null || current < 20)) Color(0xFFFFD700) else Color.White.copy(alpha = 0.25f),
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -1389,21 +1392,26 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
 fun PredictionChip(label: String, selected: Boolean, enabled: Boolean = true, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
-            .size(32.dp)
+            .size(36.dp)
             .clickable(enabled = enabled) { 
                 com.example.worldcup2026.data.util.SoundManager.playTic()
                 onClick() 
             },
         shape = CircleShape,
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = if (enabled) 0.1f else 0.05f),
-        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) 0.2f else 0.05f)) else null
+        color = if (selected) Color(0xFFFFD700) else Color(0xFF222938),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            if (selected) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f)
+        ),
+        shadowElevation = if (selected) 4.dp else 0.dp
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = if (selected) Color.White else Color.White.copy(alpha = if (enabled) 1f else 0.4f)
+                text = label,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Black,
+                fontSize = 14.sp,
+                color = if (selected) Color(0xFF10141E) else (if (enabled) Color.White else Color.White.copy(alpha = 0.4f))
             )
         }
     }
