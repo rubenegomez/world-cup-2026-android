@@ -178,6 +178,45 @@ fun LeagueDetailScreen(
                 }
             }
 
+            val hasPendingOrPostponed = remember(breakdown) {
+                breakdown.any { 
+                    val st = it.status?.uppercase() ?: ""
+                    st.contains("POSTP") || st.contains("SUSPEND") || st == "SCHEDULED" || st == "LIVE"
+                }
+            }
+            if (!isFinished && hasPendingOrPostponed && breakdown.isNotEmpty()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        color = Color(0xFFFF9800).copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF9800).copy(alpha = 0.6f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("⏳", fontSize = 20.sp, modifier = Modifier.padding(end = 8.dp))
+                            Column {
+                                Text(
+                                    "LIGA EN CURSO / PARTIDOS PENDIENTES",
+                                    color = Color(0xFFFF9800),
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 12.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    "Esta liga no se cerrará ni otorgará el podio final hasta que se hayan completado todos los partidos correspondientes a la fecha (incluyendo partidos postergados o suspendidos).",
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             if (isFinished && standings.isNotEmpty()) {
                 item {
                     Surface(

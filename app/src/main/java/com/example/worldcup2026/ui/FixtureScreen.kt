@@ -306,6 +306,20 @@ fun DayFilteredFixture(
     onToggleComodin: ((Int) -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
+    val matchdays = remember(matches) {
+        matches.mapNotNull { it.matchday }.filter { it > 0 }.distinct().sorted()
+    }
+    
+    val defaultMatchday = remember(matchdays, matches) {
+        val active = matches.firstOrNull { 
+            val st = it.status.uppercase()
+            (st == "LIVE" || st == "SCHEDULED" || st == "HALFTIME") && it.matchday != null && it.matchday > 0 
+        }?.matchday
+        active ?: matchdays.firstOrNull()
+    }
+
+    var selectedMatchday by remember(matchdays) { mutableStateOf<Int?>(if (matchdays.size > 1) defaultMatchday else null) }
+
     val dates = matches.filter { if (isWorldCup) it.id <= 72 else true }
         .map { 
             val safeDate = it.date ?: ""
@@ -334,7 +348,13 @@ fun DayFilteredFixture(
     var filterLiveOnly by remember { mutableStateOf(false) }
 
     val filteredMatches = matches
-        .filter { (it.date ?: "").startsWith(selectedDate) && (if (isWorldCup) it.id <= 72 else true) }
+        .filter { match ->
+            if (selectedMatchday != null) {
+                match.matchday == selectedMatchday
+            } else {
+                (match.date ?: "").startsWith(selectedDate) && (if (isWorldCup) match.id <= 72 else true)
+            }
+        }
         .filter { match ->
             val statusUpper = match.status.uppercase()
             val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
@@ -407,34 +427,93 @@ fun DayFilteredFixture(
                 shape = RoundedCornerShape(12.dp)
             )
         }
-        LazyRow(
-            state = listState,
-            modifier = Modifier.padding(vertical = 12.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(dates) { date ->
-                val (formattedDate, dayName) = remember(date) { formatChipDate(date) }
-                FilterChip(
-                    selected = selectedDate == date, 
-                    onClick = { 
-                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                        selectedDate = date 
-                    }, 
-                    label = { 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 2.dp)) {
-                            Text(text = formattedDate, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            if (dayName.isNotEmpty()) {
-                                Text(text = dayName, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp)
+
+        // Carrusel de Fechas / Jornadas si el torneo tiene fechas numeradas
+        if (matchdays.size > 1) {
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedMatchday == null,
+                        onClick = { 
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            selectedMatchday = null 
+                        },
+                        label = { Text("Por Día", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (selectedMatchday == null) Color.White else Color.White.copy(alpha = 0.7f)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = Color(0xFF1E2536)
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f)),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+                items(matchdays) { mDay ->
+                    val isSelected = selectedMatchday == mDay
+                    val hasLive = matches.any { it.matchday == mDay && it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA") }
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { 
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            selectedMatchday = mDay 
+                        },
+                        label = { 
+                            Text(
+                                text = "Fecha $mDay" + (if (hasLive) " 🔴" else ""), 
+                                fontSize = 11.sp, 
+                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
+                                color = if (isSelected) Color(0xFF10141E) else Color.White
+                            ) 
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFFFD700),
+                            containerColor = Color(0xFF1E2536)
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            0.5.dp, 
+                            if (isSelected) Color(0xFFFFD700) else Color.White.copy(alpha = 0.15f)
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+        }
+
+        // Si se eligió la vista Por Día (o si no hay matchdays)
+        if (selectedMatchday == null) {
+            LazyRow(
+                state = listState,
+                modifier = Modifier.padding(vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(dates) { date ->
+                    val (formattedDate, dayName) = remember(date) { formatChipDate(date) }
+                    FilterChip(
+                        selected = selectedDate == date, 
+                        onClick = { 
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            selectedDate = date 
+                        }, 
+                        label = { 
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 2.dp)) {
+                                Text(text = formattedDate, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                if (dayName.isNotEmpty()) {
+                                    Text(text = dayName, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp)
+                                }
                             }
-                        }
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        containerColor = Color.White.copy(alpha = 0.1f)
-                    ),
-                    border = FilterChipDefaults.filterChipBorder(borderColor = Color.White.copy(alpha = 0.2f), enabled = true, selected = selectedDate == date)
-                )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = Color.White.copy(alpha = 0.1f)
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(borderColor = Color.White.copy(alpha = 0.2f), enabled = true, selected = selectedDate == date)
+                    )
+                }
             }
         }
         LazyColumn(
@@ -545,23 +624,25 @@ fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val matchdayLabel = if (match.matchday != null && match.matchday > 0) " · FECHA ${match.matchday}" else ""
                     if (tournamentName != null && onNavigateToTournament != null && match.tournament_id != null) {
-                        Text(text = tournamentName.uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        Text(text = "${tournamentName.uppercase()}$matchdayLabel", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = MaterialTheme.colorScheme.primary)
                         }
                     } else {
+                        val roundOrGroup = when (match.id) {
+                            in 73..88 -> "DIECISEISAVOS DE FINAL"
+                            in 89..96 -> "OCTAVOS DE FINAL"
+                            in 97..100 -> "CUARTOS DE FINAL"
+                            101, 102 -> "SEMIFINAL"
+                            103 -> "TERCER PUESTO"
+                            104 -> "GRAN FINAL"
+                            else -> if (match.homeTeam.group.isNotBlank()) "GRUPO ${match.homeTeam.group}" else "PARTIDO"
+                        }
                         Text(
-                            text = when (match.id) {
-                                in 73..88 -> "DIECISEISAVOS DE FINAL"
-                                in 89..96 -> "OCTAVOS DE FINAL"
-                                in 97..100 -> "CUARTOS DE FINAL"
-                                101, 102 -> "SEMIFINAL"
-                                103 -> "TERCER PUESTO"
-                                104 -> "GRAN FINAL"
-                                else -> "GRUPO ${match.homeTeam.group}"
-                            },
+                            text = "$roundOrGroup$matchdayLabel",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
