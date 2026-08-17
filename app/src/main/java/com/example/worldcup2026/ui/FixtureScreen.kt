@@ -1037,47 +1037,73 @@ fun MatchCard(
                     val isESelected = currentPred.split(",").contains("E")
                     val isVSelected = currentPred.split(",").contains("V")
 
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        PredictionChip(label = "L", selected = isLSelected, enabled = isEditingProde) {
-                            val nextWinner = toggleWinnerChip(match.predictedWinner, "L")
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
-                        }
-                        PredictionChip(label = "E", selected = isESelected, enabled = isEditingProde) {
-                            val nextWinner = toggleWinnerChip(match.predictedWinner, "E")
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
-                        }
-                        PredictionChip(label = "V", selected = isVSelected, enabled = isEditingProde) {
-                            val nextWinner = toggleWinnerChip(match.predictedWinner, "V")
-                            onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
-                        }
-                        
-                        IconButton(onClick = { showPlayerHelp = !showPlayerHelp }, modifier = Modifier.size(32.dp)) {
-                            Icon(Icons.Default.Info, contentDescription = "Ayuda", tint = if (showPlayerHelp) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f))
+                        // Fila 1: Pronóstico 1X2 y Ayuda
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                PredictionChip(label = "L", selected = isLSelected, enabled = isEditingProde) {
+                                    val nextWinner = toggleWinnerChip(match.predictedWinner, "L")
+                                    onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
+                                }
+                                PredictionChip(label = "E", selected = isESelected, enabled = isEditingProde) {
+                                    val nextWinner = toggleWinnerChip(match.predictedWinner, "E")
+                                    onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
+                                }
+                                PredictionChip(label = "V", selected = isVSelected, enabled = isEditingProde) {
+                                    val nextWinner = toggleWinnerChip(match.predictedWinner, "V")
+                                    onPredictionChange(match.id, nextWinner, match.predictedHomeScore, match.predictedAwayScore, match.predictedHomePenalties, match.predictedAwayPenalties)
+                                }
+                            }
+                            
+                            IconButton(onClick = { showPlayerHelp = !showPlayerHelp }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.Info, contentDescription = "Ayuda", tint = if (showPlayerHelp) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f))
+                            }
                         }
 
-                        VerticalDivider(modifier = Modifier.height(20.dp).padding(horizontal = 8.dp), color = Color.White.copy(alpha = 0.1f))
-                        
-                        PredictionInput(
-                            value = match.predictedHomeScore, 
-                            enabled = isEditingProde,
-                            onValueChange = { h -> 
-                                val a = if (h != null && match.predictedAwayScore == null) 0 else match.predictedAwayScore
-                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
-                            }
-                        )
-                        Text(" - ", fontWeight = FontWeight.Bold, color = Color.White)
-                        PredictionInput(
-                            value = match.predictedAwayScore, 
-                            enabled = isEditingProde,
-                            onValueChange = { a -> 
-                                val h = if (a != null && match.predictedHomeScore == null) 0 else match.predictedHomeScore
-                                onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
-                            }
-                        )
+                        // Fila 2: Selector de Goles (+ / -)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Goles:",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(end = 12.dp)
+                            )
+                            PredictionInput(
+                                value = match.predictedHomeScore, 
+                                enabled = isEditingProde,
+                                onValueChange = { h -> 
+                                    val a = if (h != null && match.predictedAwayScore == null) 0 else match.predictedAwayScore
+                                    onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
+                                }
+                            )
+                            Text("   -   ", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.7f))
+                            PredictionInput(
+                                value = match.predictedAwayScore, 
+                                enabled = isEditingProde,
+                                onValueChange = { a -> 
+                                    val h = if (a != null && match.predictedHomeScore == null) 0 else match.predictedHomeScore
+                                    onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
+                                }
+                            )
+                        }
                     }
                     
                     if (showPlayerHelp) {
