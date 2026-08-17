@@ -167,13 +167,19 @@ fun LeagueDetailScreen(
                     border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text("ℹ️ Configuración de Liga", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("ℹ️ Configuración y Puntuación de la Liga", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Spacer(modifier = Modifier.height(3.dp))
                         Text("• Modalidad: $modeDesc", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
                         if (!league.customPrize.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text("• 🎁 Premio Configurado: ${league.customPrize}", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("• 🎯 Ganador / Empate Simple (L, E, V): +2 pts", color = Color(0xFFFFC107), fontSize = 11.sp)
+                        Text("• 🎲 Apuesta Doble (ej: L+E, E+V, L+V): +1 pt", color = Color(0xFFFFC107), fontSize = 11.sp)
+                        Text("• ⚽ Marcador Exacto: +3 pts", color = Color(0xFF4CAF50), fontSize = 11.sp)
+                        Text("• 📐 Misma Diferencia de Gol: +2 pts", color = Color(0xFF4CAF50), fontSize = 11.sp)
+                        Text("• ⭐ Comodín x2: Duplica todos los puntos del partido", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
                 }
             }

@@ -1212,7 +1212,7 @@ fun MatchCard(
                                 else -> "E"
                             }
                             
-                            val isDouble = isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)
+                            val isDouble = (match.predictedWinner ?: "").split(",").filter { it.isNotBlank() }.size >= 2
                             val predictedSigns = (match.predictedWinner ?: "").split(",").map { s ->
                                 when (s.trim()) {
                                     "home" -> "L"
@@ -1220,15 +1220,7 @@ fun MatchCard(
                                     "draw" -> "E"
                                     else -> s.trim()
                                 }
-                            }.filter { it.isNotBlank() }.toMutableSet()
-                            if (match.predictedHomeScore != null && match.predictedAwayScore != null) {
-                                val scoreSign = when {
-                                    match.predictedHomeScore!! > match.predictedAwayScore!! -> "L"
-                                    match.predictedAwayScore!! > match.predictedHomeScore!! -> "V"
-                                    else -> "E"
-                                }
-                                predictedSigns.add(scoreSign)
-                            }
+                            }.filter { it.isNotBlank() }.toSet()
 
                             val isWinnerHit = predictedSigns.contains(realWinner)
                             val signPoints = if (isWinnerHit) {
@@ -1241,7 +1233,7 @@ fun MatchCard(
                             val diffPoints = if (scorePoints == 0 && isWinnerHit && match.predictedHomeScore != null && match.predictedAwayScore != null) {
                                 val diffReal = h - a
                                 val diffPred = match.predictedHomeScore!! - match.predictedAwayScore!!
-                                if (diffReal == diffPred) 1 else 0
+                                if (diffReal == diffPred) 2 else 0
                             } else 0
 
                             val rawTotal = signPoints + scorePoints + diffPoints
@@ -1511,20 +1503,8 @@ fun isDoubleBet(predictedWinner: String?, homeScore: Int?, awayScore: Int?): Boo
         }
     }.filter { it.isNotBlank() }
     
-    // Caso 1: Se eligieron 2 fichas (ej: L + V, L + E, E + V)
-    if (signs.size >= 2) return true
-    
-    // Caso 2: Se eligió 1 ficha pero el marcador exacto ingresado la contradice
-    if (signs.size == 1 && homeScore != null && awayScore != null) {
-        val winnerSign = signs.first()
-        val scoreOutcome = when {
-            homeScore > awayScore -> "L"
-            awayScore > homeScore -> "V"
-            else -> "E"
-        }
-        return winnerSign != scoreOutcome
-    }
-    return false
+    // Apuesta Doble: Exclusivamente cuando se seleccionan 2 fichas (ej: L+V, L+E, E+V)
+    return signs.size >= 2
 }
 
 fun toggleWinnerChip(currentWinner: String?, clickedOption: String): String? {
@@ -1602,17 +1582,17 @@ fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
                 .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
                 .padding(12.dp)
         ) {
-            Text("Reglas del Prode", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text("Reglas del Prode y Puntos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))
             
             Text("• Apuesta de Signo (L, E, V):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-            Text("   - Apuesta Simple: 2 PUNTOS al acertar (ej: L)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Apuesta Doble: 1 PUNTO al acertar (ej: L+E, máx 3 por fecha)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Apuesta Simple: +2 PUNTOS al acertar (ej: L, E o V)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Apuesta Doble: +1 PUNTO al acertar (ej: L+E, E+V, L+V)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
             
             Spacer(modifier = Modifier.height(4.dp))
-            Text("• Diferencia de Gol y Marcador Exacto:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-            Text("   - Misma Diferencia de Gol: +1 PUNTO extra al acertar ganador/empate (ej: pusiste 2-0 y fue 3-1, o 1-1 y fue 2-2)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Resultado Exacto: +3 PUNTOS al acertar goles exactos", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("• Goles y Diferencia de Gol:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+            Text("   - Marcador Exacto: +3 PUNTOS al acertar los goles exactos (ej: 0-2)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Misma Diferencia de Gol: +2 PUNTOS al acertar ganador/empate si coincide la diferencia de goles pero no el marcador exacto (ej: pusiste 0-2 y terminó 1-3)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
             
             Spacer(modifier = Modifier.height(4.dp))
             Text("• Comodín de la Fecha (⭐ x2):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
@@ -1620,9 +1600,9 @@ fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
             Text("   - Se activa tocando la estrella ⭐ en la esquina superior del partido.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
 
             Spacer(modifier = Modifier.height(4.dp))
-            Text("• Totales Máximos por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
-            Text("   - Simple + Misma Diferencia: 3 PUNTOS (x2 Comodín = 6 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Simple + Marcador Exacto: 5 PUNTOS (x2 Comodín = 10 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("• Totales Máximos Posibles por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+            Text("   - Simple (+2) + Misma Diferencia (+2): 4 PUNTOS (x2 Comodín = 8 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+            Text("   - Simple (+2) + Marcador Exacto (+3): 5 PUNTOS (x2 Comodín = 10 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
         }
         
         Column {

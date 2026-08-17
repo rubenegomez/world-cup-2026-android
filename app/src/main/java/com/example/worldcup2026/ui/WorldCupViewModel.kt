@@ -339,12 +339,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val predW = match.predictedWinner ?: ""
         if (predW.isNotEmpty()) {
             if (predW.contains(",")) {
-                val choices = predW.split(",")
+                val choices = predW.split(",").map { it.trim() }
                 if (choices.contains(realWinner)) {
                     points += 1 // 1 punto por acierto en apuesta doble
                     isWinnerHit = true
                 }
-            } else if (predW == realWinner) {
+            } else if (predW.trim() == realWinner) {
                 points += 2 // 2 puntos por acierto en apuesta simple
                 isWinnerHit = true
             }
@@ -354,11 +354,11 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             if (match.homeScore == match.predictedHomeScore && match.awayScore == match.predictedAwayScore) {
                 points += 3 // 3 puntos por resultado de marcador exacto
             } else if (isWinnerHit) {
-                // +1 punto por misma diferencia de gol al acertar el ganador o empate
+                // +2 puntos por misma diferencia de gol al acertar el ganador o empate
                 val diffReal = h - a
                 val diffPred = match.predictedHomeScore!! - match.predictedAwayScore!!
                 if (diffReal == diffPred) {
-                    points += 1
+                    points += 2
                 }
             }
         }
