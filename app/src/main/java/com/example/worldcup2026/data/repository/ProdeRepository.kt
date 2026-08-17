@@ -176,17 +176,23 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         }
     }
 
-    suspend fun fetchMyPredictions(worldCupRepository: WorldCupRepository): Boolean {
+    suspend fun fetchMyPredictions(worldCupRepository: WorldCupRepository, context: android.content.Context? = null): Boolean {
         val token = authToken ?: return false
         return try {
             val serverPredictions = api.getMyPredictions(token)
+            val prefs = context?.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
             serverPredictions.forEach { pred ->
                 worldCupRepository.saveMatchPrediction(
                     matchId = pred.matchId,
-                    winner = if (pred.predictedHomeScore > pred.predictedAwayScore) "home" else if (pred.predictedHomeScore < pred.predictedAwayScore) "away" else "draw",
+                    winner = pred.predictedWinner ?: (if (pred.predictedHomeScore > pred.predictedAwayScore) "home" else if (pred.predictedHomeScore < pred.predictedAwayScore) "away" else "draw"),
                     homePredict = pred.predictedHomeScore,
-                    awayPredict = pred.predictedAwayScore
+                    awayPredict = pred.predictedAwayScore,
+                    homePenaltiesPredict = pred.predictedHomePenalties,
+                    awayPenaltiesPredict = pred.predictedAwayPenalties
                 )
+                if (pred.isDoublePointsMultiplier == true && prefs != null) {
+                    prefs.edit().putBoolean("comodin_match_${pred.matchId}", true).apply()
+                }
             }
             true
         } catch (e: Exception) {

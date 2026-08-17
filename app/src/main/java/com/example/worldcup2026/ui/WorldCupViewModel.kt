@@ -498,12 +498,33 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
             val willBeFeatured = !targetMatch.is_featured
 
+            // Persistir comodín en SharedPreferences
+            val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+            val keyDate = "comodin_${targetTournament}_${targetMatchday}"
+            if (willBeFeatured) {
+                prefs.edit()
+                    .putInt(keyDate, matchId)
+                    .putBoolean("comodin_match_${matchId}", true)
+                    .apply()
+            } else {
+                prefs.edit()
+                    .remove(keyDate)
+                    .remove("comodin_match_${matchId}")
+                    .apply()
+            }
+
             val updatedList = currentState.matches.map { m ->
                 val mDay = m.matchday ?: 1
                 val mT = m.tournament_id ?: currentTournamentId.value
                 if (mT == targetTournament && mDay == targetMatchday) {
-                    if (m.id == matchId) m.copy(is_featured = willBeFeatured)
-                    else m.copy(is_featured = false)
+                    if (m.id == matchId) {
+                        m.copy(is_featured = willBeFeatured)
+                    } else {
+                        if (willBeFeatured && m.is_featured) {
+                            prefs.edit().remove("comodin_match_${m.id}").apply()
+                        }
+                        m.copy(is_featured = false)
+                    }
                 } else m
             }
 
@@ -539,11 +560,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             val currentMatch = currentState.matches.find { it.id == matchId }
-            val targetMatchday = currentMatch?.matchday ?: 1
-            val targetTournament = currentMatch?.tournament_id ?: currentTournamentId.value
-
-            val hasComodinInDate = currentState.matches.any { (it.matchday ?: 1) == targetMatchday && (it.tournament_id ?: currentTournamentId.value) == targetTournament && it.is_featured }
-            val autoFeatured = if (!hasComodinInDate && (winner != null || homePredict != null || awayPredict != null)) true else (currentMatch?.is_featured ?: false)
+            val isFeatured = currentMatch?.is_featured ?: false
             
             AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict, pens=$homePenaltiesPredict-$awayPenaltiesPredict")
             repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict, homePenaltiesPredict, awayPenaltiesPredict)
@@ -563,7 +580,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                                 predictedHomePenalties = homePenaltiesPredict,
                                 predictedAwayPenalties = awayPenaltiesPredict,
                                 predictedWinner = winner,
-                                isDoublePointsMultiplier = autoFeatured
+                                isDoublePointsMultiplier = isFeatured
                             )
                         ))
                     } catch (e: Exception) {
@@ -573,7 +590,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             }
 
             val updatedList = currentState.matches.map {
-                if (it.id == matchId) it.copy(predictedWinner = winner, predictedHomeScore = homePredict, predictedAwayScore = awayPredict, predictedHomePenalties = homePenaltiesPredict, predictedAwayPenalties = awayPenaltiesPredict, is_featured = autoFeatured) else it
+                if (it.id == matchId) it.copy(
+                    predictedWinner = winner, 
+                    predictedHomeScore = homePredict, 
+                    predictedAwayScore = awayPredict, 
+                    predictedHomePenalties = homePenaltiesPredict, 
+                    predictedAwayPenalties = awayPenaltiesPredict, 
+                    is_featured = isFeatured
+                ) else it
             }
             _uiState.value = currentState.copy(matches = updatedList)
         }
@@ -608,6 +632,23 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         _celebrationMatch.value = null
     }
 
+    private fun applyComodinPersistence(matches: List<Match>): List<Match> {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        return matches.map { match ->
+            val tId = match.tournament_id ?: currentTournamentId.value
+            val mDay = match.matchday ?: 1
+            val savedComodinMatchId = prefs.getInt("comodin_${tId}_${mDay}", -1)
+            val isMatchComodin = prefs.getBoolean("comodin_match_${match.id}", false)
+            if (savedComodinMatchId == match.id || isMatchComodin) {
+                match.copy(is_featured = true)
+            } else if (savedComodinMatchId != -1 && match.is_featured) {
+                match.copy(is_featured = false)
+            } else {
+                match
+            }
+        }
+    }
+
     private fun groupMatchesPlusKnockout(all: List<Match>, knockout: List<Match>, tournamentId: Int): List<Match> {
         val combined = if (tournamentId == 1) {
             val nonWorldCupKnockouts = all.filter { it.tournament_id != 1 || it.id <= 72 }
@@ -615,7 +656,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         } else {
             all
         }
-        return combined.distinctBy { it.id }
+        return applyComodinPersistence(combined.distinctBy { it.id })
     }
 
     private fun startAutoSync(matches: List<Match>) {

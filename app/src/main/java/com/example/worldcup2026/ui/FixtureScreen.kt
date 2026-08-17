@@ -1280,41 +1280,79 @@ fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null) {
 
 @Composable
 fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) -> Unit) {
-    Surface(
-        modifier = Modifier.size(width = 40.dp, height = 40.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White.copy(alpha = if (enabled) 0.15f else 0.05f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) 0.3f else 0.05f))
+    val current = value ?: 0
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .background(
+                color = Color.White.copy(alpha = if (enabled) 0.12f else 0.04f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = if (enabled) 0.25f else 0.05f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 2.dp, vertical = 2.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            val textValue = value?.toString() ?: ""
-            if (textValue.isEmpty()) {
-                Text(
-                    text = "-",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White.copy(alpha = 0.3f)
-                )
-            }
-            androidx.compose.foundation.text.BasicTextField(
-                value = textValue,
-                onValueChange = { 
-                    if (enabled) {
-                        if (it.isEmpty()) onValueChange(null) 
-                        else it.toIntOrNull()?.let { num -> if (num in 0..20) onValueChange(num) }
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .clickable(enabled = enabled && value != null) {
+                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                    if (current > 0) {
+                        onValueChange(current - 1)
+                    } else {
+                        onValueChange(null)
                     }
                 },
-                textStyle = MaterialTheme.typography.titleMedium.copy(
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
-                ),
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                ),
-                singleLine = true,
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth()
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = "Menos",
+                tint = if (enabled && value != null) Color.White else Color.White.copy(alpha = 0.2f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .widthIn(min = 22.dp)
+                .padding(horizontal = 2.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = value?.toString() ?: "-",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = if (value != null) (if (enabled) Color.White else Color.White.copy(alpha = 0.6f)) else Color.White.copy(alpha = 0.35f),
+                textAlign = TextAlign.Center
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .clickable(enabled = enabled && (value == null || current < 20)) {
+                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                    if (value == null) {
+                        onValueChange(1)
+                    } else if (current < 20) {
+                        onValueChange(current + 1)
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Más",
+                tint = if (enabled && (value == null || current < 20)) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f),
+                modifier = Modifier.size(16.dp)
             )
         }
     }

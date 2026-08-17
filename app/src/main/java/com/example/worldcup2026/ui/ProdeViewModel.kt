@@ -69,7 +69,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                 // Descargar y restaurar predicciones guardadas en el servidor
                 launch {
                     try {
-                        prodeRepository.fetchMyPredictions(worldCupRepository)
+                        prodeRepository.fetchMyPredictions(worldCupRepository, getApplication())
                         loadMatches()
                     } catch (e: Exception) {
                         e.printStackTrace()
