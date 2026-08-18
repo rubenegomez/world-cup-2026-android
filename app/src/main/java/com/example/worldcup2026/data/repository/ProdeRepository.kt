@@ -176,6 +176,20 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         }
     }
 
+    suspend fun getGlobalRanking() = try {
+        authToken?.let { api.getGlobalRanking(it) } ?: emptyList()
+    } catch (e: Exception) {
+        Log.e("ProdeRepo", "Error fetching global ranking", e)
+        emptyList()
+    }
+
+    suspend fun getUserStats() = try {
+        authToken?.let { api.getUserStats(it) }
+    } catch (e: Exception) {
+        Log.e("ProdeRepo", "Error fetching user stats", e)
+        null
+    }
+
     suspend fun fetchMyPredictions(worldCupRepository: WorldCupRepository, context: android.content.Context? = null): Boolean {
         val token = authToken ?: return false
         return try {

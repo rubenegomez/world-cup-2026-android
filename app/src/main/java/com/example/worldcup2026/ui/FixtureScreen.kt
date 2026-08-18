@@ -588,7 +588,8 @@ fun MatchCard(
     allMatches: List<Match> = emptyList(),
     onToggleComodin: ((Int) -> Unit)? = null
 ) {
-    var showPlayerHelp by remember { mutableStateOf(false) }
+    var showTeamStats by remember { mutableStateOf(false) }
+    var showGameRules by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
 
     val statusUpper = match.status.uppercase()
@@ -624,7 +625,8 @@ fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val matchdayLabel = if (match.matchday != null && match.matchday > 0) " · FECHA ${match.matchday}" else ""
+                    val matchdayNumber = match.matchday ?: if (match.id in 1..72) ((match.id - 1) / 16 + 1) else null
+                    val matchdayLabel = if (matchdayNumber != null && matchdayNumber > 0) " · FECHA $matchdayNumber" else ""
                     if (tournamentName != null && onNavigateToTournament != null && match.tournament_id != null) {
                         Text(text = "${tournamentName.uppercase()}$matchdayLabel", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -1147,8 +1149,38 @@ fun MatchCard(
                                 }
                             }
                             
-                            IconButton(onClick = { showPlayerHelp = !showPlayerHelp }, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Info, contentDescription = "Ayuda", tint = if (showPlayerHelp) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(
+                                    onClick = { 
+                                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                                        showTeamStats = !showTeamStats 
+                                        if (showTeamStats) showGameRules = false
+                                    }, 
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info, 
+                                        contentDescription = "Estadísticas", 
+                                        tint = if (showTeamStats) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { 
+                                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                                        showGameRules = !showGameRules 
+                                        if (showGameRules) showTeamStats = false
+                                    }, 
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.HelpOutline, 
+                                        contentDescription = "Reglas", 
+                                        tint = if (showGameRules) Color(0xFFFFC107) else Color.White.copy(alpha = 0.6f)
+                                    )
+                                }
                             }
                         }
 
@@ -1188,10 +1220,15 @@ fun MatchCard(
                         }
                     }
                     
-                    if (showPlayerHelp) {
+                    if (showTeamStats) {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
-                        AyudaJugadorView(match = match, allMatches = allMatches)
+                        MatchTeamStatsView(match = match, allMatches = allMatches)
+                    }
+                    if (showGameRules) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                        MatchRulesHelpView()
                     }
                 } else {
                     val pointsData = remember(match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.homePenalties, match.awayPenalties) {
@@ -1548,14 +1585,46 @@ fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
     return ParsedScorer("", scorerStr, true)
 }
 
+@Composable
+fun MatchRulesHelpView() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text("Reglas del Prode y Puntos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(2.dp))
+        
+        Text("• Apuesta de Signo (L, E, V):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+        Text("   - Apuesta Simple: +2 PUNTOS al acertar (ej: L, E o V)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+        Text("   - Apuesta Doble: +1 PUNTO al acertar (ej: L+E, E+V, L+V)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+        
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Goles y Diferencia de Gol:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
+        Text("   - Marcador Exacto: +3 PUNTOS al acertar los goles exactos (ej: 0-2)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+        Text("   - Misma Diferencia de Gol: +2 PUNTOS al acertar ganador/empate si coincide la diferencia de goles pero no el marcador exacto (ej: pusiste 0-2 y terminó 1-3)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+        
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Comodín de la Fecha (⭐ x2):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+        Text("   - ¡DUPLICA todo el puntaje obtenido en ese partido (hasta 10 pts)!", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+        Text("   - Se activa tocando la estrella ⭐ en la esquina superior del partido.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
 
+        Spacer(modifier = Modifier.height(2.dp))
+        Text("• Totales Máximos Posibles por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+        Text("   - Simple (+2) + Misma Diferencia (+2): 4 PUNTOS (x2 Comodín = 8 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+        Text("   - Simple (+2) + Marcador Exacto (+3): 5 PUNTOS (x2 Comodín = 10 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
+    }
+}
 
 @Composable
-fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
-    val homeForm = remember(match.id, allMatches.size) { 
+fun MatchTeamStatsView(match: Match, allMatches: List<Match>) {
+    val homeForm = remember(match.homeTeam.name, allMatches.size) {
         computeRealTeamForm(match.homeTeam.name, allMatches)
     }
-    val awayForm = remember(match.id, allMatches.size) { 
+    val awayForm = remember(match.awayTeam.name, allMatches.size) {
         computeRealTeamForm(match.awayTeam.name, allMatches)
     }
 
@@ -1576,35 +1645,6 @@ fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                .padding(12.dp)
-        ) {
-            Text("Reglas del Prode y Puntos", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(6.dp))
-            
-            Text("• Apuesta de Signo (L, E, V):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-            Text("   - Apuesta Simple: +2 PUNTOS al acertar (ej: L, E o V)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Apuesta Doble: +1 PUNTO al acertar (ej: L+E, E+V, L+V)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("• Goles y Diferencia de Gol:", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
-            Text("   - Marcador Exacto: +3 PUNTOS al acertar los goles exactos (ej: 0-2)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Misma Diferencia de Gol: +2 PUNTOS al acertar ganador/empate si coincide la diferencia de goles pero no el marcador exacto (ej: pusiste 0-2 y terminó 1-3)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("• Comodín de la Fecha (⭐ x2):", style = MaterialTheme.typography.labelMedium, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
-            Text("   - ¡DUPLICA todo el puntaje obtenido en ese partido (hasta 10 pts)!", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Se activa tocando la estrella ⭐ en la esquina superior del partido.", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("• Totales Máximos Posibles por Partido:", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
-            Text("   - Simple (+2) + Misma Diferencia (+2): 4 PUNTOS (x2 Comodín = 8 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-            Text("   - Simple (+2) + Marcador Exacto (+3): 5 PUNTOS (x2 Comodín = 10 Pts)", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.9f))
-        }
-        
         Column {
             Text("Probabilidad estimada", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))
@@ -1624,7 +1664,14 @@ fun AyudaJugadorView(match: Match, allMatches: List<Match> = emptyList()) {
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
         
         Column {
-            Text("Racha últimos partidos (Reales)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Racha últimos partidos (Reales)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                Text("← Más reciente", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFC107), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -35,24 +35,24 @@ fun DailyMatchesScreen(
     var searchQuery by remember { mutableStateOf("") }
     var filterLiveOnly by remember { mutableStateOf(false) }
     val favTournaments by viewModel.favoriteTournamentIds
-    var selectedTournamentId by remember(favTournaments) { 
-        mutableIntStateOf(favTournaments.firstOrNull() ?: 0) 
+    var selectedTournamentIds by remember(favTournaments) { 
+        mutableStateOf(if (favTournaments.isNotEmpty()) favTournaments.toSet() else setOf(0)) 
     }
 
     val allTournamentsList = remember {
         listOf(0 to "🏆 Todos") + (internacionales + nacionales).map { it.id to it.name }
     }
 
-    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentId, favTournaments) {
+    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentIds, favTournaments) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
             .filter { it.date?.startsWith(dateStr) == true }
             .filter { match ->
                 val mId = match.tournament_id ?: 1
-                if (selectedTournamentId != 0) {
-                    mId == selectedTournamentId
-                } else {
+                if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) {
                     true
+                } else {
+                    selectedTournamentIds.contains(mId)
                 }
             }
             .filter { match ->
@@ -121,19 +121,37 @@ fun DailyMatchesScreen(
             )
         }
 
-        // Filtro Por Torneo (Chips horizontales scrollables)
+        // Filtro Por Torneo (Chips horizontales scrollables con selección múltiple)
         LazyRow(
             modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(allTournamentsList) { (tId, tName) ->
-                val isSelected = selectedTournamentId == tId
+                val isSelected = (tId == 0 && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())) || 
+                                 (tId != 0 && selectedTournamentIds.contains(tId))
                 val isFav = tId in favTournaments
                 val labelText = if (isFav && tId != 0) "$tName ⭐" else tName
                 FilterChip(
                     selected = isSelected,
-                    onClick = { selectedTournamentId = tId },
+                    onClick = {
+                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                        if (tId == 0) {
+                            selectedTournamentIds = setOf(0)
+                        } else {
+                            val newSet = selectedTournamentIds.toMutableSet()
+                            newSet.remove(0)
+                            if (newSet.contains(tId)) {
+                                newSet.remove(tId)
+                                if (newSet.isEmpty()) {
+                                    newSet.add(0)
+                                }
+                            } else {
+                                newSet.add(tId)
+                            }
+                            selectedTournamentIds = newSet
+                        }
+                    },
                     label = { 
                         Text(
                             text = labelText, 

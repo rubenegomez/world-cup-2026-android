@@ -184,13 +184,7 @@ fun LeagueDetailScreen(
                 }
             }
 
-            val hasPendingOrPostponed = remember(breakdown) {
-                breakdown.any { 
-                    val st = it.status?.uppercase() ?: ""
-                    st.contains("POSTP") || st.contains("SUSPEND") || st == "SCHEDULED" || st == "LIVE"
-                }
-            }
-            if (!isFinished && hasPendingOrPostponed && breakdown.isNotEmpty()) {
+            if (!isFinished) {
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),

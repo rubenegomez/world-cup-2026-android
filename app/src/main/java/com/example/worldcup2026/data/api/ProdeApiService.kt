@@ -81,6 +81,26 @@ data class MatchBreakdownDto(
     val matchday: Int? = null
 )
 
+data class GlobalRankingUserDto(
+    val id: String,
+    val name: String,
+    val avatar: String,
+    val totalPoints: Int,
+    val goldMedals: Int = 0,
+    val silverMedals: Int = 0,
+    val bronzeMedals: Int = 0,
+    val leaguesPlayed: Int = 0
+)
+
+data class UserMedalsDto(
+    val goldMedals: Int = 0,
+    val silverMedals: Int = 0,
+    val bronzeMedals: Int = 0,
+    val totalLeaguesPlayed: Int = 0,
+    val globalRank: Int = 1,
+    val totalPoints: Int = 0
+)
+
 // --- API Service ---
 
 interface ProdeApiService {
@@ -133,4 +153,14 @@ interface ProdeApiService {
     suspend fun getMyPredictions(
         @Header("Authorization") token: String
     ): List<SubmitPredictionRequest>
+
+    @GET("api/prode/ranking/global")
+    suspend fun getGlobalRanking(
+        @Header("Authorization") token: String
+    ): List<GlobalRankingUserDto>
+
+    @GET("api/prode/users/me/stats")
+    suspend fun getUserStats(
+        @Header("Authorization") token: String
+    ): UserMedalsDto
 }

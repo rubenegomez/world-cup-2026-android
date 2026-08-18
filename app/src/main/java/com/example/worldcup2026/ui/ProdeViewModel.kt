@@ -28,9 +28,32 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
     private val _allMatches = MutableStateFlow<List<com.example.worldcup2026.data.model.Match>>(emptyList())
     val allMatches = _allMatches.asStateFlow()
 
+    private val _globalRanking = MutableStateFlow<List<com.example.worldcup2026.data.api.GlobalRankingUserDto>>(emptyList())
+    val globalRanking = _globalRanking.asStateFlow()
+
+    private val _userStats = MutableStateFlow<com.example.worldcup2026.data.api.UserMedalsDto?>(null)
+    val userStats = _userStats.asStateFlow()
+
+    private val _isRankingLoading = MutableStateFlow(false)
+    val isRankingLoading = _isRankingLoading.asStateFlow()
+
     init {
         loadMatches()
         checkExistingSession()
+    }
+
+    fun loadGlobalRanking() {
+        viewModelScope.launch {
+            _isRankingLoading.value = true
+            try {
+                _globalRanking.value = prodeRepository.getGlobalRanking()
+                _userStats.value = prodeRepository.getUserStats()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isRankingLoading.value = false
+            }
+        }
     }
 
     private fun checkExistingSession() {
@@ -66,6 +89,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                 _isAuthenticated.value = true
                 _currentUser.value = prodeRepository.currentUser
                 prodeRepository.fetchMyLeagues()
+                loadGlobalRanking()
                 // Descargar y restaurar predicciones guardadas en el servidor
                 launch {
                     try {

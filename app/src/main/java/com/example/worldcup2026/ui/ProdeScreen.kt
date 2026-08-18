@@ -80,6 +80,7 @@ fun ProdeScreen(
             // Pantalla Principal del Prode
             var selectedTab by remember { mutableIntStateOf(0) }
             val currentUser by viewModel.currentUser.collectAsState()
+            val userStats by viewModel.userStats.collectAsState()
             
             Column(modifier = Modifier.fillMaxSize()) {
                 
@@ -164,12 +165,19 @@ fun ProdeScreen(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 14.sp
                                     )
-                                    Text(
-                                        text = "👋 Bienvenid@ • ⏱️ Sin Anuncios (22m/pt)",
-                                        color = Color(0xFFFFC107),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(
+                                            text = "🥇 ${userStats?.goldMedals ?: 0}  🥈 ${userStats?.silverMedals ?: 0}  🥉 ${userStats?.bronzeMedals ?: 0}",
+                                            color = Color(0xFFFFD700),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "• 🏆 ${userStats?.totalPoints ?: 0} Pts",
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontSize = 11.sp
+                                        )
+                                    }
                                 }
                             }
                             TextButton(
@@ -692,8 +700,162 @@ fun MisLigasTab(
 
 @Composable
 fun RankingTab(viewModel: ProdeViewModel) {
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-        Text("Selecciona una liga para ver el ranking", color = Color.Gray)
+    val globalRanking by viewModel.globalRanking.collectAsState()
+    val isLoading by viewModel.isRankingLoading.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadGlobalRanking()
+    }
+
+    if (isLoading && globalRanking.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        }
+    } else if (globalRanking.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+            Text("Todavía no hay puntuaciones en el ranking global.", color = Color.Gray)
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                Text(
+                    text = "🏆 Ranking Global de la Comunidad",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+
+            // Podio de los primeros 3
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.3f))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "👑 Podio de Campeones",
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            // 2do Puesto
+                            globalRanking.getOrNull(1)?.let { second ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("🥈", fontSize = 22.sp)
+                                    Text(second.name.split(" ").firstOrNull() ?: second.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                    Text("${second.totalPoints} Pts", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("🥇x${second.goldMedals}", color = Color.Gray, fontSize = 10.sp)
+                                }
+                            }
+                            // 1er Puesto
+                            globalRanking.firstOrNull()?.let { first ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("🥇", fontSize = 32.sp)
+                                    Text(first.name.split(" ").firstOrNull() ?: first.name, color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp, maxLines = 1)
+                                    Text("${first.totalPoints} Pts", color = Color(0xFFFFD700), fontSize = 13.sp, fontWeight = FontWeight.Black)
+                                    Text("🥇x${first.goldMedals}", color = Color(0xFFFFD700), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            // 3er Puesto
+                            globalRanking.getOrNull(2)?.let { third ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("🥉", fontSize = 22.sp)
+                                    Text(third.name.split(" ").firstOrNull() ?: third.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                    Text("${third.totalPoints} Pts", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("🥇x${third.goldMedals}", color = Color.Gray, fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Text(
+                    text = "Posiciones Generales",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            items(globalRanking.size) { idx ->
+                val user = globalRanking[idx]
+                val isMe = currentUser?.id == user.id || currentUser?.fullName?.trim()?.equals(user.name.trim(), ignoreCase = true) == true
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isMe) Color(0xFF2E7D32).copy(alpha = 0.35f) else Color.White.copy(alpha = 0.05f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    border = if (isMe) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50)) else null
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = when (idx) {
+                                    0 -> "🥇"
+                                    1 -> "🥈"
+                                    2 -> "🥉"
+                                    else -> "#${idx + 1}"
+                                },
+                                color = if (idx < 3) Color(0xFFFFD700) else Color.White.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                modifier = Modifier.width(36.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = if (isMe) "${user.name} (Tú)" else user.name,
+                                    color = if (isMe) Color(0xFF81C784) else Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    if (user.goldMedals > 0) Text("🥇 ${user.goldMedals}", fontSize = 11.sp, color = Color(0xFFFFD700))
+                                    if (user.silverMedals > 0) Text("🥈 ${user.silverMedals}", fontSize = 11.sp, color = Color(0xFFE0E0E0))
+                                    if (user.bronzeMedals > 0) Text("🥉 ${user.bronzeMedals}", fontSize = 11.sp, color = Color(0xFFCD7F32))
+                                    Text("• ${user.leaguesPlayed} ligas", fontSize = 11.sp, color = Color.Gray)
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "${user.totalPoints} Pts",
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
