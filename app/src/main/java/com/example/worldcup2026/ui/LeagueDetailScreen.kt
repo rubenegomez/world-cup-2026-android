@@ -53,6 +53,8 @@ fun LeagueDetailScreen(
         }
     }
     
+    val currentLeagues by viewModel.leagues.collectAsState(initial = emptyList())
+    val activeLeague = currentLeagues.find { it.id == league.id } ?: league
     val currentUser by viewModel.currentUser.collectAsState()
 
     if (selectedStandingForBreakdown != null) {
@@ -148,12 +150,12 @@ fun LeagueDetailScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         )
 
-        val modeDesc = when (league.mode) {
-            "SINGLE_MATCHDAY" -> "Fecha ${league.startMatchday ?: 1}"
-            "RANGE_MATCHDAYS" -> "Fechas ${league.startMatchday ?: 1} a ${league.endMatchday ?: 5}"
+        val modeDesc = when (activeLeague.mode) {
+            "SINGLE_MATCHDAY" -> "Fecha ${activeLeague.startMatchday ?: 1}"
+            "RANGE_MATCHDAYS" -> "Fechas ${activeLeague.startMatchday ?: 1} a ${activeLeague.endMatchday ?: 5}"
             else -> "Torneo Completo"
         }
-        val isFinished = league.status?.uppercase() == "FINISHED"
+        val isFinished = activeLeague.status?.uppercase() == "FINISHED" || (standings.isNotEmpty() && !isLoading && (activeLeague.mode != "FULL_TOURNAMENT"))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
@@ -170,9 +172,9 @@ fun LeagueDetailScreen(
                         Text("ℹ️ Configuración y Puntuación de la Liga", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         Spacer(modifier = Modifier.height(3.dp))
                         Text("• Modalidad: $modeDesc", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
-                        if (!league.customPrize.isNullOrBlank()) {
+                        if (!activeLeague.customPrize.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text("• 🎁 Premio Configurado: ${league.customPrize}", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("• 🎁 Premio Configurado: ${activeLeague.customPrize}", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("• 🎯 Ganador / Empate Simple (L, E, V): +2 pts", color = Color(0xFFFFC107), fontSize = 11.sp)

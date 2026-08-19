@@ -619,39 +619,56 @@ fun MatchCard(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            val matchdayNumber = match.matchday ?: if (match.id in 1..72) ((match.id - 1) / 16 + 1) else null
-            val roundOrGroup = when (match.id) {
-                in 73..88 -> "Dieciseisavos"
-                in 89..96 -> "Octavos"
-                in 97..100 -> "Cuartos"
-                101, 102 -> "Semifinal"
-                103 -> "3º Puesto"
-                104 -> "Final"
-                else -> if (matchdayNumber != null && matchdayNumber > 0) "Fecha $matchdayNumber" else if (match.homeTeam.group.isNotBlank()) "Grupo ${match.homeTeam.group}" else null
-            }
-
-            val userPointsEarned = remember(match.status, match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.is_featured) {
-                if (match.status.equals("Finished", ignoreCase = true) && (match.predictedWinner != null || match.predictedHomeScore != null)) {
-                    val h = match.homeScore ?: 0
-                    val a = match.awayScore ?: 0
-                    val ph = match.predictedHomeScore
-                    val pa = match.predictedAwayScore
-                    val pw = match.predictedWinner
-                    val realW = if (h > a) "L" else if (h < a) "V" else "E"
-                    var pts = 0
-                    if (ph != null && pa != null) {
-                        if (ph == h && pa == a) pts += 3
-                        else if (ph - pa == h - a && (h != a || ph == pa)) pts += 2
+            val stageLabel = when (match.tournament_id) {
+                6 -> { // Copa Argentina
+                    when (match.matchday) {
+                        1 -> "32avos"
+                        2 -> "16avos"
+                        3 -> "Octavos"
+                        4 -> "Cuartos"
+                        5 -> "Semifinal"
+                        6 -> "Final"
+                        else -> "Octavos"
                     }
-                    if (pw != null) {
-                        if (pw.contains(",")) {
-                            if (pw.split(",").map { it.trim() }.contains(realW)) pts += 1
-                        } else if (pw.trim() == realW) {
-                            pts += 2
+                }
+                3, 4 -> { // Libertadores / Sudamericana
+                    when (match.matchday) {
+                        in 1..6 -> "Fecha ${match.matchday ?: 1}"
+                        7, 8 -> "Octavos"
+                        9, 10 -> "Cuartos"
+                        11, 12 -> "Semifinal"
+                        13 -> "Final"
+                        else -> "Octavos"
+                    }
+                }
+                1 -> { // Mundial 2026
+                    when (match.id) {
+                        in 73..88 -> "Dieciseisavos"
+                        in 89..96 -> "Octavos"
+                        in 97..100 -> "Cuartos"
+                        101, 102 -> "Semifinal"
+                        103 -> "3º Puesto"
+                        104 -> "Final"
+                        else -> {
+                            val f = if (match.id in 1..72) ((match.id - 1) / 16 + 1) else (match.matchday ?: 1)
+                            val g = if (match.homeTeam.group.isNotBlank() && match.homeTeam.group.length <= 2) " · Gr. ${match.homeTeam.group}" else ""
+                            "Fecha $f$g"
                         }
                     }
-                    if (match.is_featured) pts * 2 else pts
-                } else null
+                }
+                5, 7, 8, 9, 13 -> { // Ligas nacionales
+                    if (match.matchday != null && match.matchday > 0) "Fecha ${match.matchday}" else "Fecha 1"
+                }
+                else -> {
+                    if (match.matchday != null && match.matchday > 0) "Fecha ${match.matchday}" else ""
+                }
+            }
+
+            val fullHeaderTitle = if (!tournamentName.isNullOrBlank()) {
+                if (stageLabel.isNotBlank()) "${tournamentName.uppercase()} · ${stageLabel.uppercase()}"
+                else tournamentName.uppercase()
+            } else {
+                stageLabel.uppercase()
             }
 
             Row(
@@ -661,92 +678,55 @@ fun MatchCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
+                    Text(
+                        text = fullHeaderTitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.55f),
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
                     if (tournamentName != null && onNavigateToTournament != null && match.tournament_id != null) {
-                        Text(
-                            text = tournamentName.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                        IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(20.dp)) {
-                            Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                        }
-                    }
-
-                    if (roundOrGroup != null) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                            border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                        ) {
-                            Text(
-                                text = roundOrGroup.uppercase(),
-                                color = MaterialTheme.colorScheme.primary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
+                        IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(16.dp).padding(start = 2.dp)) {
+                            Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(11.dp))
                         }
                     }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    if (userPointsEarned != null) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFFFFD700).copy(alpha = 0.2f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
-                        ) {
-                            Text(
-                                text = "⭐ +$userPointsEarned PTS",
-                                color = Color(0xFFFFD700),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
+                val isComodin = match.is_featured
+                val canToggleComodin = statusUpper == "SCHEDULED" && onToggleComodin != null
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isComodin) Color(0xFFFFD700) else Color.White.copy(alpha = 0.06f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, 
+                        if (isComodin) Color(0xFFFFD700) else Color(0xFFFFD700).copy(alpha = 0.35f)
+                    ),
+                    modifier = Modifier.clickable(enabled = canToggleComodin) {
+                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                        onToggleComodin?.invoke(match.id)
                     }
-
-                    val isComodin = match.is_featured
-                    val canToggleComodin = statusUpper == "SCHEDULED" && onToggleComodin != null
-
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (isComodin) Color(0xFFFFD700) else Color.White.copy(alpha = 0.06f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp, 
-                            if (isComodin) Color(0xFFFFD700) else Color(0xFFFFD700).copy(alpha = 0.35f)
-                        ),
-                        modifier = Modifier.clickable(enabled = canToggleComodin) {
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            onToggleComodin?.invoke(match.id)
-                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Star, 
-                                contentDescription = "Comodín", 
-                                tint = if (isComodin) Color.Black else Color(0xFFFFD700),
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = if (isComodin) "COMODÍN x2" else "x2", 
-                                color = if (isComodin) Color.Black else Color(0xFFFFD700), 
-                                fontWeight = FontWeight.Black, 
-                                fontSize = 10.sp
-                            )
-                        }
+                        Icon(
+                            Icons.Default.Star, 
+                            contentDescription = "Comodín", 
+                            tint = if (isComodin) Color.Black else Color(0xFFFFD700),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = if (isComodin) "COMODÍN x2" else "x2", 
+                            color = if (isComodin) Color.Black else Color(0xFFFFD700), 
+                            fontWeight = FontWeight.Black, 
+                            fontSize = 9.sp
+                        )
                     }
                 }
             }
