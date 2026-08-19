@@ -179,12 +179,6 @@ fun MainScreen(
                         prefs.edit().putBoolean("has_shown_celebration_${state.champion.id}", true).apply()
                     }
                 )
-            } else if (celebrationMatch != null) {
-                // Festejo individual (Gol o Final del partido recibido por notificación en primer plano)
-                com.example.worldcup2026.ui.GoalCelebrationDialog(
-                    match = celebrationMatch!!,
-                    onDismiss = { viewModel.dismissCelebration() }
-                )
             } else if (isWatchingAd) {
                 AdWatchingScreen(onComplete = {
                     isWatchingAd = false

@@ -699,7 +699,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if (match.id >= 73 && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null
+                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -771,7 +771,7 @@ fun MatchCard(
                         val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
                                 clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
 
-                        val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") || clockLower.contains("pens")
+                        val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") || clockLower.contains("pens") || statusUpper == "PENALES" || statusUpper.contains("PENAL") || (isLiveLocal && (match.homePenalties != null || match.awayPenalties != null))
                         val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") || clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
                                 (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
 
@@ -817,7 +817,7 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if (isKnockoutMatch(match) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null
+                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null
                 )
             }
  
@@ -897,12 +897,10 @@ fun MatchCard(
             }
 
             val isLivePenalties = match.status.uppercase() != "FINISHED" && 
-                (match.clock?.lowercase()?.contains("penal") == true || match.status.uppercase() == "PENALES")
+                (match.clock?.lowercase()?.contains("penal") == true || match.status.uppercase() == "PENALES" || match.status.uppercase().contains("PENAL"))
 
             val showPenaltyShootout = (match.status.uppercase() == "FINISHED" || isLivePenalties) &&
-                match.homePenalties != null && 
-                match.awayPenalties != null && 
-                match.id >= 73
+                (match.homePenalties != null || match.awayPenalties != null || isLivePenalties)
 
             if (showPenaltyShootout) {
                 Spacer(modifier = Modifier.height(16.dp))

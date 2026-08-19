@@ -302,15 +302,36 @@ fun TeamBadge(team: com.example.worldcup2026.data.model.Team, modifier: Modifier
 
 @Composable
 fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDismiss: () -> Unit) {
-    val infiniteTransition = rememberInfiniteTransition()
+    val infiniteTransition = rememberInfiniteTransition(label = "goal_pulse")
     
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.08f,
+        initialValue = 0.96f,
+        targetValue = 1.06f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
+            animation = tween(400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
-        )
+        ),
+        label = "pulse_scale"
+    )
+
+    val kineticSpacing by infiniteTransition.animateFloat(
+        initialValue = 2f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = EaseInOutQuad),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "kinetic_spacing"
+    )
+
+    val vibrationY by infiniteTransition.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(120, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "vibration_y"
     )
 
     val isGoal = match.status.equals("LIVE", ignoreCase = true)
@@ -318,22 +339,19 @@ fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDi
     val aScore = match.awayScore ?: 0
     val isFinished = match.status.equals("Finished", ignoreCase = true)
 
-    val headerTitle = when {
-        isGoal -> "¡GOOOOOLLLL!"
-        isFinished && hScore > aScore -> "¡TRIUNFO DE ${match.homeTeam.name.uppercase()}!"
-        isFinished && aScore > hScore -> "¡TRIUNFO DE ${match.awayTeam.name.uppercase()}!"
-        isFinished -> "¡EMPATE FINAL!"
-        else -> "¡GOOOOOLLLL!"
+    val latestScorer = remember(match.scorers) {
+        match.scorers.lastOrNull()?.replace("[Penales]", "")?.replace("[Tanda de penales]", "")?.trim()
     }
 
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .height(380.dp)
+                .fillMaxWidth(0.96f)
+                .wrapContentHeight()
                 .clip(RoundedCornerShape(28.dp))
-                .background(Color.Black)
-                .border(2.dp, Color(0xFFFFD700), RoundedCornerShape(28.dp)),
+                .background(Color(0xFF0F172A))
+                .border(2.dp, Brush.verticalGradient(listOf(Color(0xFFFFD700), Color(0xFFFF9800))), RoundedCornerShape(28.dp))
+                .graphicsLayer { translationY = if (isGoal) vibrationY else 0f },
             contentAlignment = Alignment.Center
         ) {
             // Lluvia de Papel picado y Cintas de Colores
@@ -341,36 +359,79 @@ fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDi
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Título en semicírculo / arco en dorado
-                Text(
-                    text = headerTitle,
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontSize = if (headerTitle.length > 20) 20.sp else 28.sp,
-                        letterSpacing = 2.sp,
-                        shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 12f)
-                    ),
-                    color = Color(0xFFFFD700),
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.scale(pulseScale),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                if (isGoal) {
+                    // KINETIC EXPANDING GOAL TYPOGRAPHY
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "¡GOOOOOOOL!",
+                            style = MaterialTheme.typography.displaySmall.copy(
+                                fontSize = 34.sp,
+                                letterSpacing = kineticSpacing.sp,
+                                shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 16f)
+                            ),
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.scale(pulseScale),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        if (!latestScorer.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color.Black.copy(alpha = 0.6f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                            ) {
+                                Text(
+                                    text = "⚽ $latestScorer",
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    val headerTitle = when {
+                        isFinished && hScore > aScore -> "¡TRIUNFO DE ${match.homeTeam.name.uppercase()}!"
+                        isFinished && aScore > hScore -> "¡TRIUNFO DE ${match.awayTeam.name.uppercase()}!"
+                        isFinished -> "¡EMPATE FINAL!"
+                        else -> "¡FINAL DEL PARTIDO!"
+                    }
+                    Text(
+                        text = headerTitle,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontSize = if (headerTitle.length > 20) 20.sp else 26.sp,
+                            letterSpacing = 1.5.sp,
+                            shadow = androidx.compose.ui.graphics.Shadow(Color.Black, blurRadius = 12f)
+                        ),
+                        color = Color(0xFFFFD700),
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.scale(pulseScale),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
 
-                // Contenido central: Escudos y Marcador en grande
+                // Contenido central: Escudos y Marcador
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // Local
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         TeamBadge(
                             team = match.homeTeam,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(52.dp)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
@@ -378,7 +439,8 @@ fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDi
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            maxLines = 1
+                            maxLines = 1,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
 
@@ -386,16 +448,19 @@ fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDi
                     Text(
                         text = "$hScore - $aScore",
                         fontWeight = FontWeight.Black,
-                        fontSize = 38.sp,
+                        fontSize = 36.sp,
                         color = Color(0xFFFFD700),
-                        modifier = Modifier.scale(pulseScale)
+                        modifier = Modifier.scale(pulseScale).padding(horizontal = 8.dp)
                     )
 
                     // Visitante
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         TeamBadge(
                             team = match.awayTeam,
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(52.dp)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
@@ -403,24 +468,28 @@ fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDi
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            maxLines = 1
+                            maxLines = 1,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
 
                 Button(
                     onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700), contentColor = Color.Black),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFD700), 
+                        contentColor = Color.Black
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                 ) {
                     Text(
-                        text = if (isGoal) "¡GOOOOL!" else "¡ENTENDIDO!",
+                        text = if (isGoal) "¡VAMOS!" else "¡ENTENDIDO!",
                         fontWeight = FontWeight.Black,
-                        fontSize = 18.sp
+                        fontSize = 17.sp
                     )
                 }
             }

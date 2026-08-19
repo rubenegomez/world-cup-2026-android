@@ -189,6 +189,31 @@ fun ProdeScreen(
                         }
                     }
                 }
+
+                val adFreeUntilVal = worldCupViewModel?.adFreeUntil?.value ?: 0L
+                val remainingMs = adFreeUntilVal - System.currentTimeMillis()
+                if (remainingMs > 0) {
+                    val remHours = remainingMs / (1000 * 60 * 60)
+                    val remMins = (remainingMs / (1000 * 60)) % 60
+                    val timeStr = if (remHours > 0) "${remHours}h ${remMins}m" else "${remMins}m"
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF4CAF50).copy(alpha = 0.2f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 2.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("🛡️ Modo Sin Anuncios: ", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("$timeStr restantes", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                        }
+                    }
+                }
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color.Transparent,
@@ -468,7 +493,19 @@ fun MisLigasTab(
                             }
                             if (isFinished) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Text("🏆 LIGA FINALIZADA", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Black)
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                                ) {
+                                    Text(
+                                        text = "🏁 LIGA FINALIZADA",
+                                        color = Color(0xFFFFD700),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
                         
