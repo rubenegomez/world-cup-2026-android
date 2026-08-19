@@ -657,18 +657,28 @@ fun MatchCard(
                     }
                 }
                 5, 7, 8, 9, 13 -> { // Ligas nacionales
-                    if (match.matchday != null && match.matchday > 0) "Fecha ${match.matchday}" else "Fecha 1"
+                    if (match.matchday != null && match.matchday > 0) {
+                        "Fecha ${match.matchday}"
+                    } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
+                        val dtStr = match.date.substring(0, 10)
+                        when {
+                            dtStr in "2026-08-15".."2026-08-18" -> "Fecha 5"
+                            dtStr in "2026-08-19".."2026-08-25" -> "Fecha 6"
+                            dtStr in "2026-08-26".."2026-09-01" -> "Fecha 7"
+                            dtStr in "2026-09-02".."2026-09-08" -> "Fecha 8"
+                            dtStr in "2026-09-09".."2026-09-15" -> "Fecha 9"
+                            dtStr in "2026-09-16".."2026-09-22" -> "Fecha 10"
+                            dtStr in "2026-09-23".."2026-09-29" -> "Fecha 11"
+                            dtStr in "2026-09-30".."2026-10-06" -> "Fecha 12"
+                            else -> "Fecha 6"
+                        }
+                    } else {
+                        "Fecha 6"
+                    }
                 }
                 else -> {
                     if (match.matchday != null && match.matchday > 0) "Fecha ${match.matchday}" else ""
                 }
-            }
-
-            val fullHeaderTitle = if (!tournamentName.isNullOrBlank()) {
-                if (stageLabel.isNotBlank()) "${tournamentName.uppercase()} · ${stageLabel.uppercase()}"
-                else tournamentName.uppercase()
-            } else {
-                stageLabel.uppercase()
             }
 
             Row(
@@ -680,18 +690,39 @@ fun MatchCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
-                    Text(
-                        text = fullHeaderTitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.55f),
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 9.sp,
-                        maxLines = 1
-                    )
-                    if (tournamentName != null && onNavigateToTournament != null && match.tournament_id != null) {
-                        IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(16.dp).padding(start = 2.dp)) {
-                            Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = Color.White.copy(alpha = 0.4f), modifier = Modifier.size(11.dp))
+                    if (!tournamentName.isNullOrBlank()) {
+                        Text(
+                            text = tournamentName.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            maxLines = 1
+                        )
+                        if (stageLabel.isNotBlank()) {
+                            Text(
+                                text = " · ${stageLabel.uppercase()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.55f),
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 9.sp,
+                                maxLines = 1
+                            )
                         }
+                        if (onNavigateToTournament != null && match.tournament_id != null) {
+                            IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(16.dp).padding(start = 2.dp)) {
+                                Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = Color(0xFFFFD700).copy(alpha = 0.7f), modifier = Modifier.size(11.dp))
+                            }
+                        }
+                    } else if (stageLabel.isNotBlank()) {
+                        Text(
+                            text = stageLabel.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.55f),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 9.sp,
+                            maxLines = 1
+                        )
                     }
                 }
 
