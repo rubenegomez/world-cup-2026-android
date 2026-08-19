@@ -619,39 +619,101 @@ fun MatchCard(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            val matchdayNumber = match.matchday ?: if (match.id in 1..72) ((match.id - 1) / 16 + 1) else null
+            val roundOrGroup = when (match.id) {
+                in 73..88 -> "Dieciseisavos"
+                in 89..96 -> "Octavos"
+                in 97..100 -> "Cuartos"
+                101, 102 -> "Semifinal"
+                103 -> "3º Puesto"
+                104 -> "Final"
+                else -> if (matchdayNumber != null && matchdayNumber > 0) "Fecha $matchdayNumber" else if (match.homeTeam.group.isNotBlank()) "Grupo ${match.homeTeam.group}" else null
+            }
+
+            val userPointsEarned = remember(match.status, match.homeScore, match.awayScore, match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore, match.is_featured) {
+                if (match.status.equals("Finished", ignoreCase = true) && (match.predictedWinner != null || match.predictedHomeScore != null)) {
+                    val h = match.homeScore ?: 0
+                    val a = match.awayScore ?: 0
+                    val ph = match.predictedHomeScore
+                    val pa = match.predictedAwayScore
+                    val pw = match.predictedWinner
+                    val realW = if (h > a) "L" else if (h < a) "V" else "E"
+                    var pts = 0
+                    if (ph != null && pa != null) {
+                        if (ph == h && pa == a) pts += 3
+                        else if (ph - pa == h - a && (h != a || ph == pa)) pts += 2
+                    }
+                    if (pw != null) {
+                        if (pw.contains(",")) {
+                            if (pw.split(",").map { it.trim() }.contains(realW)) pts += 1
+                        } else if (pw.trim() == realW) {
+                            pts += 2
+                        }
+                    }
+                    if (match.is_featured) pts * 2 else pts
+                } else null
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val matchdayNumber = match.matchday ?: if (match.id in 1..72) ((match.id - 1) / 16 + 1) else null
-                    val matchdayLabel = if (matchdayNumber != null && matchdayNumber > 0) " · FECHA $matchdayNumber" else ""
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     if (tournamentName != null && onNavigateToTournament != null && match.tournament_id != null) {
-                        Text(text = "${tournamentName.uppercase()}$matchdayLabel", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    } else {
-                        val roundOrGroup = when (match.id) {
-                            in 73..88 -> "DIECISEISAVOS DE FINAL"
-                            in 89..96 -> "OCTAVOS DE FINAL"
-                            in 97..100 -> "CUARTOS DE FINAL"
-                            101, 102 -> "SEMIFINAL"
-                            103 -> "TERCER PUESTO"
-                            104 -> "GRAN FINAL"
-                            else -> if (match.homeTeam.group.isNotBlank()) "GRUPO ${match.homeTeam.group}" else "PARTIDO"
-                        }
                         Text(
-                            text = "$roundOrGroup$matchdayLabel",
+                            text = tournamentName.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
                         )
+                        IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(20.dp)) {
+                            Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                        }
+                    }
+
+                    if (roundOrGroup != null) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                        ) {
+                            Text(
+                                text = roundOrGroup.uppercase(),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (userPointsEarned != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                        ) {
+                            Text(
+                                text = "⭐ +$userPointsEarned PTS",
+                                color = Color(0xFFFFD700),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
                     val isComodin = match.is_featured
                     val canToggleComodin = statusUpper == "SCHEDULED" && onToggleComodin != null
 

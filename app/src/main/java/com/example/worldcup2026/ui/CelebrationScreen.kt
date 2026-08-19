@@ -343,6 +343,24 @@ fun GoalCelebrationDialog(match: com.example.worldcup2026.data.model.Match, onDi
         match.scorers.lastOrNull()?.replace("[Penales]", "")?.replace("[Tanda de penales]", "")?.trim()
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    DisposableEffect(Unit) {
+        val soundRes = if (isGoal) com.example.worldcup2026.R.raw.gooolll else com.example.worldcup2026.R.raw.silbato
+        val player = try {
+            android.media.MediaPlayer.create(context, soundRes)?.apply {
+                start()
+            }
+        } catch (e: Exception) {
+            null
+        }
+        onDispose {
+            try {
+                player?.stop()
+                player?.release()
+            } catch (e: Exception) { }
+        }
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier

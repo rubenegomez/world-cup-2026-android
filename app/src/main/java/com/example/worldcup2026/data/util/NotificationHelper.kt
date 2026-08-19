@@ -11,9 +11,9 @@ import androidx.core.app.NotificationCompat
 import com.example.worldcup2026.R
 
 object NotificationHelper {
-    private const val CHANNEL_GENERAL_ID = "world_cup_2026_notifications_v3"
-    private const val CHANNEL_GOALS_ID = "world_cup_2026_goals_v3"
-    private const val CHANNEL_INCIDENTS_ID = "world_cup_2026_incidents_v3"
+    private const val CHANNEL_GENERAL_ID = "world_cup_2026_notifications_v4"
+    private const val CHANNEL_GOALS_ID = "world_cup_2026_goals_v4"
+    private const val CHANNEL_INCIDENTS_ID = "world_cup_2026_incidents_v4"
     private const val NOTIFICATION_ID = 2026
 
     fun createNotificationChannel(context: Context) {

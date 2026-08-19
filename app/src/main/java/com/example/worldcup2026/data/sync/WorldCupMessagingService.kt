@@ -133,9 +133,9 @@ class WorldCupMessagingService : FirebaseMessagingService() {
         )
 
         val channelId = when (eventType) {
-            "goal" -> "world_cup_2026_goals_v3"
-            "start", "end", "card" -> "world_cup_2026_incidents_v3"
-            else -> "world_cup_2026_notifications_v3"
+            "goal" -> "world_cup_2026_goals_v4"
+            "start", "end", "card" -> "world_cup_2026_incidents_v4"
+            else -> "world_cup_2026_notifications_v4"
         }
 
         val soundRes = when (eventType) {
