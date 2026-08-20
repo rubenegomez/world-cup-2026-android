@@ -656,25 +656,57 @@ fun MatchCard(
                         }
                     }
                 }
-                5, 7, 8, 9, 13 -> { // Ligas nacionales
+                5 -> { // Liga Profesional
                     if (match.matchday != null && match.matchday > 0) {
                         "Fecha ${match.matchday}"
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
-                            dtStr in "2026-08-15".."2026-08-18" -> "Fecha 5"
-                            dtStr in "2026-08-19".."2026-08-25" -> "Fecha 6"
+                            dtStr <= "2026-08-17" -> "Fecha 5"
+                            dtStr in "2026-08-18".."2026-08-25" -> "Fecha 6"
                             dtStr in "2026-08-26".."2026-09-01" -> "Fecha 7"
-                            dtStr in "2026-09-02".."2026-09-08" -> "Fecha 8"
-                            dtStr in "2026-09-09".."2026-09-15" -> "Fecha 9"
-                            dtStr in "2026-09-16".."2026-09-22" -> "Fecha 10"
-                            dtStr in "2026-09-23".."2026-09-29" -> "Fecha 11"
-                            dtStr in "2026-09-30".."2026-10-06" -> "Fecha 12"
                             else -> "Fecha 6"
                         }
-                    } else {
-                        "Fecha 6"
-                    }
+                    } else "Fecha 6"
+                }
+                7 -> { // Primera Nacional
+                    if (match.matchday != null && match.matchday > 0) {
+                        "Fecha ${match.matchday}"
+                    } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
+                        val dtStr = match.date.substring(0, 10)
+                        if (dtStr <= "2026-08-16") "Fecha 25" else "Fecha 26"
+                    } else "Fecha 26"
+                }
+                8 -> { // Primera B Metropolitana
+                    if (match.matchday != null && match.matchday > 0) {
+                        "Fecha ${match.matchday}"
+                    } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
+                        val dtStr = match.date.substring(0, 10)
+                        if (dtStr <= "2026-08-20") "Fecha 30" else "Fecha 31"
+                    } else "Fecha 31"
+                }
+                9 -> { // Primera C Metropolitana
+                    if (match.matchday != null && match.matchday > 0) {
+                        "Fecha ${match.matchday}"
+                    } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
+                        val dtStr = match.date.substring(0, 10)
+                        if (dtStr <= "2026-08-20") "Fecha 24" else "Fecha 25"
+                    } else "Fecha 25"
+                }
+                13 -> { // Promocional Amateur
+                    val isZonaB = match.homeTeam.group.contains("B", ignoreCase = true) || match.awayTeam.group.contains("B", ignoreCase = true)
+                    if (match.matchday != null && match.matchday > 0) {
+                        "Fecha ${match.matchday} · ${if (isZonaB) "Zona B" else "Zona A"}"
+                    } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
+                        val dtStr = match.date.substring(0, 10)
+                        if (isZonaB) {
+                            val f = if (dtStr <= "2026-08-20") 15 else 16
+                            "Fecha $f · Zona B"
+                        } else {
+                            val f = if (dtStr <= "2026-08-20") 12 else 13
+                            "Fecha $f · Zona A"
+                        }
+                    } else "Fecha 12"
                 }
                 else -> {
                     if (match.matchday != null && match.matchday > 0) "Fecha ${match.matchday}" else ""
@@ -969,11 +1001,11 @@ fun MatchCard(
                 }
             }
 
+            val hasPenaltiesData = match.homePenalties != null || match.awayPenalties != null || match.events.any { it.contains("penal", ignoreCase = true) }
             val isLivePenalties = match.status.uppercase() != "FINISHED" && 
-                (match.clock?.lowercase()?.contains("penal") == true || match.status.uppercase() == "PENALES" || match.status.uppercase().contains("PENAL"))
+                (match.clock?.lowercase()?.contains("penal") == true || match.status.uppercase() == "PENALES" || match.status.uppercase().contains("PENAL") || hasPenaltiesData)
 
-            val showPenaltyShootout = (match.status.uppercase() == "FINISHED" || isLivePenalties) &&
-                (match.homePenalties != null || match.awayPenalties != null || isLivePenalties)
+            val showPenaltyShootout = (match.status.uppercase() == "FINISHED" && hasPenaltiesData) || isLivePenalties
 
             if (showPenaltyShootout) {
                 Spacer(modifier = Modifier.height(16.dp))

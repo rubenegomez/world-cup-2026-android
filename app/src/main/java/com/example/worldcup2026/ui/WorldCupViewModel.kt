@@ -140,11 +140,11 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
         // Defaults actualizados con las fechas activas reales por torneo:
         return when (tournamentId) {
-            5 -> 5   // Liga Profesional (Fecha 5)
-            7, 8 -> 25  // Primera Nacional (Fecha 25)
-            8, 9 -> 30  // Primera B Metropolitana (Fecha 30)
-            9, 10 -> 24 // Primera C (Fecha 24)
-            13 -> 11 // Promocional Amateur (Fecha 11 Zona A / 14 Zona B)
+            5 -> 6   // Liga Profesional (Fecha 6)
+            7 -> 26  // Primera Nacional (Fecha 26)
+            8 -> 31  // Primera B Metropolitana (Fecha 31)
+            9 -> 25  // Primera C (Fecha 25)
+            13 -> 12 // Promocional Amateur (Fecha 12)
             3 -> 7   // Copa Libertadores (Octavos de Final)
             4 -> 7   // Copa Sudamericana (Octavos de Final)
             6 -> 4   // Copa Argentina (Octavos)
@@ -443,6 +443,31 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
         checkClaimableRounds()
         checkPendingRewardDialog()
+    }
+
+    fun claimPointsForAdFree(totalUserPoints: Int) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
+        val availablePointsToClaim = (totalUserPoints - alreadyClaimed).coerceAtLeast(0)
+        if (availablePointsToClaim > 0) {
+            val adFreeTimeToAdd = availablePointsToClaim * 22 * 60 * 1000L
+            val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
+            val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
+            val newUntil = baseTime + adFreeTimeToAdd
+            
+            prefs.edit()
+                .putInt("claimed_ad_free_points", alreadyClaimed + availablePointsToClaim)
+                .putLong("ad_free_until", newUntil)
+                .apply()
+                
+            _adFreeUntil.value = newUntil
+        }
+    }
+
+    fun getAvailablePointsToClaim(totalUserPoints: Int): Int {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
+        return (totalUserPoints - alreadyClaimed).coerceAtLeast(0)
     }
     
     fun toggleVipStatus() {

@@ -173,7 +173,7 @@ fun ProdeScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = "• 🏆 ${userStats?.totalPoints ?: 0} Pts",
+                                            text = "• 🏆 ${userStats?.totalPoints ?: 0} Pts (Histórico)",
                                             color = Color.White.copy(alpha = 0.8f),
                                             fontSize = 11.sp
                                         )
@@ -190,12 +190,16 @@ fun ProdeScreen(
                     }
                 }
 
+                val totalUserPoints = userStats?.totalPoints ?: 0
+                val availablePointsToClaim = worldCupViewModel?.getAvailablePointsToClaim(totalUserPoints) ?: 0
                 val adFreeUntilVal = worldCupViewModel?.adFreeUntil?.value ?: 0L
                 val remainingMs = adFreeUntilVal - System.currentTimeMillis()
+                
                 if (remainingMs > 0) {
                     val remHours = remainingMs / (1000 * 60 * 60)
                     val remMins = (remainingMs / (1000 * 60)) % 60
                     val timeStr = if (remHours > 0) "${remHours}h ${remMins}m" else "${remMins}m"
+                    
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = Color(0xFF4CAF50).copy(alpha = 0.2f),
@@ -204,13 +208,91 @@ fun ProdeScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 3.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
-                            Text("🛡️ Modo Sin Anuncios: ", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            Text("$timeStr restantes", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("🛡️ Modo Sin Anuncios: ", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text("$timeStr restantes", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                            }
+                            if (availablePointsToClaim > 0) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFD700).copy(alpha = 0.25f),
+                                    border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFD700)),
+                                    modifier = Modifier.clickable {
+                                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                                        worldCupViewModel?.claimPointsForAdFree(totalUserPoints)
+                                    }
+                                ) {
+                                    Text(
+                                        text = "🎁 Sumar +$availablePointsToClaim Pts acumulados (+${availablePointsToClaim * 22} min)",
+                                        color = Color(0xFFFFD700),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else if (availablePointsToClaim > 0) {
+                    val addMinsTotal = availablePointsToClaim * 22
+                    val addHours = addMinsTotal / 60
+                    val addMins = addMinsTotal % 60
+                    val rewardStr = if (addHours > 0) "${addHours}h ${addMins}m" else "${addMins}m"
+                    
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFFFD700).copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 3.dp)
+                            .clickable {
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                worldCupViewModel?.claimPointsForAdFree(totalUserPoints)
+                            }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Text("🎁", fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
+                                Column {
+                                    Text(
+                                        text = "¡$availablePointsToClaim Puntos Disponibles para Canjear!",
+                                        color = Color(0xFFFFD700),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                    Text(
+                                        text = "Toca acá para activar $rewardStr SIN PUBLICIDAD",
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFFFD700)
+                            ) {
+                                Text(
+                                        text = "CANJEAR 🚀",
+                                        color = Color.Black,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                                )
+                            }
                         }
                     }
                 } else {
@@ -229,7 +311,7 @@ fun ProdeScreen(
                         ) {
                             Text("🛡️ Publicidad Activa", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("· Reclamá premios por puntos para desactivarla", color = Color(0xFFFFC107), fontSize = 11.sp)
+                            Text("· Acertá pronósticos para sumar horas sin anuncios", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
                         }
                     }
                 }
