@@ -127,6 +127,11 @@ fun ProdeScreen(
                     }
                 }
 
+                val totalUserPoints = userStats?.totalPoints ?: 0
+                val availablePointsToClaim = worldCupViewModel?.getAvailablePointsToClaim(totalUserPoints) ?: 0
+                val adFreeUntilVal = worldCupViewModel?.adFreeUntil?.value ?: 0L
+                val remainingMs = adFreeUntilVal - System.currentTimeMillis()
+
                 // Header de Perfil / Status VIP
                 if (currentUser != null) {
                     val user = currentUser!!
@@ -174,7 +179,7 @@ fun ProdeScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = "• 🏆 ${userStats?.totalPoints ?: 0} Pts (Histórico)",
+                                            text = "• 🏆 $availablePointsToClaim Pts",
                                             color = Color.White.copy(alpha = 0.8f),
                                             fontSize = 11.sp
                                         )
@@ -190,11 +195,6 @@ fun ProdeScreen(
                         }
                     }
                 }
-
-                val totalUserPoints = userStats?.totalPoints ?: 0
-                val availablePointsToClaim = worldCupViewModel?.getAvailablePointsToClaim(totalUserPoints) ?: 0
-                val adFreeUntilVal = worldCupViewModel?.adFreeUntil?.value ?: 0L
-                val remainingMs = adFreeUntilVal - System.currentTimeMillis()
                 
                 if (remainingMs > 0) {
                     val remHours = remainingMs / (1000 * 60 * 60)
