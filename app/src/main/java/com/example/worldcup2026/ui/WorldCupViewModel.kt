@@ -464,6 +464,15 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun addAdFreeTime(ms: Long) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
+        val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
+        val newUntil = baseTime + ms
+        prefs.edit().putLong("ad_free_until", newUntil).apply()
+        _adFreeUntil.value = newUntil
+    }
+
     fun getAvailablePointsToClaim(totalUserPoints: Int): Int {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
@@ -692,21 +701,21 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         
         if (hasUnfinishedMatches) {
             autoSyncJob = viewModelScope.launch {
+                var consecutiveFailures = 0
                 while (true) {
-                    // Poll cada 15 segundos si hay en vivo, o cada 2 minutos si no
                     delay(if (hasLiveMatches) 15000L else 120000L) 
                     try {
                         val oldList = (_uiState.value as? WorldCupUiState.Success)?.matches ?: emptyList()
                         val success = repository.syncMatchesWithLiveJson(getApplication(), currentTournamentId.value)
-                        _isServerConnected.value = success
                         if (success) {
+                            consecutiveFailures = 0
+                            _isServerConnected.value = true
                             val globalMatches = repository.getAllMatchesGlobal()
                             val worldCupMatches = globalMatches.filter { it.tournament_id == currentTournamentId.value }
                             val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
                             val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
                             _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                             
-                            // Detectar automáticamente goles o final de partido para disparar los festejos
                             for (newM in allMatches) {
                                 val oldM = oldList.find { it.id == newM.id } ?: continue
                                 val oldH = oldM.homeScore ?: 0
@@ -720,13 +729,20 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                                 }
                             }
 
-                            // Re-evaluar intervalo
                             startAutoSync(allMatches)
                             break
+                        } else {
+                            consecutiveFailures++
+                            if (consecutiveFailures >= 3) {
+                                _isServerConnected.value = false
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        _isServerConnected.value = false
+                        consecutiveFailures++
+                        if (consecutiveFailures >= 3) {
+                            _isServerConnected.value = false
+                        }
                     }
                 }
             }

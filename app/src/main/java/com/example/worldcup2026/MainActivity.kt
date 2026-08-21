@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
         // Inicializamos Remote Config para IDs dinámicos
         RemoteConfigManager.init()
         
+        // Inicializamos Unity Ads
+        com.example.worldcup2026.ui.UnityAdsManager.init(this)
+        
         // Firebase Cloud Messaging: Suscribirse a goles/eventos
         FirebaseMessaging.getInstance().subscribeToTopic("live_matches_updates")
             .addOnCompleteListener { task ->

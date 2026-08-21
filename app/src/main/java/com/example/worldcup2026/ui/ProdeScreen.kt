@@ -1,5 +1,6 @@
 package com.example.worldcup2026.ui
 
+import android.app.Activity
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -311,8 +312,34 @@ fun ProdeScreen(
                         ) {
                             Text("🛡️ Publicidad Activa", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("· Acertá pronósticos para sumar horas sin anuncios", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
+                            Text("· Acertá pronósticos o mirá un video para desactivarla", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
                         }
+                    }
+                }
+
+                // Botón interactivo para ver Video Unity y ganar +2 hs sin publicidad gratis
+                val activityContext = LocalContext.current as? Activity
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFF1E88E5).copy(alpha = 0.2f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E88E5)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 2.dp)
+                        .clickable {
+                            if (activityContext != null) {
+                                UnityAdsManager.showRewardedAd(activityContext) {
+                                    worldCupViewModel?.addAdFreeTime(2 * 60 * 60 * 1000L)
+                                }
+                            }
+                        }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text("🎬 Mirar Video Anuncio para +2 hs SIN PUBLICIDAD", color = Color(0xFF64B5F6), fontSize = 11.sp, fontWeight = FontWeight.Black)
                     }
                 }
                 TabRow(
