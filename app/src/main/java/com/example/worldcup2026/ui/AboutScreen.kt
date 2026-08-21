@@ -64,8 +64,8 @@ fun AboutScreen() {
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("WORLD CUP 2026", fontWeight = FontWeight.Black, fontSize = 26.sp, letterSpacing = 2.sp)
-                    Text("Centro de Resultados de Alto Rendimiento", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("ARENA PRODE Y TORNEOS", fontWeight = FontWeight.Black, fontSize = 22.sp, letterSpacing = 1.sp, textAlign = TextAlign.Center)
+                    Text("Resultados y Pronósticos de Fútbol en Vivo", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
                     Spacer(modifier = Modifier.height(12.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -116,7 +116,7 @@ fun AboutScreen() {
                         onClick = {
                             val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
                                 data = android.net.Uri.parse("mailto:rubeng69@hotmail.com")
-                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Soporte World Cup 2026")
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "Soporte Arena Prode y Torneos")
                             }
                             context.startActivity(intent)
                         },
@@ -171,7 +171,7 @@ fun AboutScreen() {
         // Pie de página Legal
         item {
             Text(
-                text = "© 2026 Rubén & Antigravity. Todos los derechos reservados.\n\nEsta aplicación es una herramienta independiente de seguimiento de resultados y no tiene vínculo oficial con la FIFA ni ninguna federación nacional. Los nombres y marcas se utilizan bajo el principio de uso informativo.",
+                text = "© 2026 Rubén & Antigravity. Todos los derechos reservados.\n\nArena Prode y Torneos es una herramienta independiente de resultados y pronósticos deportivos. Los nombres de equipos y marcas se utilizan con fines puramente informativos.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
                 textAlign = TextAlign.Center,
