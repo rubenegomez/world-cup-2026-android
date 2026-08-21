@@ -23,6 +23,8 @@ object AdManager {
     private var isLoading = false
 
     fun loadInterstitialAd(context: Context) {
+        // Carga primaria en AdMob y respaldo en Unity Ads
+        UnityAdsManager.loadInterstitialAd()
         if (mInterstitialAd != null || isLoading) return
         isLoading = true
 
@@ -35,13 +37,6 @@ object AdManager {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
                     mInterstitialAd = null
                     isLoading = false
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(
-                            context.applicationContext,
-                            "AdMob error al cargar Interstitial: ${adError.message} (Código: ${adError.code})",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
                 }
 
                 override fun onAdLoaded(interstitialAd: InterstitialAd) {
@@ -66,27 +61,14 @@ object AdManager {
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     mInterstitialAd = null
-                    onComplete()
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(
-                            context.applicationContext,
-                            "AdMob error al mostrar Interstitial: ${adError.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                    // Si AdMob falla, mediación automática hacia Unity Ads
+                    UnityAdsManager.showInterstitialAd(context, onComplete)
                 }
             }
             ad.show(activity)
         } else {
-            loadInterstitialAd(context)
-            onComplete()
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(
-                    context.applicationContext,
-                    "Interstitial no listo, intentando cargar de nuevo...",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            // Mediación en cascada: AdMob no disponible -> mostrar Unity Ads
+            UnityAdsManager.showInterstitialAd(context, onComplete)
         }
     }
 }
@@ -94,28 +76,29 @@ object AdManager {
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    AndroidView(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        factory = { ctx ->
-            AdView(ctx).apply {
-                setAdSize(AdSize.BANNER)
-                adUnitId = AdManager.BANNER_REAL_ID
-                adListener = object : AdListener() {
-                    override fun onAdFailedToLoad(adError: LoadAdError) {
-                        super.onAdFailedToLoad(adError)
-                        Handler(Looper.getMainLooper()).post {
-                            Toast.makeText(
-                                context.applicationContext,
-                                "AdMob error al cargar Banner: ${adError.message} (Código: ${adError.code})",
-                                Toast.LENGTH_LONG
-                            ).show()
+    var showUnityFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    if (showUnityFallback.value) {
+        UnityBannerView(modifier = modifier)
+    } else {
+        AndroidView(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            factory = { ctx ->
+                AdView(ctx).apply {
+                    setAdSize(AdSize.BANNER)
+                    adUnitId = AdManager.BANNER_REAL_ID
+                    adListener = object : AdListener() {
+                        override fun onAdFailedToLoad(adError: LoadAdError) {
+                            super.onAdFailedToLoad(adError)
+                            // Fallback inmediato hacia Unity Ads si AdMob rechaza el APK fuera de tienda
+                            showUnityFallback.value = true
                         }
                     }
+                    loadAd(AdRequest.Builder().build())
                 }
-                loadAd(AdRequest.Builder().build())
             }
-        }
-    )
+        )
+    }
 }
