@@ -82,6 +82,51 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         checkPendingRewardDialog()
         checkClaimableRounds()
         startLiveTournamentsChecker()
+        checkForUpdates()
+    }
+
+    data class AppUpdateInfo(
+        val versionCode: Int,
+        val versionName: String,
+        val downloadUrl: String,
+        val releaseNotes: String?,
+        val isMandatory: Boolean
+    )
+
+    private val _appUpdateInfo = mutableStateOf<AppUpdateInfo?>(null)
+    val appUpdateInfo: State<AppUpdateInfo?> = _appUpdateInfo
+
+    fun dismissUpdateDialog() {
+        _appUpdateInfo.value = null
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val url = java.net.URL("https://ellocodelpedal.duckdns.org/api/AppVersions/check?platform=ArenaMobile")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+                if (conn.responseCode == 200) {
+                    val json = conn.inputStream.bufferedReader().use { it.readText() }
+                    val obj = org.json.JSONObject(json)
+                    val serverVersionCode = obj.optInt("versionCode", 0)
+                    if (serverVersionCode > com.example.worldcup2026.BuildConfig.VERSION_CODE) {
+                        val rawUrl = obj.optString("downloadUrl", "")
+                        val fullUrl = if (rawUrl.startsWith("http")) rawUrl else "https://ellocodelpedal.duckdns.org$rawUrl"
+                        _appUpdateInfo.value = AppUpdateInfo(
+                            versionCode = serverVersionCode,
+                            versionName = obj.optString("versionName", ""),
+                            downloadUrl = fullUrl,
+                            releaseNotes = obj.optString("releaseNotes", "Nuevas mejoras y correcciones disponibles."),
+                            isMandatory = obj.optBoolean("isMandatory", false)
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun toggleFavoriteTournament(tournamentId: Int) {

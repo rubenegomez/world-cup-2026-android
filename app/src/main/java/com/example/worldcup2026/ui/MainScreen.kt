@@ -515,6 +515,14 @@ fun MainScreen(
                                 }
                             }
                         }
+
+                        val updateInfo by viewModel.appUpdateInfo
+                        if (updateInfo != null) {
+                            UpdateAvailableDialog(
+                                updateInfo = updateInfo!!,
+                                onDismiss = { viewModel.dismissUpdateDialog() }
+                            )
+                        }
                     }
                 }
             }
