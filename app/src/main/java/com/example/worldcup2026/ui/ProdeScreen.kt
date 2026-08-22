@@ -157,46 +157,53 @@ fun ProdeScreen(
                         shape = RoundedCornerShape(12.dp),
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(10.dp)
+                                .fillMaxWidth()
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                coil.compose.AsyncImage(
-                                    model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                        .data(user.avatarUrl)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(androidx.compose.foundation.shape.CircleShape)
-                                        .background(Color.White.copy(alpha = 0.1f)),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = user.fullName,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    coil.compose.AsyncImage(
+                                        model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                            .data(user.avatarUrl)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(androidx.compose.foundation.shape.CircleShape)
+                                            .background(Color.White.copy(alpha = 0.1f)),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                     )
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
                                         Text(
-                                            text = "🥇 ${userStats?.goldMedals ?: 0}  🥈 ${userStats?.silverMedals ?: 0}  🥉 ${userStats?.bronzeMedals ?: 0}",
-                                            color = Color(0xFFFFD700),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
+                                            text = user.fullName,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
                                         )
-                                        Text(
-                                            text = "• 🏆 $availablePointsToClaim Pts",
-                                            color = Color.White.copy(alpha = 0.8f),
-                                            fontSize = 11.sp
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Text(
+                                                text = "🥇 ${userStats?.goldMedals ?: 0}  🥈 ${userStats?.silverMedals ?: 0}  🥉 ${userStats?.bronzeMedals ?: 0}",
+                                                color = Color(0xFFFFD700),
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = "• 🏆 $availablePointsToClaim Pts",
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                fontSize = 11.sp
+                                            )
+                                        }
                                     }
                                 }
                                 TextButton(
@@ -206,16 +213,20 @@ fun ProdeScreen(
                                     Text("Salir", fontSize = 12.sp)
                                 }
                             }
+                            
+                            Spacer(modifier = Modifier.height(6.dp))
+
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Button(
                                     onClick = { showHelpDialog = true },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                    shape = RoundedCornerShape(8.dp)
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
                                     Text("❓ Ayuda Rápida", fontSize = 11.sp, color = Color.White)
                                 }
@@ -234,10 +245,11 @@ fun ProdeScreen(
                                         )
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                    shape = RoundedCornerShape(8.dp)
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("📣 Presumir Logros (+12h Ads)", fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                                    Text("📣 Presumir Logro", fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
