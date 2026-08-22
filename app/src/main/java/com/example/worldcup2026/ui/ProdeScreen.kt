@@ -82,6 +82,20 @@ fun ProdeScreen(
             var selectedTab by remember { mutableIntStateOf(0) }
             val currentUser by viewModel.currentUser.collectAsState()
             val userStats by viewModel.userStats.collectAsState()
+
+            var showHelpDialog by remember { mutableStateOf(false) }
+            var achievementToShare by remember { mutableStateOf<AchievementData?>(null) }
+
+            if (showHelpDialog) {
+                HelpDialog(onDismiss = { showHelpDialog = false })
+            }
+
+            if (achievementToShare != null) {
+                ShareAchievementModal(
+                    achievement = achievementToShare!!,
+                    onDismiss = { achievementToShare = null }
+                )
+            }
             
             Column(modifier = Modifier.fillMaxSize()) {
                 
@@ -186,11 +200,33 @@ fun ProdeScreen(
                                     }
                                 }
                             }
-                            TextButton(
-                                onClick = { viewModel.signOut() },
-                                colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
-                            ) {
-                                Text("Salir", fontSize = 12.sp)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { showHelpDialog = true }) {
+                                    Text("❓", fontSize = 16.sp)
+                                }
+                                TextButton(
+                                    onClick = {
+                                        achievementToShare = AchievementData(
+                                            userName = user.fullName,
+                                            userAvatarUrl = user.avatarUrl,
+                                            type = AchievementType.DAILY_TOP,
+                                            title = "¡PUESTO DE PODIO EN ARENA PRODE!",
+                                            subtitle = "Ranking Global de la Comunidad",
+                                            points = totalUserPoints,
+                                            position = 1,
+                                            referralCode = user.id.ifEmpty { "prode" }
+                                        )
+                                    },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFFD700))
+                                ) {
+                                    Text("📣 Presumir", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(
+                                    onClick = { viewModel.signOut() },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
+                                ) {
+                                    Text("Salir", fontSize = 12.sp)
+                                }
                             }
                         }
                     }
