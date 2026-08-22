@@ -192,25 +192,53 @@ fun DailyMatchesScreen(
                     }
                 }
             } else {
-                val allTournaments = internacionales + nacionales
-                
                 items(matchesForSelectedDate) { match ->
-                    val tName = allTournaments.find { it.id == (match.tournament_id ?: 1) }?.name ?: "Torneo Desconocido"
+                    val tName = resolveTournamentName(match)
 
                     MatchCard(
                         match = match,
-                        onScoreChange = { matchId, home, away -> viewModel.updateMatchScore(matchId, home, away) },
-                        onPenaltiesChange = { matchId, home, away -> viewModel.updateMatchPenalties(matchId, home, away) },
-                        onStatusChange = { matchId, status -> viewModel.updateMatchStatus(matchId, status) },
+                        onScoreChange = { matchId, hScore, aScore ->
+                            viewModel.updateMatchScore(matchId, hScore, aScore)
+                        },
+                        onPenaltiesChange = { matchId, hPen, aPen ->
+                            viewModel.updateMatchPenalties(matchId, hPen, aPen)
+                        },
+                        onStatusChange = { matchId, status ->
+                            viewModel.updateMatchStatus(matchId, status)
+                        },
                         onShowVipStats = onShowVipStats,
-                        onPredictionChange = { matchId, winner, h, a, hp, ap -> viewModel.updateMatchPrediction(matchId, winner, h, a, hp, ap) },
-                        onNavigateToTournament = { id -> onNavigateToTournament(id) },
+                        onPredictionChange = { matchId, winner, hScore, aScore, hPen, aPen ->
+                            viewModel.updateMatchPrediction(matchId, winner, hScore, aScore, hPen, aPen)
+                        },
+                        onNavigateToTournament = onNavigateToTournament,
                         tournamentName = tName,
                         allMatches = matches,
-                        onToggleComodin = { matchId -> viewModel.toggleComodin(matchId) }
+                        onToggleComodin = { matchId ->
+                            viewModel.toggleComodin(matchId)
+                        }
                     )
                 }
             }
         }
+    }
+}
+
+private fun resolveTournamentName(match: Match): String {
+    val allTournaments = internacionales + nacionales
+    val tId = match.tournament_id
+    if (tId != null) {
+        val found = allTournaments.find { it.id == tId }?.name
+        if (found != null) return found
+    }
+    val contextText = "${match.homeTeam.group} ${match.stadium} ${match.city}".lowercase()
+    return when {
+        contextText.contains("primera c") || contextText.contains("metro c") -> "Primera C Metropolitana"
+        contextText.contains("promocional") || contextText.contains("amateur") -> "Torneo Promocional Amateur"
+        contextText.contains("primera b") -> "Primera B Metropolitana"
+        contextText.contains("nacional") -> "Primera Nacional"
+        contextText.contains("libertadores") -> "Copa CONMEBOL Libertadores"
+        contextText.contains("sudamericana") -> "Copa CONMEBOL Sudamericana"
+        contextText.contains("argentina") -> "Copa Argentina"
+        else -> "Liga Profesional"
     }
 }

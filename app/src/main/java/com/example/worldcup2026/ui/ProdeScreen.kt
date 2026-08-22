@@ -178,7 +178,7 @@ fun ProdeScreen(
                                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = user.fullName,
                                         color = Color.White,
@@ -199,12 +199,28 @@ fun ProdeScreen(
                                         )
                                     }
                                 }
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { showHelpDialog = true }) {
-                                    Text("❓", fontSize = 16.sp)
-                                }
                                 TextButton(
+                                    onClick = { viewModel.signOut() },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
+                                ) {
+                                    Text("Salir", fontSize = 12.sp)
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = { showHelpDialog = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("❓ Ayuda Rápida", fontSize = 11.sp, color = Color.White)
+                                }
+
+                                Button(
                                     onClick = {
                                         achievementToShare = AchievementData(
                                             userName = user.fullName,
@@ -217,15 +233,11 @@ fun ProdeScreen(
                                             referralCode = user.id.ifEmpty { "prode" }
                                         )
                                     },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFFFD700))
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    Text("📣 Presumir", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                }
-                                TextButton(
-                                    onClick = { viewModel.signOut() },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
-                                ) {
-                                    Text("Salir", fontSize = 12.sp)
+                                    Text("📣 Presumir Logros (+12h Ads)", fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
