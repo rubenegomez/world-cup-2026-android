@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
-import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -65,17 +63,16 @@ fun ShareAchievementModal(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    var isSharing by remember { mutableStateOf(false) }
 
     val shareText = when (achievement.type) {
         AchievementType.TOURNAMENT_CHAMPION ->
-            "¡Terminé en el puesto #${achievement.position ?: 1} en el torneo ${achievement.subtitle} sumando ${achievement.points} pts! 🏆 Sumate a la próxima fecha en Arena Prode: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
+            "¡Terminé en el puesto #${achievement.position ?: 1} en ${achievement.subtitle} sumando ${achievement.points} pts! 🏆 Sumate en Arena Prode: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
         AchievementType.DAILY_TOP ->
-            "¡Quedé en el puesto #${achievement.position ?: 1} del Ranking Global Diario sumando ${achievement.points} pts! 🏆 Demostrá lo que sabés en Arena Prode: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
+            "¡Quedé en el puesto #${achievement.position ?: 1} del Ranking Global sumando ${achievement.points} pts! 🏆 Demostrá lo que sabés en Arena Prode: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
         AchievementType.PERFECT_MATCH ->
-            "¡Metí pleno exacto en esta fecha! 🎯 Sumate a mi torneo en Arena Prode: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
+            "¡Metí pleno exacto! 🎯 Sumate a mi torneo en Arena Prode: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
         AchievementType.STREAK ->
-            "¡Llevo racha imparable en la zona de podio en Arena Prode! 🚀 Sumate con mi link: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
+            "¡Llevo racha imparable en el podio de Arena Prode! 🚀 Sumate: https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}"
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -98,94 +95,59 @@ fun ShareAchievementModal(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "COMPARTIR LOGRO",
+                        text = "PRESUMIR LOGRO",
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Black,
                             color = Color(0xFFFFD700),
-                            letterSpacing = 1.sp
+                            fontWeight = FontWeight.Black
                         )
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.Gray)
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White.copy(alpha = 0.7f))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Tarjeta 9:16 previa
+                // Preview Card
                 AchievementCardPreview(achievement = achievement)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "¡Al invitar a un amigo sumás +12 HORAS SIN ANUNCIOS gratis! 🎁",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = Color.Yellow,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
+                    text = "Seleccioná la red para compartir la tarjeta:",
+                    style = MaterialTheme.typography.labelSmall.copy(color = Color.Gray)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Selector de Redes Sociales
-                Text(
-                    text = "Seleccioná la red social:",
-                    style = MaterialTheme.typography.bodyMedium.copy(color = Color.White, fontWeight = FontWeight.Bold)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    SocialShareButton(
-                        name = "WhatsApp",
-                        bgColor = Color(0xFF25D366),
-                        onClick = {
-                            shareTextDirectly(context, shareText, "com.whatsapp")
-                        }
-                    )
+                    // WhatsApp
+                    SocialShareButton("WhatsApp", Color(0xFF25D366)) {
+                        shareAchievementWithImage(context, achievement, shareText, "com.whatsapp")
+                    }
 
-                    SocialShareButton(
-                        name = "Instagram",
-                        bgColor = Color(0xFFE1306C),
-                        onClick = {
-                            shareTextDirectly(context, shareText, "com.instagram.android")
-                        }
-                    )
+                    // Instagram
+                    SocialShareButton("Instagram", Color(0xFFE4405F)) {
+                        shareAchievementWithImage(context, achievement, shareText, "com.instagram.android")
+                    }
 
-                    SocialShareButton(
-                        name = "Facebook",
-                        bgColor = Color(0xFF1877F2),
-                        onClick = {
-                            shareTextDirectly(context, shareText, "com.facebook.katana")
-                        }
-                    )
+                    // Telegram
+                    SocialShareButton("Telegram", Color(0xFF0088CC)) {
+                        shareAchievementWithImage(context, achievement, shareText, "org.telegram.messenger")
+                    }
 
-                    SocialShareButton(
-                        name = "X (Twitter)",
-                        bgColor = Color(0xFF000000),
-                        onClick = {
-                            shareTextDirectly(context, shareText, "com.twitter.android")
-                        }
-                    )
-                }
+                    // X / Twitter
+                    SocialShareButton("X (Twitter)", Color(0xFF1DA1F2)) {
+                        shareAchievementWithImage(context, achievement, shareText, "com.twitter.android")
+                    }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Botón General
-                Button(
-                    onClick = {
-                        shareTextDirectly(context, shareText, null)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = Color.Black)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("COMPARTIR EN OTRAS APPS", color = Color.Black, fontWeight = FontWeight.Bold)
+                    // General
+                    SocialShareButton("Más...", Color(0xFF673AB7)) {
+                        shareAchievementWithImage(context, achievement, shareText, null)
+                    }
                 }
             }
         }
@@ -193,33 +155,32 @@ fun ShareAchievementModal(
 }
 
 @Composable
-private fun AchievementCardPreview(achievement: AchievementData) {
+fun AchievementCardPreview(achievement: AchievementData) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(260.dp)
+            .clip(RoundedCornerShape(20.dp))
             .background(
-                brush = Brush.verticalGradient(
-                    listOf(Color(0xFF0F0F1B), Color(0xFF232338))
-                ),
-                shape = RoundedCornerShape(16.dp)
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0F172A),
+                        Color(0xFF1E1E2E)
+                    )
+                )
             )
-            .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+            .border(1.5.dp, Color(0xFFFFD700), RoundedCornerShape(20.dp)),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp)
         ) {
-            // Insignia
             Icon(
-                imageVector = when (achievement.type) {
-                    AchievementType.TOURNAMENT_CHAMPION -> Icons.Default.EmojiEvents
-                    else -> Icons.Default.Stars
-                },
+                imageVector = Icons.Default.EmojiEvents,
                 contentDescription = null,
                 tint = Color(0xFFFFD700),
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(54.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -227,16 +188,16 @@ private fun AchievementCardPreview(achievement: AchievementData) {
             Text(
                 text = achievement.title,
                 style = MaterialTheme.typography.titleMedium.copy(
+                    color = Color.White,
                     fontWeight = FontWeight.Black,
-                    color = Color.Yellow,
                     textAlign = TextAlign.Center
                 )
             )
 
             Text(
                 text = achievement.subtitle,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color.LightGray,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Color(0xFF64B5F6),
                     textAlign = TextAlign.Center
                 )
             )
@@ -244,7 +205,7 @@ private fun AchievementCardPreview(achievement: AchievementData) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!achievement.userAvatarUrl.isNull_or_Empty()) {
+                if (!achievement.userAvatarUrl.isNullOrEmpty()) {
                     AsyncImage(
                         model = achievement.userAvatarUrl,
                         contentDescription = null,
@@ -272,7 +233,7 @@ private fun AchievementCardPreview(achievement: AchievementData) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Surface(
                 color = Color(0xFFFFD700).copy(alpha = 0.2f),
@@ -323,31 +284,151 @@ private fun SocialShareButton(
     }
 }
 
-private fun String?.isNull_or_Empty(): Boolean = this == null || this.trim().isEmpty()
-
-private fun shareTextDirectly(context: Context, text: String, packageName: String?) {
+private fun shareAchievementWithImage(context: Context, achievement: AchievementData, text: String, packageName: String?) {
+    val imageUri = generateAchievementCardBitmap(context, achievement)
     val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
+        if (imageUri != null) {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, imageUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } else {
+            type = "text/plain"
+        }
         putExtra(Intent.EXTRA_TEXT, text)
         if (!packageName.isNullOrEmpty()) {
             setPackage(packageName)
         }
     }
+
     try {
         if (!packageName.isNullOrEmpty()) {
             context.startActivity(intent)
         } else {
-            context.startActivity(Intent.createChooser(intent, "Compartir Logro"))
+            context.startActivity(Intent.createChooser(intent, "Presumir Logro"))
         }
     } catch (e: Exception) {
-        // Fallback al chooser general si la app no está instalada
         val chooserIntent = Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
+                type = if (imageUri != null) "image/png" else "text/plain"
+                if (imageUri != null) {
+                    putExtra(Intent.EXTRA_STREAM, imageUri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
                 putExtra(Intent.EXTRA_TEXT, text)
             },
-            "Compartir Logro"
+            "Presumir Logro"
         )
         context.startActivity(chooserIntent)
     }
 }
+
+private fun generateAchievementCardBitmap(context: Context, achievement: AchievementData): Uri? {
+    try {
+        val width = 1080
+        val height = 1920
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Background Gradient
+        val bgPaint = android.graphics.Paint()
+        bgPaint.shader = android.graphics.LinearGradient(
+            0f, 0f, 0f, height.toFloat(),
+            intColor(0xFF0F172A), intColor(0xFF1E1E2E),
+            android.graphics.Shader.TileMode.CLAMP
+        )
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+        // Gold Frame
+        val borderPaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFD700)
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = 24f
+        }
+        canvas.drawRoundRect(40f, 40f, width - 40f, height - 40f, 48f, 48f, borderPaint)
+
+        // App Title
+        val titlePaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFD700)
+            textSize = 52f
+            isFakeBoldText = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText("ARENA PRODE Y TORNEOS", width / 2f, 220f, titlePaint)
+
+        // Subtitle
+        val subPaint = android.graphics.Paint().apply {
+            color = intColor(0xFF64B5F6)
+            textSize = 36f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText(achievement.subtitle, width / 2f, 300f, subPaint)
+
+        // Trophy Emoji / Circle
+        val trophyPaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFD700)
+            textSize = 140f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText("🏆", width / 2f, 580f, trophyPaint)
+
+        // Achievement Title
+        val badgePaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFFFFF)
+            textSize = 58f
+            isFakeBoldText = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText(achievement.title, width / 2f, 780f, badgePaint)
+
+        // User Name
+        val userPaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFC107)
+            textSize = 68f
+            isFakeBoldText = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText("👤 ${achievement.userName}", width / 2f, 960f, userPaint)
+
+        // Points & Position
+        val ptsPaint = android.graphics.Paint().apply {
+            color = intColor(0xFF00E676)
+            textSize = 76f
+            isFakeBoldText = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        val posStr = if (achievement.position != null) " • PUESTO #${achievement.position}" else ""
+        canvas.drawText("${achievement.points} PTS$posStr", width / 2f, 1140f, ptsPaint)
+
+        // Footer Call To Action
+        val refPaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFFFFF)
+            textSize = 34f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText("Sumate y ganá +12h Sin Anuncios:", width / 2f, 1620f, refPaint)
+
+        val linkPaint = android.graphics.Paint().apply {
+            color = intColor(0xFFFFD700)
+            textSize = 38f
+            isFakeBoldText = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+        canvas.drawText("https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}", width / 2f, 1700f, linkPaint)
+
+        // Save PNG to cache
+        val imagesFolder = File(context.cacheDir, "images")
+        imagesFolder.mkdirs()
+        val file = File(imagesFolder, "achievement_card.png")
+        val stream = FileOutputStream(file)
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        stream.flush()
+        stream.close()
+
+        return FileProvider.getUriForFile(context, "com.example.worldcup2026.fileprovider", file)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return null
+    }
+}
+
+private fun intColor(colorLong: Long): Int = colorLong.toInt()

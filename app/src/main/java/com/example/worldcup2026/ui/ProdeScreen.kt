@@ -84,10 +84,19 @@ fun ProdeScreen(
             val userStats by viewModel.userStats.collectAsState()
 
             var showHelpDialog by remember { mutableStateOf(false) }
+            var showReferralDialog by remember { mutableStateOf(false) }
             var achievementToShare by remember { mutableStateOf<AchievementData?>(null) }
 
             if (showHelpDialog) {
                 HelpDialog(onDismiss = { showHelpDialog = false })
+            }
+
+            if (showReferralDialog && currentUser != null) {
+                ReferralDialog(
+                    userId = currentUser!!.id,
+                    userName = currentUser!!.fullName,
+                    onDismiss = { showReferralDialog = false }
+                )
             }
 
             if (achievementToShare != null) {
@@ -199,7 +208,7 @@ fun ProdeScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(
-                                                text = "• 🏆 $availablePointsToClaim Pts",
+                                                text = "• 🏆 $totalUserPoints Pts Total",
                                                 color = Color.White.copy(alpha = 0.8f),
                                                 fontSize = 11.sp
                                             )
@@ -218,17 +227,17 @@ fun ProdeScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Button(
                                     onClick = { showHelpDialog = true },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("❓ Ayuda Rápida", fontSize = 11.sp, color = Color.White)
+                                    Text("❓ Ayuda", fontSize = 10.sp, color = Color.White)
                                 }
 
                                 Button(
@@ -245,11 +254,21 @@ fun ProdeScreen(
                                         )
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1.2f)
                                 ) {
-                                    Text("📣 Presumir Logro", fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                                    Text("📣 Presumir", fontSize = 10.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+
+                                Button(
+                                    onClick = { showReferralDialog = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1.3f)
+                                ) {
+                                    Text("🎁 Referir (+12h)", fontSize = 10.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

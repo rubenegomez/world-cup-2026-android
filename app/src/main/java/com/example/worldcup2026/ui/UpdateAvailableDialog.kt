@@ -1,7 +1,11 @@
 package com.example.worldcup2026.ui
 
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Environment
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,10 +95,27 @@ fun UpdateAvailableDialog(
                 Button(
                     onClick = {
                         try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.downloadUrl))
+                            // Usar el Gestor de Descargas nativo de Android
+                            val downloadUri = Uri.parse(updateInfo.downloadUrl)
+                            val request = DownloadManager.Request(downloadUri).apply {
+                                setTitle("Arena Prode v${updateInfo.versionName}")
+                                setDescription("Descargando actualización Build ${updateInfo.versionCode}...")
+                                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ArenaProde_v${updateInfo.versionName}.apk")
+                                setAllowedOverMetered(true)
+                                setAllowedOverRoaming(true)
+                            }
+
+                            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                            downloadManager.enqueue(request)
+                            Toast.makeText(context, "📥 Descargando APK en barra de notificaciones...", Toast.LENGTH_LONG).show()
+
+                            // Fallback abriendo el navegador si prefiere descarga directa
+                            val intent = Intent(Intent.ACTION_VIEW, downloadUri)
                             context.startActivity(intent)
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.downloadUrl))
+                            context.startActivity(intent)
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
