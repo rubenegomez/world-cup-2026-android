@@ -495,13 +495,15 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
         val availablePointsToClaim = (totalUserPoints - alreadyClaimed).coerceAtLeast(0)
         if (availablePointsToClaim > 0) {
-            val adFreeTimeToAdd = availablePointsToClaim * 22 * 60 * 1000L
+            val adFreeTimeToAdd = availablePointsToClaim * 12 * 60 * 60 * 1000L
             val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
             val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
             val newUntil = baseTime + adFreeTimeToAdd
             
+            val newClaimed = maxOf(alreadyClaimed + availablePointsToClaim, totalUserPoints)
             prefs.edit()
-                .putInt("claimed_ad_free_points", alreadyClaimed + availablePointsToClaim)
+                .putInt("claimed_ad_free_points", newClaimed)
+                .putBoolean("is_claimed_initialized", true)
                 .putLong("ad_free_until", newUntil)
                 .apply()
                 
@@ -520,6 +522,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     fun getAvailablePointsToClaim(totalUserPoints: Int): Int {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val isInit = prefs.getBoolean("is_claimed_initialized", false)
+        if (!isInit && totalUserPoints > 0) {
+            prefs.edit()
+                .putInt("claimed_ad_free_points", totalUserPoints)
+                .putBoolean("is_claimed_initialized", true)
+                .apply()
+            return 0
+        }
         val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
         return (totalUserPoints - alreadyClaimed).coerceAtLeast(0)
     }

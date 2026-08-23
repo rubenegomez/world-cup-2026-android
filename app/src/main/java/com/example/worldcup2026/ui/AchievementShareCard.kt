@@ -346,6 +346,8 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
         }
         canvas.drawRoundRect(40f, 40f, width - 40f, height - 40f, 48f, 48f, borderPaint)
 
+        val maxWidth = width - 160f
+
         // App Title
         val titlePaint = android.graphics.Paint().apply {
             color = intColor(0xFFFFD700)
@@ -353,7 +355,7 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
             isFakeBoldText = true
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        canvas.drawText("ARENA PRODE Y TORNEOS", width / 2f, 220f, titlePaint)
+        drawFittedText(canvas, "ARENA PRODE Y TORNEOS", width / 2f, 220f, titlePaint, maxWidth)
 
         // Subtitle
         val subPaint = android.graphics.Paint().apply {
@@ -361,9 +363,9 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
             textSize = 36f
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        canvas.drawText(achievement.subtitle, width / 2f, 300f, subPaint)
+        drawFittedText(canvas, achievement.subtitle, width / 2f, 300f, subPaint, maxWidth)
 
-        // Trophy Emoji / Circle
+        // Trophy Emoji
         val trophyPaint = android.graphics.Paint().apply {
             color = intColor(0xFFFFD700)
             textSize = 140f
@@ -374,30 +376,30 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
         // Achievement Title
         val badgePaint = android.graphics.Paint().apply {
             color = intColor(0xFFFFFFFF)
-            textSize = 58f
+            textSize = 54f
             isFakeBoldText = true
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        canvas.drawText(achievement.title, width / 2f, 780f, badgePaint)
+        drawFittedText(canvas, achievement.title, width / 2f, 780f, badgePaint, maxWidth)
 
         // User Name
         val userPaint = android.graphics.Paint().apply {
             color = intColor(0xFFFFC107)
-            textSize = 68f
+            textSize = 64f
             isFakeBoldText = true
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        canvas.drawText("👤 ${achievement.userName}", width / 2f, 960f, userPaint)
+        drawFittedText(canvas, "👤 ${achievement.userName}", width / 2f, 960f, userPaint, maxWidth)
 
         // Points & Position
         val ptsPaint = android.graphics.Paint().apply {
             color = intColor(0xFF00E676)
-            textSize = 76f
+            textSize = 72f
             isFakeBoldText = true
             textAlign = android.graphics.Paint.Align.CENTER
         }
         val posStr = if (achievement.position != null) " • PUESTO #${achievement.position}" else ""
-        canvas.drawText("${achievement.points} PTS$posStr", width / 2f, 1140f, ptsPaint)
+        drawFittedText(canvas, "${achievement.points} PTS$posStr", width / 2f, 1140f, ptsPaint, maxWidth)
 
         // Footer Call To Action
         val refPaint = android.graphics.Paint().apply {
@@ -405,15 +407,15 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
             textSize = 34f
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        canvas.drawText("Sumate y ganá +12h Sin Anuncios:", width / 2f, 1620f, refPaint)
+        drawFittedText(canvas, "Sumate y ganá +12h Sin Anuncios:", width / 2f, 1620f, refPaint, maxWidth)
 
         val linkPaint = android.graphics.Paint().apply {
             color = intColor(0xFFFFD700)
-            textSize = 38f
+            textSize = 36f
             isFakeBoldText = true
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        canvas.drawText("https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}", width / 2f, 1700f, linkPaint)
+        drawFittedText(canvas, "https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}", width / 2f, 1700f, linkPaint, maxWidth)
 
         // Save PNG to cache
         val imagesFolder = File(context.cacheDir, "images")
@@ -429,6 +431,17 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
         e.printStackTrace()
         return null
     }
+}
+
+private fun drawFittedText(canvas: Canvas, text: String, centerX: Float, y: Float, paint: android.graphics.Paint, maxWidth: Float) {
+    val originalTextSize = paint.textSize
+    var currentSize = originalTextSize
+    while (paint.measureText(text) > maxWidth && currentSize > 20f) {
+        currentSize -= 2f
+        paint.textSize = currentSize
+    }
+    canvas.drawText(text, centerX, y, paint)
+    paint.textSize = originalTextSize
 }
 
 private fun intColor(colorLong: Long): Int = colorLong.toInt()
