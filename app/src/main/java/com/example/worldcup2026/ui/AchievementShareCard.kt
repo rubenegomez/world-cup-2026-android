@@ -415,7 +415,7 @@ private fun generateAchievementCardBitmap(context: Context, achievement: Achieve
             isFakeBoldText = true
             textAlign = android.graphics.Paint.Align.CENTER
         }
-        drawFittedText(canvas, "https://ellocodelpedal.duckdns.org/join?ref=${achievement.referralCode}", width / 2f, 1700f, linkPaint, maxWidth)
+        drawFittedText(canvas, "https://ellocodelpedal.duckdns.org/download/ArenaProde?ref=${achievement.referralCode}", width / 2f, 1700f, linkPaint, maxWidth)
 
         // Save PNG to cache
         val imagesFolder = File(context.cacheDir, "images")

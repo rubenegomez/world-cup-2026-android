@@ -208,7 +208,7 @@ fun ProdeScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(
-                                                text = "• 🏆 $totalUserPoints Pts Total",
+                                                text = "• 🏆 $totalUserPoints Pts Históricos",
                                                 color = Color.White.copy(alpha = 0.8f),
                                                 fontSize = 11.sp
                                             )
