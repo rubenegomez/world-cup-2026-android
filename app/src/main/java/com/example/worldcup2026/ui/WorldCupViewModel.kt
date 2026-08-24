@@ -59,6 +59,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _favoriteTeamNames = mutableStateOf<Set<String>>(emptySet())
     val favoriteTeamNames: State<Set<String>> = _favoriteTeamNames
 
+    private val _allTeamsState = mutableStateOf<List<Team>>(emptyList())
+    val allTeamsState: State<List<Team>> = _allTeamsState
+
     init {
         val database = WorldCupDatabase.getDatabase(application)
         repository = WorldCupRepository(database.matchDao())
@@ -207,6 +210,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private fun loadData() {
         viewModelScope.launch {
             try {
+                launch(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val remoteTeams = com.example.worldcup2026.data.api.NetworkModule.apiService.getTeams(null)
+                        _allTeamsState.value = remoteTeams
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
                 // Sincronización automática con el JSON remoto de GitHub en segundo plano
                 launch {
                     val success = repository.syncMatchesWithLiveJson(getApplication(), currentTournamentId.value)

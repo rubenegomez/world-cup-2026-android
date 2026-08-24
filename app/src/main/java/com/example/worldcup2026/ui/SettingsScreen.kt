@@ -476,8 +476,11 @@ fun TeamsListScreen(
     var updateTrigger by remember { mutableIntStateOf(0) }
 
     val uiState = viewModel.uiState.value
-    val allTeams = remember(uiState) {
-        if (uiState is WorldCupUiState.Success) {
+    val allTeamsFromVm by viewModel.allTeamsState
+    val allTeams = remember(allTeamsFromVm, uiState) {
+        if (allTeamsFromVm.isNotEmpty()) {
+            allTeamsFromVm.filter { it.name.isNotBlank() && it.name.lowercase() != "por definir" && !it.name.contains("Ganador", ignoreCase = true) }
+        } else if (uiState is WorldCupUiState.Success) {
             val matches = (uiState as WorldCupUiState.Success).matches
             matches.flatMap { listOf(it.homeTeam, it.awayTeam) }
                 .filter { it.name.isNotBlank() && it.name.lowercase() != "por definir" && !it.name.contains("Ganador", ignoreCase = true) }
@@ -490,16 +493,19 @@ fun TeamsListScreen(
 
     val tournamentsList = listOf(
         TournamentInfo(5, "Liga Profesional Argentina", "🏆 Liga Profesional"),
+        TournamentInfo(6, "Copa Argentina", "🇦🇷 Copa Argentina"),
         TournamentInfo(7, "Primera Nacional (B)", "⚽ Primera Nacional"),
-        TournamentInfo(6, "Copa Argentina", "🏆 Copa Argentina"),
-        TournamentInfo(3, "Copa Libertadores", "🌎 Copa Libertadores"),
-        TournamentInfo(4, "Copa Sudamericana", "🌎 Copa Sudamericana"),
-        TournamentInfo(8, "Primera B Metropolitana", "⚽ Primera B"),
-        TournamentInfo(9, "Primera C", "⚽ Primera C"),
-        TournamentInfo(13, "Torneo Promocional Amateur", "⚽ Promocional Amateur"),
-        TournamentInfo(2, "Eliminatorias Sudamericanas", "🌍 Eliminatorias"),
+        TournamentInfo(8, "Primera B Metropolitana", "🏟️ Primera B"),
+        TournamentInfo(15, "Torneo Federal A", "🏔️ Torneo Federal A"),
+        TournamentInfo(10, "Primera C Metropolitana", "🥅 Primera C"),
+        TournamentInfo(16, "Torneo Regional Federal Amateur", "🚩 Torneo Regional Amateur"),
+        TournamentInfo(13, "Torneo Promocional Amateur", "🎖️ Promocional Amateur"),
+        TournamentInfo(3, "Copa Libertadores", "🏆 Copa Libertadores"),
+        TournamentInfo(4, "Copa Sudamericana", "🏆 Copa Sudamericana"),
+        TournamentInfo(2, "Eliminatorias Sudamericanas", "🌎 Eliminatorias"),
         TournamentInfo(12, "Finalíssima", "🏆 Finalíssima"),
-        TournamentInfo(14, "Amistosos Internacionales", "🌍 Amistosos FIFA")
+        TournamentInfo(14, "Amistosos Internacionales", "⚽ Amistosos FIFA"),
+        TournamentInfo(1, "Campeonato Mundial", "🌍 Mundial 2026")
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -574,65 +580,103 @@ fun TeamsListScreen(
         } else {
             // TAB EQUIPOS / SELECCIONES
             val favTeamNames = viewModel.favoriteTeamNames.value
+            val nationalIds = setOf(5, 6, 7, 8, 15, 10, 16, 13)
 
             val filteredTeams = remember(allTeams, selectedTab) {
                 when (selectedTab) {
                     1 -> allTeams.filter { t -> t.tournament_id in listOf(1, 2) || isNationalSelection(t.name) }
-                    2 -> allTeams.filter { t -> t.tournament_id in listOf(5, 6, 7, 8, 9) && !isNationalSelection(t.name) && isArgentineTeam(t.name) }
+                    2 -> allTeams.filter { t -> (t.tournament_id in nationalIds || t.tournament_id == null) && !isNationalSelection(t.name) && isArgentineTeam(t.name) }
                     3 -> allTeams.filter { t -> (!isArgentineTeam(t.name) && !isNationalSelection(t.name)) || t.tournament_id in listOf(3, 4) }
                     else -> allTeams
                 }
             }
 
-            val sortedTeams = remember(filteredTeams, favTeamNames) {
-                filteredTeams.sortedWith(
-                    compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
-                        .thenBy { it.name }
-                )
+            val tournamentOrder = listOf(5, 6, 7, 8, 15, 10, 16, 13, 1, 2, 3, 4, 12, 14)
+            val tournamentNamesMap = mapOf(
+                5 to "🏆 LIGA PROFESIONAL",
+                6 to "🇦🇷 COPA ARGENTINA",
+                7 to "⚽ PRIMERA NACIONAL",
+                8 to "🏟️ PRIMERA B METROPOLITANA",
+                15 to "🏔️ TORNEO FEDERAL A",
+                10 to "🥅 PRIMERA C METROPOLITANA",
+                16 to "🚩 TORNEO REGIONAL FEDERAL AMATEUR",
+                13 to "🎖️ TORNEO PROMOCIONAL AMATEUR",
+                1 to "🌍 MUNDIAL 2026",
+                2 to "🌎 ELIMINATORIAS SUDAMERICANAS",
+                3 to "🏆 COPA LIBERTADORES",
+                4 to "🏆 COPA SUDAMERICANA"
+            )
+
+            val groupedTeams = remember(filteredTeams, favTeamNames) {
+                filteredTeams.groupBy { it.tournament_id ?: 5 }
+                    .mapValues { (_, teamList) ->
+                        teamList.distinctBy { it.name.trim().lowercase() }
+                            .sortedWith(
+                                compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
+                                    .thenBy { it.name }
+                            )
+                    }
+                    .entries
+                    .sortedBy { (tId, _) ->
+                        val idx = tournamentOrder.indexOf(tId)
+                        if (idx != -1) idx else 999
+                    }
             }
 
-            if (sortedTeams.isEmpty()) {
+            if (groupedTeams.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Cargando equipos...", color = Color.Gray)
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(sortedTeams, key = { it.name }) { team ->
-                        val isFavorite = team.name in favTeamNames
-                        
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 4.dp, vertical = 4.dp)
-                                .clickable {
-                                    viewModel.toggleFavoriteTeam(team.name)
-                                },
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isFavorite) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
+                    groupedTeams.forEach { (tId, teamList) ->
+                        val tTitle = tournamentNamesMap[tId] ?: "⚽ TORNEO #$tId"
+                        item {
+                            Text(
+                                text = "$tTitle (${teamList.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp)
                             )
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (!team.flagUrl.isNullOrBlank()) {
-                                        coil.compose.AsyncImage(
-                                            model = team.flagUrl,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                    }
-                                    Text(text = team.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                }
-                                Icon(
-                                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-                                    contentDescription = "Favorito",
-                                    tint = if (isFavorite) Color(0xFFFFC107) else Color.Gray,
-                                    modifier = Modifier.size(22.dp)
+                        }
+                        items(teamList, key = { "${tId}_${it.name}" }) { team ->
+                            val isFavorite = team.name in favTeamNames
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 3.dp)
+                                    .clickable {
+                                        viewModel.toggleFavoriteTeam(team.name)
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isFavorite) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
                                 )
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (!team.flagUrl.isNullOrBlank()) {
+                                            coil.compose.AsyncImage(
+                                                model = team.flagUrl,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                        }
+                                        Text(text = team.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                    }
+                                    Icon(
+                                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                        contentDescription = "Favorito",
+                                        tint = if (isFavorite) Color(0xFFFFC107) else Color.Gray,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
                             }
                         }
                     }
