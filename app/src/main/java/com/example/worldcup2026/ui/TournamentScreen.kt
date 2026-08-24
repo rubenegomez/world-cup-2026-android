@@ -61,7 +61,9 @@ val nacionales = listOf(
     TournamentItem(6, "Copa Argentina", "Nacional", active = true),
     TournamentItem(7, "Primera Nacional", "Nacional", active = true),
     TournamentItem(8, "Primera B Metropolitana", "Nacional", active = true),
-    TournamentItem(9, "Primera C Metropolitana", "Nacional", active = true),
+    TournamentItem(15, "Torneo Federal A", "Nacional", active = true),
+    TournamentItem(10, "Primera C Metropolitana", "Nacional", active = true),
+    TournamentItem(16, "Torneo Regional Federal Amateur", "Nacional", active = true),
     TournamentItem(13, "Torneo Promocional Amateur", "Nacional", active = true)
 )
 

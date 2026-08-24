@@ -37,8 +37,10 @@ fun TeamsScreen(
         mapOf(
             5 to "🏆 LIGA PROFESIONAL",
             7 to "⚽ PRIMERA NACIONAL",
-            8 to "🏟️ PRIMERA B",
-            10 to "🥅 PRIMERA C",
+            8 to "🏟️ PRIMERA B METROPOLITANA",
+            15 to "🏔️ TORNEO FEDERAL A",
+            10 to "🥅 PRIMERA C METROPOLITANA",
+            16 to "🚩 TORNEO REGIONAL FEDERAL AMATEUR",
             13 to "🎖️ TORNEO PROMOCIONAL AMATEUR",
             6 to "🇦🇷 COPA ARGENTINA",
             1 to "🌍 MUNDIAL 2026",
