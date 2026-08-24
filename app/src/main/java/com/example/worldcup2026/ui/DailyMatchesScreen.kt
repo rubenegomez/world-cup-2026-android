@@ -121,52 +121,100 @@ fun DailyMatchesScreen(
             )
         }
 
-        // Filtro Por Torneo (Chips horizontales scrollables con selección múltiple)
-        LazyRow(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(allTournamentsList) { (tId, tName) ->
-                val isSelected = (tId == 0 && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())) || 
-                                 (tId != 0 && selectedTournamentIds.contains(tId))
-                val isFav = tId in favTournaments
-                val labelText = if (isFav && tId != 0) "$tName ⭐" else tName
-                FilterChip(
-                    selected = isSelected,
-                    onClick = {
-                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                        if (tId == 0) {
-                            selectedTournamentIds = setOf(0)
-                        } else {
+        // Filtro Por Torneo en 2 Renglones Compactos (Internacionales y Regionales)
+        val intlList = remember { listOf(0 to "🏆 Todos") + internacionales.map { it.id to it.name } }
+        val nacList = remember { nacionales.map { it.id to it.name } }
+
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+            // Renglón 1: Internacionales
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(intlList) { (tId, tName) ->
+                    val isSelected = (tId == 0 && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())) || 
+                                     (tId != 0 && selectedTournamentIds.contains(tId))
+                    val isFav = tId in favTournaments
+                    val labelText = if (isFav && tId != 0) "$tName ⭐" else tName
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            if (tId == 0) {
+                                selectedTournamentIds = setOf(0)
+                            } else {
+                                val newSet = selectedTournamentIds.toMutableSet()
+                                newSet.remove(0)
+                                if (newSet.contains(tId)) {
+                                    newSet.remove(tId)
+                                    if (newSet.isEmpty()) newSet.add(0)
+                                } else {
+                                    newSet.add(tId)
+                                }
+                                selectedTournamentIds = newSet
+                            }
+                        },
+                        label = { 
+                            Text(
+                                text = labelText, 
+                                fontSize = 10.sp, 
+                                fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
+                                color = if (isSelected) Color.White else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
+                            ) 
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
+                        ),
+                        border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(28.dp)
+                    )
+                }
+            }
+
+            // Renglón 2: Regionales / Locales
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(nacList) { (tId, tName) ->
+                    val isSelected = selectedTournamentIds.contains(tId)
+                    val isFav = tId in favTournaments
+                    val labelText = if (isFav) "$tName ⭐" else tName
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
                             val newSet = selectedTournamentIds.toMutableSet()
                             newSet.remove(0)
                             if (newSet.contains(tId)) {
                                 newSet.remove(tId)
-                                if (newSet.isEmpty()) {
-                                    newSet.add(0)
-                                }
+                                if (newSet.isEmpty()) newSet.add(0)
                             } else {
                                 newSet.add(tId)
                             }
                             selectedTournamentIds = newSet
-                        }
-                    },
-                    label = { 
-                        Text(
-                            text = labelText, 
-                            fontSize = 11.sp, 
-                            fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
-                            color = if (isSelected) Color.White else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.7f)
-                        ) 
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
-                    ),
-                    border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
-                    shape = RoundedCornerShape(12.dp)
-                )
+                        },
+                        label = { 
+                            Text(
+                                text = labelText, 
+                                fontSize = 10.sp, 
+                                fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
+                                color = if (isSelected) Color.White else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
+                            ) 
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
+                        ),
+                        border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(28.dp)
+                    )
+                }
             }
         }
 
