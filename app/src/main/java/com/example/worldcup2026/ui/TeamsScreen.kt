@@ -50,12 +50,20 @@ fun TeamsScreen(
         )
     }
 
-    // 3. Agrupación por torneo y orden alfabético A-Z dentro de cada torneo
+    // 3. Orden de prioridad jerárquica de torneos
+    val tournamentOrder = remember {
+        listOf(5, 6, 7, 8, 15, 10, 16, 13, 1, 2, 3, 4, 12, 14)
+    }
+
+    // 4. Agrupación por torneo y orden alfabético A-Z dentro de cada torneo
     val groupedByTournament = remember(teams) {
         teams.groupBy { it.tournament_id ?: 5 }
             .mapValues { (_, teamList) -> teamList.sortedBy { it.name } }
             .entries
-            .sortedBy { (tId, _) -> tournamentNames[tId] ?: "⚽ OTROS TORNEOS" }
+            .sortedBy { (tId, _) ->
+                val idx = tournamentOrder.indexOf(tId)
+                if (idx != -1) idx else 999
+            }
     }
 
     LazyColumn(
