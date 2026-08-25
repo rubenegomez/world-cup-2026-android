@@ -160,11 +160,11 @@ fun DailyMatchesScreen(
                                 text = labelText, 
                                 fontSize = 10.sp, 
                                 fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
-                                color = if (isSelected) Color.White else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
+                                color = if (isSelected) Color.Black else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
                             ) 
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedContainerColor = Color(0xFFFFC107),
                             containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
                         ),
                         border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
@@ -203,11 +203,11 @@ fun DailyMatchesScreen(
                                 text = labelText, 
                                 fontSize = 10.sp, 
                                 fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
-                                color = if (isSelected) Color.White else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
+                                color = if (isSelected) Color.Black else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
                             ) 
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondary,
+                            selectedContainerColor = Color(0xFFFFC107),
                             containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
                         ),
                         border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
