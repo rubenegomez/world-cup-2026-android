@@ -128,7 +128,7 @@ class NullTeamInterceptor : Interceptor {
 }
 
 object NetworkModule {
-    const val BASE_URL = "http://ellocodelpedal.duckdns.org:8000/"
+    const val BASE_URL = "https://ellocodelpedal.duckdns.org/"
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(NullTeamInterceptor())
@@ -143,7 +143,7 @@ object NetworkModule {
             .create(WorldCupApiService::class.java)
     }
 
-    const val PRODE_BASE_URL = "http://ellocodelpedal.duckdns.org:8000/"
+    const val PRODE_BASE_URL = "https://ellocodelpedal.duckdns.org/"
 
     val prodeApiService: ProdeApiService by lazy {
         Retrofit.Builder()
