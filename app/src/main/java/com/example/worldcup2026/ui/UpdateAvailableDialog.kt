@@ -108,14 +108,17 @@ fun UpdateAvailableDialog(
 
                             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                             downloadManager.enqueue(request)
-                            Toast.makeText(context, "📥 Descargando APK en barra de notificaciones...", Toast.LENGTH_LONG).show()
-
-                            // Fallback abriendo el navegador si prefiere descarga directa
-                            val intent = Intent(Intent.ACTION_VIEW, downloadUri)
-                            context.startActivity(intent)
+                            Toast.makeText(context, "📥 Descargando actualización en la barra de notificaciones...", Toast.LENGTH_LONG).show()
+                            onDismiss()
                         } catch (e: Exception) {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.downloadUrl))
-                            context.startActivity(intent)
+                            // Fallback: abrir en el navegador web solo si falla el DownloadManager
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.downloadUrl))
+                                context.startActivity(intent)
+                                onDismiss()
+                            } catch (ex: Exception) {
+                                Toast.makeText(context, "Error al iniciar descarga: ${ex.message}", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
