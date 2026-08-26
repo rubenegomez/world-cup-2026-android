@@ -82,8 +82,7 @@ fun AboutScreen() {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     Button(
                         onClick = {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://ellocodelpedal.duckdns.org/download/ArenaProde.apk"))
-                            context.startActivity(intent)
+                            openDownloadUrlInChromeOrFallback(context, "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk")
                         },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

@@ -22,6 +22,52 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
+fun openDownloadUrlInChromeOrFallback(context: Context, urlStr: String) {
+    val uri = Uri.parse(urlStr)
+    
+    // 1. Forzar apertura en Google Chrome obligatoriamente si está instalado
+    val chromeIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+        setPackage("com.android.chrome")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    
+    try {
+        context.startActivity(chromeIntent)
+        Toast.makeText(context, "🌐 Abriendo descarga en Google Chrome...", Toast.LENGTH_SHORT).show()
+        return
+    } catch (e: Exception) {
+        // Chrome no está instalado o deshabilitado
+    }
+
+    // 2. Si Chrome no está, intentar usar el Gestor de Descargas nativo (DownloadManager)
+    try {
+        val request = DownloadManager.Request(uri).apply {
+            setTitle("Arena Prode APK")
+            setDescription("Descargando actualización...")
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ArenaProde.apk")
+            setAllowedOverMetered(true)
+            setAllowedOverRoaming(true)
+        }
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.enqueue(request)
+        Toast.makeText(context, "📥 Descargando en la barra de notificaciones...", Toast.LENGTH_LONG).show()
+        return
+    } catch (e: Exception) {
+        // Error en DownloadManager
+    }
+
+    // 3. Fallback genérico a cualquier navegador web predeterminado
+    try {
+        val genericIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(genericIntent)
+    } catch (ex: Exception) {
+        Toast.makeText(context, "Error al abrir el navegador: ${ex.message}", Toast.LENGTH_SHORT).show()
+    }
+}
+
 @Composable
 fun UpdateAvailableDialog(
     updateInfo: WorldCupViewModel.AppUpdateInfo,
@@ -94,39 +140,15 @@ fun UpdateAvailableDialog(
 
                 Button(
                     onClick = {
-                        try {
-                            // Usar el Gestor de Descargas nativo de Android
-                            val downloadUri = Uri.parse(updateInfo.downloadUrl)
-                            val request = DownloadManager.Request(downloadUri).apply {
-                                setTitle("Arena Prode v${updateInfo.versionName}")
-                                setDescription("Descargando actualización Build ${updateInfo.versionCode}...")
-                                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ArenaProde_v${updateInfo.versionName}.apk")
-                                setAllowedOverMetered(true)
-                                setAllowedOverRoaming(true)
-                            }
-
-                            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                            downloadManager.enqueue(request)
-                            Toast.makeText(context, "📥 Descargando actualización en la barra de notificaciones...", Toast.LENGTH_LONG).show()
-                            onDismiss()
-                        } catch (e: Exception) {
-                            // Fallback: abrir en el navegador web solo si falla el DownloadManager
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.downloadUrl))
-                                context.startActivity(intent)
-                                onDismiss()
-                            } catch (ex: Exception) {
-                                Toast.makeText(context, "Error al iniciar descarga: ${ex.message}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        openDownloadUrlInChromeOrFallback(context, updateInfo.downloadUrl)
+                        onDismiss()
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
                 ) {
                     Text(
-                        text = "⚡ ACTUALIZAR AHORA",
+                        text = "⚡ ACTUALIZAR AHORA (CHROME)",
                         fontWeight = FontWeight.Black,
                         color = Color.Black,
                         fontSize = 14.sp
