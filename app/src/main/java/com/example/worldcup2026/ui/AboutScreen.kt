@@ -78,6 +78,20 @@ fun AboutScreen() {
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    Button(
+                        onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://ellocodelpedal.duckdns.org/download/ArenaProde.apk"))
+                            context.startActivity(intent)
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("🚀 BUSCAR / DESCARGAR ACTUALIZACIÓN", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
                 }
             }
         }
