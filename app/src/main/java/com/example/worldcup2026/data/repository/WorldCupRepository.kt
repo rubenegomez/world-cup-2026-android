@@ -69,6 +69,11 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         
         try {
             val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
+            if (remoteMatches.isNotEmpty()) {
+                val validIds = remoteMatches.map { it.id }
+                matchDao.deleteObsoleteMatches(validIds)
+            }
+
             remoteMatches.forEach { match ->
                 val saved = savedMatches.find { it.id == match.id }
                 // BUGFIX: Remote API is the source of truth for tournament_id, otherwise local DB corruption persists.

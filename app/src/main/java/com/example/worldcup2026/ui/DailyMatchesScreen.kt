@@ -70,7 +70,7 @@ fun DailyMatchesScreen(
                 compareByDescending<Match> { it.status != "Scheduled" }
                     .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
             )
-            .distinctBy { "${it.homeTeam.name.lowercase().trim()}_vs_${it.awayTeam.name.lowercase().trim()}" }
+            .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
             .sortedBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
     }
 
