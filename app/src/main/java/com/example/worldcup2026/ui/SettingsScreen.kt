@@ -596,14 +596,14 @@ fun TeamsListScreen(
                     // Tab 2: Equipos Nacionales (Ligas domésticas argentinas sin duplicados de Copa Argentina/Libertadores)
                     2 -> allTeams.filter { t -> 
                         t.tournament_id in domesticLeagueIds && !isNationalSelection(t.name)
-                    }.distinctBy { it.name.trim().lowercase() }
+                    }.distinctBy { normalizeTeamName(it.name) }
                     
                     // Tab 3: Equipos Internacionales (SOLO equipos de AFUERA de Argentina)
                     3 -> allTeams.filter { t -> 
                         !isNationalSelection(t.name) && 
                         !argTeamNames.contains(t.name.trim().lowercase()) &&
                         !isArgentineTeamName(t.name)
-                    }.distinctBy { it.name.trim().lowercase() }
+                    }.distinctBy { normalizeTeamName(it.name) }
                     
                     else -> allTeams
                 }
@@ -724,7 +724,26 @@ private fun isArgentineTeamName(name: String): Boolean {
         "boca", "river", "racing", "independiente", "san lorenzo", "vélez", "estudiantes", "gimnasia",
         "talleres", "belgrano", "instituto", "rosario central", "newell", "lanús", "banfield", "huracán",
         "argentinos", "defensa y justicia", "godoy cruz", "central córdoba", "tucumán", "platense", "tigre",
-        "unión", "colón", "barracas", "riestra", "sarmiento", "aldosivi", "chacarita", "ferro", "quilmes"
+        "unión", "colón", "barracas", "riestra", "sarmiento", "aldosivi", "chacarita", "ferro", "quilmes", "dock sud"
     )
     return argKeywords.any { lower.contains(it) }
+}
+
+fun normalizeTeamName(name: String): String {
+    val lower = name.lowercase().trim()
+    return when {
+        lower.contains("dock sud") -> "Dock Sud"
+        lower.contains("gimnasia") && lower.contains("jujuy") -> "Gimnasia y Esgrima (Jujuy)"
+        lower.contains("gimnasia") && lower.contains("mendoza") -> "Gimnasia (Mendoza)"
+        lower.contains("gimnasia") && lower.contains("tiro") -> "Gimnasia y Tiro (Salta)"
+        lower.contains("gimnasia") && (lower.contains("la plata") || lower.contains("lp")) -> "Gimnasia La Plata"
+        lower.contains("san martín") && lower.contains("tucumán") || lower.contains("san martin") && lower.contains("tucuman") -> "San Martín (Tucumán)"
+        lower.contains("san martín") && lower.contains("juan") || lower.contains("san martin") && lower.contains("juan") -> "San Martín (San Juan)"
+        lower.contains("san martín") && lower.contains("burzaco") || lower.contains("san martin") && lower.contains("burzaco") -> "San Martín (Burzaco)"
+        lower.contains("racing") && lower.contains("córdoba") || lower.contains("racing") && lower.contains("cordoba") -> "Racing (Córdoba)"
+        lower.contains("talleres") && lower.contains("remedios") || lower.contains("talleres re") -> "Talleres de Remedios"
+        lower.contains("estudiantes") && (lower.contains("buenos aires") || lower.contains("ba")) -> "Estudiantes (Buenos Aires)"
+        lower.contains("rafaela") -> "Atlético Rafaela"
+        else -> name.trim()
+    }
 }
