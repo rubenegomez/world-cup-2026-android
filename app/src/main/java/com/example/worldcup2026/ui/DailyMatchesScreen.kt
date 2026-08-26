@@ -35,8 +35,8 @@ fun DailyMatchesScreen(
     var searchQuery by remember { mutableStateOf("") }
     var filterLiveOnly by remember { mutableStateOf(false) }
     val favTournaments by viewModel.favoriteTournamentIds
-    var selectedTournamentIds by remember(favTournaments) { 
-        mutableStateOf(if (favTournaments.isNotEmpty()) favTournaments.toSet() else setOf(0)) 
+    var selectedTournamentIds by remember { 
+        mutableStateOf(setOf(0)) 
     }
 
     val allTournamentsList = remember {
