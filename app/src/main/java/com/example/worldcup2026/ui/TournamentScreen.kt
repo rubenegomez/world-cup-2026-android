@@ -76,12 +76,12 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
     
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Internacionales", "Nacionales")
-    
-    // Estado de favoritos locales
+        // Estado de favoritos locales (Sincronizado con favorite_tournament_ids de ViewModel)
     var favoriteTournaments by remember {
-        mutableStateOf(
-            sharedPrefs.getStringSet("favorite_tournaments", emptySet()) ?: emptySet()
-        )
+        val favs = sharedPrefs.getStringSet("favorite_tournament_ids", null)
+            ?: sharedPrefs.getStringSet("favorite_tournaments", emptySet())
+            ?: setOf("5")
+        mutableStateOf(favs)
     }
 
     // Estado de Selección / Club favoritos
@@ -106,13 +106,13 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
     
     // Detectar si hay vivos generales en cada pestaña
     val hasInternacionalesLive = remember(liveStatuses) {
-        liveStatuses[1] == true || liveStatuses[3] == true
+        liveStatuses[1] == true || liveStatuses[2] == true || liveStatuses[3] == true || liveStatuses[4] == true
     }
     val hasNacionalesLive = remember(liveStatuses) {
-        liveStatuses[5] == true
+        liveStatuses[5] == true || liveStatuses[6] == true || liveStatuses[7] == true || liveStatuses[8] == true || liveStatuses[15] == true
     }
 
-    // Función para alternar favorito
+    // Función para alternar favorito sincronizada con ViewModel
     val toggleFavorite: (Int) -> Unit = { id ->
         val currentSet = favoriteTournaments.toMutableSet()
         val idStr = id.toString()
@@ -121,8 +121,12 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
         } else {
             currentSet.add(idStr)
         }
-        sharedPrefs.edit().putStringSet("favorite_tournaments", currentSet).apply()
+        sharedPrefs.edit()
+            .putStringSet("favorite_tournaments", currentSet)
+            .putStringSet("favorite_tournament_ids", currentSet)
+            .apply()
         favoriteTournaments = currentSet
+        viewModel.toggleFavoriteTournament(id)
     }
 
     Column(
