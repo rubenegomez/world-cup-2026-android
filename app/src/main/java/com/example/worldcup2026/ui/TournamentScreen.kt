@@ -48,25 +48,28 @@ data class TournamentItem(
 )
 
 val internacionales = listOf(
-    TournamentItem(1, "Mundial de Fútbol (2026 / 2030)", "Internacional", active = true),
-    TournamentItem(2, "Eliminatorias Mundial", "Internacional", active = true),
+    TournamentItem(1, "Mundial de Fútbol 2030", "Internacional", active = true),
+    TournamentItem(2, "Eliminatorias Mundial 2030", "Internacional", active = true),
     TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = true),
     TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true),
     TournamentItem(12, "Finalíssima", "Internacional", active = true),
-    TournamentItem(14, "Amistosos Internacionales", "Internacional", active = true),
+    TournamentItem(14, "Amistosos Internacionales CONMEBOL", "Internacional", active = true),
     TournamentItem(17, "Mundial de Clubes", "Internacional", active = true),
     TournamentItem(18, "Copa Intercontinental", "Internacional", active = true),
-    TournamentItem(19, "Amistosos de Clubes", "Internacional", active = true)
+    TournamentItem(19, "Amistosos Internacionales de Clubes", "Internacional", active = true)
 )
 
 val nacionales = listOf(
     TournamentItem(5, "Nivel 1: Liga Profesional", "Nacional", active = true),
     TournamentItem(6, "Copa Argentina", "Nacional", active = true),
     TournamentItem(7, "Nivel 2: Primera Nacional", "Nacional", active = true),
-    TournamentItem(8, "Nivel 3 Metro: Primera B", "Nacional", active = true),
+    TournamentItem(8, "Nivel 3 Metro: Primera B Metropolitana", "Nacional", active = true),
     TournamentItem(15, "Nivel 3 Interior: Torneo Federal A", "Nacional", active = true),
     TournamentItem(9, "Nivel 4 Metro: Primera C", "Nacional", active = true),
-    TournamentItem(16, "Nivel 4 Interior: TRFA", "Nacional", active = true)
+    TournamentItem(10, "Nivel 4 Metro: Primera C Metropolitana", "Nacional", active = true),
+    TournamentItem(16, "Nivel 4 Interior: Torneo Regional Federal Amateur", "Nacional", active = true),
+    TournamentItem(13, "Torneo Promocional Amateur", "Nacional", active = true),
+    TournamentItem(20, "Amistosos AFA / Nacionales", "Nacional", active = true)
 )
 
 @Composable

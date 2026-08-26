@@ -342,10 +342,14 @@ private fun resolveTournamentName(match: Match): String {
         contextText.contains("primera c") || contextText.contains("metro c") -> "Primera C Metropolitana"
         contextText.contains("promocional") || contextText.contains("amateur") -> "Torneo Promocional Amateur"
         contextText.contains("primera b") -> "Primera B Metropolitana"
-        contextText.contains("nacional") -> "Primera Nacional"
+        contextText.contains("primera nacional") || contextText.contains("nacional b") -> "Primera Nacional"
+        contextText.contains("federal a") -> "Torneo Federal A"
+        contextText.contains("regional") || contextText.contains("trfa") -> "Torneo Regional Federal Amateur"
         contextText.contains("libertadores") -> "Copa CONMEBOL Libertadores"
         contextText.contains("sudamericana") -> "Copa CONMEBOL Sudamericana"
+        contextText.contains("intercontinental") -> "Copa Intercontinental"
+        contextText.contains("mundial de clubes") -> "Mundial de Clubes"
         contextText.contains("argentina") -> "Copa Argentina"
-        else -> "Liga Profesional"
+        else -> "Competición Oficial"
     }
 }

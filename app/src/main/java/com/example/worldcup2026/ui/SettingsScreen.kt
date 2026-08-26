@@ -580,31 +580,53 @@ fun TeamsListScreen(
         } else {
             // TAB EQUIPOS / SELECCIONES
             val favTeamNames = viewModel.favoriteTeamNames.value
-            val nationalIds = setOf(5, 6, 7, 8, 15, 10, 16, 13)
+            val domesticLeagueIds = setOf(5, 7, 8, 9, 10, 13, 15, 16, 20)
 
-            val filteredTeams = remember(allTeams, selectedTab) {
+            val argTeamNames = remember(allTeams) {
+                allTeams.filter { it.tournament_id in domesticLeagueIds }
+                    .map { it.name.trim().lowercase() }
+                    .toSet()
+            }
+
+            val filteredTeams = remember(allTeams, selectedTab, argTeamNames) {
                 when (selectedTab) {
+                    // Tab 1: Selecciones Nacionales (Argentina, Brasil, Francia, etc.)
                     1 -> allTeams.filter { t -> t.tournament_id in listOf(1, 2) || isNationalSelection(t.name) }
-                    2 -> allTeams.filter { t -> (t.tournament_id in nationalIds || t.tournament_id == null) && !isNationalSelection(t.name) && isArgentineTeam(t.name) }
-                    3 -> allTeams.filter { t -> (!isArgentineTeam(t.name) && !isNationalSelection(t.name)) || t.tournament_id in listOf(3, 4) }
+                    
+                    // Tab 2: Equipos Nacionales (Ligas domésticas argentinas sin duplicados de Copa Argentina/Libertadores)
+                    2 -> allTeams.filter { t -> 
+                        t.tournament_id in domesticLeagueIds && !isNationalSelection(t.name)
+                    }.distinctBy { it.name.trim().lowercase() }
+                    
+                    // Tab 3: Equipos Internacionales (SOLO equipos de AFUERA de Argentina)
+                    3 -> allTeams.filter { t -> 
+                        !isNationalSelection(t.name) && 
+                        !argTeamNames.contains(t.name.trim().lowercase()) &&
+                        !isArgentineTeamName(t.name)
+                    }.distinctBy { it.name.trim().lowercase() }
+                    
                     else -> allTeams
                 }
             }
 
-            val tournamentOrder = listOf(5, 6, 7, 8, 15, 10, 16, 13, 1, 2, 3, 4, 12, 14)
+            val tournamentOrder = listOf(5, 7, 8, 15, 10, 9, 16, 13, 20, 1, 2, 3, 4, 12, 14, 17, 18, 19)
             val tournamentNamesMap = mapOf(
                 5 to "🏆 LIGA PROFESIONAL",
-                6 to "🇦🇷 COPA ARGENTINA",
                 7 to "⚽ PRIMERA NACIONAL",
                 8 to "🏟️ PRIMERA B METROPOLITANA",
                 15 to "🏔️ TORNEO FEDERAL A",
                 10 to "🥅 PRIMERA C METROPOLITANA",
+                9 to "🥅 PRIMERA C",
                 16 to "🚩 TORNEO REGIONAL FEDERAL AMATEUR",
                 13 to "🎖️ TORNEO PROMOCIONAL AMATEUR",
-                1 to "🌍 MUNDIAL 2026",
+                20 to "🇦🇷 AMISTOSOS AFA",
+                1 to "🌍 MUNDIAL 2030",
                 2 to "🌎 ELIMINATORIAS SUDAMERICANAS",
                 3 to "🏆 COPA LIBERTADORES",
-                4 to "🏆 COPA SUDAMERICANA"
+                4 to "🏆 COPA SUDAMERICANA",
+                17 to "🏆 MUNDIAL DE CLUBES",
+                18 to "🏆 COPA INTERCONTINENTAL",
+                19 to "⚽ AMISTOSOS DE CLUBES INT."
             )
 
             val groupedTeams = remember(filteredTeams, favTeamNames) {
@@ -696,11 +718,13 @@ private fun isNationalSelection(name: String): Boolean {
     return selections.any { name.lowercase().trim() == it }
 }
 
-private fun isArgentineTeam(name: String): Boolean {
-    val nonArg = listOf(
-        "flamengo", "palmeiras", "sao paulo", "gremio", "botafogo", "fluminense", "inter de porto alegre",
-        "colo colo", "universidad de chile", "peñarol", "nacional", "bolivar", "the strongest", "olimpia", "libertad",
-        "barcelona sc", "ldu quito", "independiente del valle"
+private fun isArgentineTeamName(name: String): Boolean {
+    val lower = name.lowercase().trim()
+    val argKeywords = listOf(
+        "boca", "river", "racing", "independiente", "san lorenzo", "vélez", "estudiantes", "gimnasia",
+        "talleres", "belgrano", "instituto", "rosario central", "newell", "lanús", "banfield", "huracán",
+        "argentinos", "defensa y justicia", "godoy cruz", "central córdoba", "tucumán", "platense", "tigre",
+        "unión", "colón", "barracas", "riestra", "sarmiento", "aldosivi", "chacarita", "ferro", "quilmes"
     )
-    return nonArg.none { name.lowercase().contains(it) }
+    return argKeywords.any { lower.contains(it) }
 }
