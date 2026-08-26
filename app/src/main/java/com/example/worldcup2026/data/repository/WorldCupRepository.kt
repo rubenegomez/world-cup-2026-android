@@ -333,9 +333,12 @@ class WorldCupRepository(private val matchDao: MatchDao) {
 
                 // --- DETECCION DE INCIDENCIAS EN VIVO ---
                 if (saved != null) {
-                    val matchInfo = getCachedMatch(liveMatch.matchId, saved.tournamentId)
-                    val homeTeamName = matchInfo?.homeTeam?.name ?: "Local"
-                    val awayTeamName = matchInfo?.awayTeam?.name ?: "Visitante"
+                    val allGlobal = cachedMatches ?: getAllMatchesGlobal()
+                    val matchInfo = allGlobal.find { it.id == liveMatch.matchId }
+                    val homeTeamName = matchInfo?.homeTeam?.name?.takeIf { it.isNotBlank() }
+                        ?: "Equipo Local"
+                    val awayTeamName = matchInfo?.awayTeam?.name?.takeIf { it.isNotBlank() }
+                        ?: "Equipo Visitante"
                     
                     val oldHome = saved.homeScore ?: 0
                     val newHome = liveMatch.homeScore ?: 0
@@ -345,10 +348,17 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     // 1. Detección de Goles
                     if (newHome > oldHome || newAway > oldAway) {
                         val scoringTeam = if (newHome > oldHome) homeTeamName else awayTeamName
+                        val latestScorer = liveMatch.scorers?.lastOrNull()?.trim()
+                        val goalMsg = if (!latestScorer.isNullOrBlank()) {
+                            "¡Gol de $latestScorer! $homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})"
+                        } else {
+                            "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})"
+                        }
+
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
                             title = "⚽ ¡GOOOOOL de $scoringTeam! ⚽",
-                            message = "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})",
+                            message = goalMsg,
                             isGoal = true
                         )
                     }
@@ -371,10 +381,19 @@ class WorldCupRepository(private val matchDao: MatchDao) {
 
                     if (newHomeRed > oldHomeRed || newAwayRed > oldAwayRed) {
                         val penalizedTeam = if (newHomeRed > oldHomeRed) homeTeamName else awayTeamName
+                        val lastEvent = liveMatch.events?.findLast { it.contains("Roja", ignoreCase = true) || it.contains("Expulsi", ignoreCase = true) }
+                        val playerName = lastEvent?.substringBefore("(")?.substringBefore(" -")?.trim()
+
+                        val redMsg = if (!playerName.isNullOrBlank()) {
+                            "¡Expulsión de $playerName ($penalizedTeam)! (Min ${liveMatch.clock ?: ""})"
+                        } else {
+                            "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})"
+                        }
+
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
                             title = "🟥 ¡Tarjeta Roja para $penalizedTeam! 🟥",
-                            message = "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})",
+                            message = redMsg,
                             isGoal = false
                         )
                     }
@@ -386,10 +405,19 @@ class WorldCupRepository(private val matchDao: MatchDao) {
 
                     if (newHomeYellow > oldHomeYellow || newAwayYellow > oldAwayYellow) {
                         val penalizedTeam = if (newHomeYellow > oldHomeYellow) homeTeamName else awayTeamName
+                        val lastEvent = liveMatch.events?.findLast { it.contains("Amarilla", ignoreCase = true) || it.contains("Tarjeta", ignoreCase = true) }
+                        val playerName = lastEvent?.substringBefore("(")?.substringBefore(" -")?.trim()
+
+                        val yellowMsg = if (!playerName.isNullOrBlank()) {
+                            "Amonestación para $playerName ($penalizedTeam). (Min ${liveMatch.clock ?: ""})"
+                        } else {
+                            "Amonestación para un jugador de $penalizedTeam. (Min ${liveMatch.clock ?: ""})"
+                        }
+
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
-                            title = "🟨 Tarjeta Amarilla 🟨",
-                            message = "Amonestación para un jugador de $penalizedTeam. (Min ${liveMatch.clock ?: ""})",
+                            title = "🟨 Tarjeta Amarilla ($penalizedTeam) 🟨",
+                            message = yellowMsg,
                             isGoal = false
                         )
                     }
@@ -404,8 +432,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                         val scoringTeam = if (newHomePens > oldHomePens) homeTeamName else awayTeamName
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
-                            title = "🥅 ¡Gol en la Tanda de Penales! ⚽",
-                            message = "Gol de $scoringTeam. Tanda actual: $newHomePens - $newAwayPens",
+                            title = "🥅 ¡Gol en Penales de $scoringTeam! ⚽",
+                            message = "Gol de $scoringTeam. Tanda actual: $homeTeamName $newHomePens - $newAwayPens $awayTeamName",
                             isGoal = false
                         )
                     }
@@ -414,8 +442,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     if (saved.status != "Finished" && effectiveStatus == "Finished") {
                         com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
                             context = context,
-                            title = "🏁 ¡Final del partido! 🏁",
-                            message = "$homeTeamName y $awayTeamName han terminado su encuentro.",
+                            title = "🏁 ¡Final del Partido! 🏁",
+                            message = "$homeTeamName $newHome - $newAway $awayTeamName. ¡Encuentro finalizado!",
                             isGoal = false
                         )
                     }
