@@ -62,6 +62,8 @@ class MainActivity : ComponentActivity() {
                 Log.d("FCM", "Subscribed to upcoming_matches_30m: ${task.isSuccessful}")
             }
             
+        checkUpdateIntent(intent)
+        
         val navMatchId = intent?.getStringExtra("nav_match_id")
         val dataUri = intent?.data
         val joinCodeFromUri = dataUri?.getQueryParameter("code") ?: dataUri?.lastPathSegment?.takeIf { it != "join" }
@@ -74,6 +76,25 @@ class MainActivity : ComponentActivity() {
                 ) {
                     MainScreen(initialMatchId = navMatchId, initialJoinCode = joinCodeFromUri)
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        checkUpdateIntent(intent)
+    }
+
+    private fun checkUpdateIntent(intent: android.content.Intent?) {
+        if (intent == null) return
+        val type = intent.getStringExtra("type")
+        val downloadUrl = intent.getStringExtra("downloadUrl") ?: "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk"
+        if (type == "app_update" || intent.hasExtra("versionCode")) {
+            try {
+                val browserIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(downloadUrl))
+                startActivity(browserIntent)
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error launching update URL", e)
             }
         }
     }

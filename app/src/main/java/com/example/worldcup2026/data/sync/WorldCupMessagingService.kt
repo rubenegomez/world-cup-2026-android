@@ -34,6 +34,15 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             val homeScore = remoteMessage.data["homeScore"]
             val awayScore = remoteMessage.data["awayScore"]
 
+            val msgType = remoteMessage.data["type"]
+            val downloadUrl = remoteMessage.data["downloadUrl"]
+            if (msgType == "app_update" || downloadUrl != null && remoteMessage.data.containsKey("versionCode")) {
+                val updateTitle = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "🏟️ ¡Nueva Versión Disponible!"
+                val updateBody = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: "Toca aquí para actualizar la aplicación."
+                sendUpdateNotification(updateTitle, updateBody, downloadUrl ?: "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk")
+                return
+            }
+
             if (eventType == "upcoming_30m" && matchId != null) {
                 // Check local Prode
                 val mId = matchId.toIntOrNull() ?: return
@@ -163,5 +172,29 @@ class WorldCupMessagingService : FirebaseMessagingService() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val notifId = ((matchId?.hashCode() ?: 0) * 31) + (eventType?.hashCode() ?: 0)
         notificationManager.notify(notifId, notificationBuilder.build())
+    }
+
+    private fun sendUpdateNotification(title: String, messageBody: String, downloadUrl: String) {
+        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(downloadUrl)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, (System.currentTimeMillis() % 10000).toInt(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        NotificationHelper.createNotificationChannel(this)
+
+        val notificationBuilder = NotificationCompat.Builder(this, "world_cup_2026_notifications_v4")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(messageBody)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(99999, notificationBuilder.build())
     }
 }
