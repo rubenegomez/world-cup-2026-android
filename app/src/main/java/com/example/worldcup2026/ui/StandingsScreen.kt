@@ -171,14 +171,14 @@ fun StandingsScreen(matches: List<Match>) {
             "TABLA ANUAL" -> {
                 isLoadingAnnual = true
                 try { annualStandings = NetworkModule.apiService.getAnnualStandings(tournamentId) }
-                catch (e: Exception) { e.printStackTrace() }
+                catch (e: Exception) { annualStandings = emptyList(); e.printStackTrace() }
                 finally { isLoadingAnnual = false }
             }
             "PROMEDIOS" -> {
                 if (descensoStandings == null) {
                     isLoadingDescenso = true
                     try { descensoStandings = NetworkModule.apiService.getDescensoStandings(tournamentId) }
-                    catch (e: Exception) { e.printStackTrace() }
+                    catch (e: Exception) { descensoStandings = emptyList(); e.printStackTrace() }
                     finally { isLoadingDescenso = false }
                 }
             }
@@ -186,7 +186,7 @@ fun StandingsScreen(matches: List<Match>) {
                 if (goleadores == null) {
                     isLoadingGoleadores = true
                     try { goleadores = NetworkModule.apiService.getGoleadores(tournamentId) }
-                    catch (e: Exception) { e.printStackTrace() }
+                    catch (e: Exception) { goleadores = emptyList(); e.printStackTrace() }
                     finally { isLoadingGoleadores = false }
                 }
             }
@@ -498,6 +498,12 @@ fun GroupStandingsTable(
 
 @Composable
 fun AnnualStandingsTable(standings: List<AnnualStandingDto>, descensoStandings: List<DescensoStandingDto> = emptyList()) {
+    if (standings.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text("No hay datos de la Tabla Anual disponibles aún.", color = Color.Gray, fontSize = 13.sp)
+        }
+        return
+    }
     val worstDescensoTeamId = descensoStandings.minByOrNull { it.promedio }?.team_id
     val worstAnnualTeamId = standings.lastOrNull()?.team_id
     
@@ -692,6 +698,12 @@ fun AnnualStandingsTable(standings: List<AnnualStandingDto>, descensoStandings: 
 
 @Composable
 fun DescensoStandingsTable(standings: List<DescensoStandingDto>) {
+    if (standings.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text("No hay datos de Promedios disponibles aún.", color = Color.Gray, fontSize = 13.sp)
+        }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -792,6 +804,12 @@ fun DescensoStandingsTable(standings: List<DescensoStandingDto>) {
 
 @Composable
 fun GoleadoresTable(goleadoresList: List<GoleadorDto>) {
+    if (goleadoresList.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+            Text("No hay registros de goleadores aún.", color = Color.Gray, fontSize = 13.sp)
+        }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
