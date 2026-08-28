@@ -52,7 +52,8 @@ enum class TournamentFormat {
 typealias TournamentKind = TournamentFormat
 
 val LIGA_ZONAS_MAP = mapOf(
-    // ZONA A
+    // ZONA A (15 equipos)
+    "Gimnasia y Esgrima (Mendoza)" to "Zona A",
     "Gimnasia (Mendoza)" to "Zona A",
     "Newell's Old Boys" to "Zona A",
     "Vélez Sarsfield" to "Zona A",
@@ -69,12 +70,13 @@ val LIGA_ZONAS_MAP = mapOf(
     "Talleres (Córdoba)" to "Zona A",
     "San Lorenzo" to "Zona A",
 
-    // ZONA B
+    // ZONA B (15 equipos)
     "Argentinos Juniors" to "Zona B",
     "Belgrano (Córdoba)" to "Zona B",
     "Racing Club" to "Zona B",
     "Huracán" to "Zona B",
-    "Estudiantes de Río Cuarto" to "Zona B",
+    "Godoy Cruz Antonio Tomba" to "Zona B",
+    "Godoy Cruz" to "Zona B",
     "Barracas Central" to "Zona B",
     "Aldosivi" to "Zona B",
     "Atlético Tucumán" to "Zona B",
@@ -131,7 +133,6 @@ fun StandingsScreen(matches: List<Match>) {
     }
 
     var selectedTab by remember { mutableStateOf(0) }
-    val scope = rememberCoroutineScope()
 
     // Estados para datos dinámicos del backend
     var annualStandings by remember { mutableStateOf<List<AnnualStandingDto>?>(null) }
@@ -143,16 +144,20 @@ fun StandingsScreen(matches: List<Match>) {
     var isLoadingGoleadores by remember { mutableStateOf(false) }
 
     val teamsByGroup = remember(matches, tournamentFormat) {
-        val rawTeams = matches.flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }.distinctBy { it.id }
+        val rawTeams = matches.flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }
+            .distinctBy { it.name.trim().lowercase() }
         
         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
             val mappedTeams = rawTeams.map { team ->
-                val assigned = LIGA_ZONAS_MAP[team.name] ?: team.group
-                val finalGroup = if (assigned.isNotEmpty() && assigned != "Fase Regular") assigned else (LIGA_ZONAS_MAP[team.name] ?: "Zona A")
-                team.copy(group = finalGroup, players = team.players ?: emptyList())
+                val cleanName = team.name.trim()
+                val assigned = LIGA_ZONAS_MAP[cleanName] 
+                    ?: LIGA_ZONAS_MAP.entries.firstOrNull { cleanName.contains(it.key, ignoreCase = true) || it.key.contains(cleanName, ignoreCase = true) }?.value
+                    ?: team.group
+                val finalGroup = if (assigned.isNotEmpty() && assigned != "Fase Regular") assigned else "Zona A"
+                team.copy(name = cleanName, group = finalGroup, players = team.players ?: emptyList())
             }
             mappedTeams
-                .filter { it.id > 0 }
+                .filter { it.name.isNotBlank() }
                 .groupBy { it.group }
                 .toSortedMap()
         } else {
@@ -235,17 +240,7 @@ fun StandingsScreen(matches: List<Match>) {
 
                     val filteredMatches = remember(matches, tournamentFormat, tournamentId) {
                         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-                            matches.filter { match ->
-                                (match.tournament_id == null || match.tournament_id == 5) &&
-                                (match.date != null && (
-                                    match.date.contains("-07-") || match.date.contains("2026-07") || match.date.contains("/07/") ||
-                                    match.date.contains("-08-") || match.date.contains("2026-08") || match.date.contains("/08/") ||
-                                    match.date.contains("-09-") || match.date.contains("2026-09") || match.date.contains("/09/") ||
-                                    match.date.contains("-10-") || match.date.contains("2026-10") || match.date.contains("/10/") ||
-                                    match.date.contains("-11-") || match.date.contains("2026-11") || match.date.contains("/11/") ||
-                                    match.date.contains("-12-") || match.date.contains("2026-12") || match.date.contains("/12/")
-                                ))
-                            }
+                            matches.filter { match -> match.tournament_id == null || match.tournament_id == 5 }
                         } else {
                             matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
                         }

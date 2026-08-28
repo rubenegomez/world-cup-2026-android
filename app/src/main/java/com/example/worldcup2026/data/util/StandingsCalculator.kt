@@ -41,7 +41,7 @@ object StandingsCalculator {
             matches
         }
 
-        val seenFixtureKeys = mutableSetOf<String>()
+        val seenMatchIds = mutableSetOf<Int>()
         val targetTeamName = team.name.trim().lowercase()
 
         groupMatches.forEach { match ->
@@ -54,21 +54,18 @@ object StandingsCalculator {
             val homeId = match.homeTeam?.id
             val awayId = match.awayTeam?.id
 
-            val isHome = homeId == team.id || (homeName.isNotEmpty() && homeName == targetTeamName)
-            val isAway = awayId == team.id || (awayName.isNotEmpty() && awayName == targetTeamName)
+            val isHome = (homeId != null && homeId == team.id) || (homeName.isNotEmpty() && (homeName == targetTeamName || homeName.contains(targetTeamName) || targetTeamName.contains(homeName)))
+            val isAway = (awayId != null && awayId == team.id) || (awayName.isNotEmpty() && (awayName == targetTeamName || awayName.contains(targetTeamName) || targetTeamName.contains(awayName)))
 
             if (isHome || isAway) {
+                if (!seenMatchIds.add(match.id)) {
+                    return@forEach
+                }
+
                 val hScore = match.homeScore
                 val aScore = match.awayScore
                 
                 if (hScore != null && aScore != null) {
-                    val opponentName = if (isHome) awayName else homeName
-                    val datePrefix = match.date?.take(7) ?: ""
-                    val fixtureKey = "${opponentName}_$datePrefix"
-                    if (!seenFixtureKeys.add(fixtureKey)) {
-                        return@forEach // Evitar computar duplicados del mismo partido
-                    }
-
                     pj++
                     val (teamScore, opponentScore) = if (isHome) hScore to aScore else aScore to hScore
                     
