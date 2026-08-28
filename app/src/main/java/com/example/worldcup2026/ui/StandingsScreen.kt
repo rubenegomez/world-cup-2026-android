@@ -240,7 +240,7 @@ fun StandingsScreen(matches: List<Match>) {
                         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
                             matches.filter { match ->
                                 (match.tournament_id == null || match.tournament_id == 5) &&
-                                (match.date != null && match.date >= "2026-07-01")
+                                isClausuraMatch(match.date)
                             }
                         } else {
                             matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
@@ -1027,4 +1027,15 @@ fun BestThirdsTable(thirds: List<TeamStats>) {
             }
         }
     }
+}
+
+private fun isClausuraMatch(dateStr: String?): Boolean {
+    if (dateStr.isNullOrBlank()) return true
+    val isApertura = dateStr.contains("-01-") || dateStr.contains("-02-") || dateStr.contains("-03-") ||
+                     dateStr.contains("-04-") || dateStr.contains("-05-") || dateStr.contains("-06-") ||
+                     dateStr.contains("/01/") || dateStr.contains("/02/") || dateStr.contains("/03/") ||
+                     dateStr.contains("/04/") || dateStr.contains("/05/") || dateStr.contains("/06/") ||
+                     dateStr.startsWith("2026-01") || dateStr.startsWith("2026-02") || dateStr.startsWith("2026-03") ||
+                     dateStr.startsWith("2026-04") || dateStr.startsWith("2026-05") || dateStr.startsWith("2026-06")
+    return !isApertura
 }
