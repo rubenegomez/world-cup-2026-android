@@ -54,8 +54,8 @@ object StandingsCalculator {
             val homeId = match.homeTeam?.id
             val awayId = match.awayTeam?.id
 
-            val isHome = (homeId != null && homeId == team.id) || (homeName.isNotEmpty() && (homeName == targetTeamName || homeName.contains(targetTeamName) || targetTeamName.contains(homeName)))
-            val isAway = (awayId != null && awayId == team.id) || (awayName.isNotEmpty() && (awayName == targetTeamName || awayName.contains(targetTeamName) || targetTeamName.contains(awayName)))
+            val isHome = (homeId != null && homeId == team.id) || (homeName.isNotEmpty() && homeName == targetTeamName)
+            val isAway = (awayId != null && awayId == team.id) || (awayName.isNotEmpty() && awayName == targetTeamName)
 
             if (isHome || isAway) {
                 if (!seenMatchIds.add(match.id)) {

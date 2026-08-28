@@ -150,9 +150,7 @@ fun StandingsScreen(matches: List<Match>) {
         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
             val mappedTeams = rawTeams.map { team ->
                 val cleanName = team.name.trim()
-                val assigned = LIGA_ZONAS_MAP[cleanName] 
-                    ?: LIGA_ZONAS_MAP.entries.firstOrNull { cleanName.contains(it.key, ignoreCase = true) || it.key.contains(cleanName, ignoreCase = true) }?.value
-                    ?: team.group
+                val assigned = LIGA_ZONAS_MAP[cleanName] ?: team.group
                 val finalGroup = if (assigned.isNotEmpty() && assigned != "Fase Regular") assigned else "Zona A"
                 team.copy(name = cleanName, group = finalGroup, players = team.players ?: emptyList())
             }
