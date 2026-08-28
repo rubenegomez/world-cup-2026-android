@@ -238,7 +238,10 @@ fun StandingsScreen(matches: List<Match>) {
 
                     val filteredMatches = remember(matches, tournamentFormat, tournamentId) {
                         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-                            matches.filter { match -> match.tournament_id == null || match.tournament_id == 5 }
+                            matches.filter { match ->
+                                (match.tournament_id == null || match.tournament_id == 5) &&
+                                (match.date != null && match.date >= "2026-07-01")
+                            }
                         } else {
                             matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
                         }
