@@ -15,12 +15,70 @@ import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+
 object AdManager {
     const val INTERSTITIAL_REAL_ID = "ca-app-pub-7768012635304880/8383774129"
     const val BANNER_REAL_ID = "ca-app-pub-7768012635304880/7721429148"
+    const val REWARDED_TEST_ID = "ca-app-pub-3940256099942544/5224354917"
 
     private var mInterstitialAd: InterstitialAd? = null
     private var isLoading = false
+
+    private var mRewardedAd: RewardedAd? = null
+    private var isRewardedLoading = false
+
+    fun loadRewardedAd(context: Context) {
+        UnityAdsManager.loadRewardedAd()
+        if (mRewardedAd != null || isRewardedLoading) return
+        isRewardedLoading = true
+
+        val adRequest = AdRequest.Builder().build()
+        RewardedAd.load(
+            context,
+            REWARDED_TEST_ID,
+            adRequest,
+            object : RewardedAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    mRewardedAd = null
+                    isRewardedLoading = false
+                }
+
+                override fun onAdLoaded(rewardedAd: RewardedAd) {
+                    mRewardedAd = rewardedAd
+                    isRewardedLoading = false
+                }
+            }
+        )
+    }
+
+    fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
+        val activity = context as? Activity
+        val ad = mRewardedAd
+
+        if (activity != null && ad != null) {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mRewardedAd = null
+                    loadRewardedAd(context)
+                }
+
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    mRewardedAd = null
+                    UnityAdsManager.showRewardedAd(activity, onRewardGranted)
+                }
+            }
+            ad.show(activity) { _ ->
+                onRewardGranted()
+                Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+            }
+        } else if (activity != null) {
+            UnityAdsManager.showRewardedAd(activity, onRewardGranted)
+        } else {
+            onRewardGranted()
+        }
+    }
 
     fun loadInterstitialAd(context: Context) {
         // Carga primaria en AdMob y respaldo en Unity Ads

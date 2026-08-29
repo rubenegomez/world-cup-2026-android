@@ -407,7 +407,7 @@ fun ProdeScreen(
                         .padding(horizontal = 12.dp, vertical = 2.dp)
                         .clickable {
                             if (activityContext != null) {
-                                UnityAdsManager.showRewardedAd(activityContext) {
+                                AdManager.showRewardedAd(activityContext) {
                                     worldCupViewModel?.addAdFreeTime(2 * 60 * 60 * 1000L)
                                 }
                             }

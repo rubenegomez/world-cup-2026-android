@@ -21,7 +21,7 @@ object UnityAdsManager {
     const val REWARDED_PLACEMENT_ID = "Rewarded_Android"
     const val INTERSTITIAL_PLACEMENT_ID = "Interstitial_Android"
     const val BANNER_PLACEMENT_ID = "Banner_Android"
-    const val TEST_MODE = false
+    const val TEST_MODE = true
 
     private var isInitialized = false
 
@@ -85,7 +85,8 @@ object UnityAdsManager {
                 }
 
                 override fun onUnityAdsShowFailure(placementId: String?, error: UnityAds.UnityAdsShowError?, message: String?) {
-                    Toast.makeText(activity, "No se pudo mostrar el anuncio de Unity Ads.", Toast.LENGTH_SHORT).show()
+                    onRewardGranted()
+                    Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
                     loadRewardedAd()
                 }
 
