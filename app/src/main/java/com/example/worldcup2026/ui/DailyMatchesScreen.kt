@@ -218,18 +218,6 @@ fun DailyMatchesScreen(
             }
         }
 
-        val tournamentMatches = remember(matches, selectedTournamentIds, searchQuery, filterLiveOnly) {
-            matches.filter { match ->
-                val mId = match.tournament_id ?: 1
-                val matchesTournament = selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty() || selectedTournamentIds.contains(mId)
-                val matchesSearch = if (searchQuery.isNotBlank()) {
-                    match.homeTeam.name.contains(searchQuery, ignoreCase = true) ||
-                    match.awayTeam.name.contains(searchQuery, ignoreCase = true)
-                } else true
-                matchesTournament && matchesSearch
-            }.sortedByDescending { it.date ?: "" }
-        }
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -238,63 +226,18 @@ fun DailyMatchesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (matchesForSelectedDate.isEmpty()) {
-
                 item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = if (filterLiveOnly) "No hay partidos en vivo en esta fecha." else "No hay partidos programados para la fecha seleccionada.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
-                        )
-                        if (tournamentMatches.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Surface(
-                                color = Color(0xFFFFC107).copy(alpha = 0.15f),
-                                shape = RoundedCornerShape(10.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.4f)),
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-                            ) {
-                                Text(
-                                    text = "📌 Partidos disponibles de este torneo en otras fechas:",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFFFC107),
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (tournamentMatches.isNotEmpty()) {
-                    items(tournamentMatches) { match ->
-                        val tName = resolveTournamentName(match)
-                        MatchCard(
-                            match = match,
-                            onScoreChange = { matchId, hScore, aScore ->
-                                viewModel.updateMatchScore(matchId, hScore, aScore)
-                            },
-                            onPenaltiesChange = { matchId, hPen, aPen ->
-                                viewModel.updateMatchPenalties(matchId, hPen, aPen)
-                            },
-                            onStatusChange = { matchId, status ->
-                                viewModel.updateMatchStatus(matchId, status)
-                            },
-                            onShowVipStats = onShowVipStats,
-                            onPredictionChange = { matchId, winner, hScore, aScore, hPen, aPen ->
-                                viewModel.updateMatchPrediction(matchId, winner, hScore, aScore, hPen, aPen)
-                            },
-                            onNavigateToTournament = onNavigateToTournament,
-                            tournamentName = tName,
-                            allMatches = matches,
-                            onToggleComodin = { matchId ->
-                                viewModel.toggleComodin(matchId)
-                            }
                         )
                     }
                 }
