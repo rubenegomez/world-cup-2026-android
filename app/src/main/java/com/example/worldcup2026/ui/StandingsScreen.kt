@@ -148,14 +148,24 @@ fun StandingsScreen(matches: List<Match>) {
             .distinctBy { it.name.trim().lowercase() }
         
         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-            val mappedTeams = rawTeams.map { team ->
+            val nameAliasMap = mapOf(
+                "Gimnasia (Mendoza)" to "Gimnasia y Esgrima (Mendoza)",
+                "Estudiantes de Río Cuarto" to "Godoy Cruz Antonio Tomba",
+                "Godoy Cruz" to "Godoy Cruz Antonio Tomba"
+            )
+
+            val mappedTeams = rawTeams.mapNotNull { team ->
                 val cleanName = team.name.trim()
-                val assigned = LIGA_ZONAS_MAP[cleanName] ?: team.group
-                val finalGroup = if (assigned.isNotEmpty() && assigned != "Fase Regular") assigned else "Zona A"
-                team.copy(name = cleanName, group = finalGroup, players = team.players ?: emptyList())
-            }
+                val canonicalName = nameAliasMap[cleanName] ?: cleanName
+                val group = LIGA_ZONAS_MAP[canonicalName] ?: LIGA_ZONAS_MAP[cleanName]
+                if (group != null) {
+                    team.copy(name = canonicalName, group = group, players = team.players ?: emptyList())
+                } else {
+                    null
+                }
+            }.distinctBy { it.name.lowercase() }
+
             mappedTeams
-                .filter { it.name.isNotBlank() }
                 .groupBy { it.group }
                 .toSortedMap()
         } else {
