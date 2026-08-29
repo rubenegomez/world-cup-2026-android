@@ -55,33 +55,37 @@ object AdManager {
 
     fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
         val activity = context as? Activity
-        val ad = mRewardedAd
-
-        if (activity != null && ad != null) {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    mRewardedAd = null
-                    loadRewardedAd(context)
-                }
-
-                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                    mRewardedAd = null
-                    UnityAdsManager.showRewardedAd(activity, onRewardGranted)
-                }
-            }
-            ad.show(activity) { _ ->
+        if (activity != null) {
+            // Prioridad #1: Unity Ads (Óptimo para distribución Web / APK directa)
+            UnityAdsManager.showRewardedAd(activity) {
                 onRewardGranted()
-                Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
             }
-        } else if (activity != null) {
-            UnityAdsManager.showRewardedAd(activity, onRewardGranted)
         } else {
-            onRewardGranted()
+            val ad = mRewardedAd
+            if (ad != null && activity != null) {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        mRewardedAd = null
+                        loadRewardedAd(context)
+                    }
+
+                    override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                        mRewardedAd = null
+                        onRewardGranted()
+                    }
+                }
+                ad.show(activity) { _ ->
+                    onRewardGranted()
+                    Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                onRewardGranted()
+            }
         }
     }
 
     fun loadInterstitialAd(context: Context) {
-        // Carga primaria en AdMob y respaldo en Unity Ads
+        // Carga primaria en Unity Ads y respaldo en AdMob
         UnityAdsManager.loadInterstitialAd()
         if (mInterstitialAd != null || isLoading) return
         isLoading = true
@@ -107,36 +111,40 @@ object AdManager {
 
     fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
         val activity = context as? Activity
-        val ad = mInterstitialAd
-
-        if (activity != null && ad != null) {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    mInterstitialAd = null
-                    onComplete()
-                    loadInterstitialAd(context)
-                }
-
-                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                    mInterstitialAd = null
-                    // Si AdMob falla, mediación automática hacia Unity Ads
-                    UnityAdsManager.showInterstitialAd(context, onComplete)
-                }
+        // Prioridad #1: Unity Ads
+        if (activity != null) {
+            UnityAdsManager.showInterstitialAd(context) {
+                onComplete()
             }
-            ad.show(activity)
         } else {
-            // Mediación en cascada: AdMob no disponible -> mostrar Unity Ads
-            UnityAdsManager.showInterstitialAd(context, onComplete)
+            val ad = mInterstitialAd
+            if (activity != null && ad != null) {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        mInterstitialAd = null
+                        onComplete()
+                        loadInterstitialAd(context)
+                    }
+
+                    override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                        mInterstitialAd = null
+                        onComplete()
+                    }
+                }
+                ad.show(activity)
+            } else {
+                onComplete()
+            }
         }
     }
 }
 
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var showUnityFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    // Prioridad #1: Unity Ads Banner
+    val showAdmobFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
-    if (showUnityFallback.value) {
+    if (!showAdmobFallback.value) {
         UnityBannerView(modifier = modifier)
     } else {
         AndroidView(
@@ -147,13 +155,6 @@ fun AdmobBanner(modifier: Modifier = Modifier) {
                 AdView(ctx).apply {
                     setAdSize(AdSize.BANNER)
                     adUnitId = AdManager.BANNER_REAL_ID
-                    adListener = object : AdListener() {
-                        override fun onAdFailedToLoad(adError: LoadAdError) {
-                            super.onAdFailedToLoad(adError)
-                            // Fallback inmediato hacia Unity Ads si AdMob rechaza el APK fuera de tienda
-                            showUnityFallback.value = true
-                        }
-                    }
                     loadAd(AdRequest.Builder().build())
                 }
             }
