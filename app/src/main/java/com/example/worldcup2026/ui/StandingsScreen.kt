@@ -89,6 +89,17 @@ val LIGA_ZONAS_MAP = mapOf(
     "Banfield" to "Zona B"
 )
 
+fun getLigaZona(name: String): String? {
+    val norm = normalizeTeamName(name).lowercase()
+    for ((key, zone) in LIGA_ZONAS_MAP) {
+        val normKey = normalizeTeamName(key).lowercase()
+        if (norm == normKey || norm.contains(normKey) || normKey.contains(norm)) {
+            return zone
+        }
+    }
+    return LIGA_ZONAS_MAP[name]
+}
+
 @Composable
 fun StandingsScreen(matches: List<Match>) {
     val tournamentId = remember(matches) {
@@ -157,13 +168,13 @@ fun StandingsScreen(matches: List<Match>) {
             val mappedTeams = rawTeams.mapNotNull { team ->
                 val cleanName = team.name.trim()
                 val canonicalName = nameAliasMap[cleanName] ?: cleanName
-                val group = LIGA_ZONAS_MAP[canonicalName] ?: LIGA_ZONAS_MAP[cleanName]
+                val group = getLigaZona(canonicalName) ?: getLigaZona(cleanName)
                 if (group != null) {
                     team.copy(name = canonicalName, group = group, players = team.players ?: emptyList())
                 } else {
                     null
                 }
-            }.distinctBy { it.name.lowercase() }
+            }.distinctBy { normalizeTeamName(it.name).lowercase() }
 
             mappedTeams
                 .groupBy { it.group }
