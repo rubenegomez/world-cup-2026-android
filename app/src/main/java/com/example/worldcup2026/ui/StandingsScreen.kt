@@ -216,24 +216,65 @@ fun StandingsScreen(matches: List<Match>) {
     var isLoadingDescenso by remember { mutableStateOf(false) }
     var isLoadingGoleadores by remember { mutableStateOf(false) }
 
+val LIGA_ZONA_A_TEAMS = listOf(
+    "Boca Juniors",
+    "Central Córdoba (Santiago del Estero)",
+    "Defensa y Justicia",
+    "Deportivo Riestra",
+    "Estudiantes de La Plata",
+    "Gimnasia y Esgrima (Mendoza)",
+    "Independiente",
+    "Instituto (Córdoba)",
+    "Lanús",
+    "Newell's Old Boys",
+    "Platense",
+    "San Lorenzo",
+    "Talleres (Córdoba)",
+    "Unión (Santa Fe)",
+    "Vélez Sarsfield"
+)
+
+val LIGA_ZONA_B_TEAMS = listOf(
+    "Aldosivi",
+    "Argentinos Juniors",
+    "Atlético Tucumán",
+    "Banfield",
+    "Barracas Central",
+    "Belgrano (Córdoba)",
+    "Gimnasia La Plata",
+    "Godoy Cruz Antonio Tomba",
+    "Huracán",
+    "Independiente Rivadavia",
+    "Racing Club",
+    "River Plate",
+    "Rosario Central",
+    "Sarmiento (Junín)",
+    "Tigre"
+)
+
     val teamsByGroup = remember(matches, tournamentFormat) {
         val rawTeams = matches.flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }
             .distinctBy { it.name.trim().lowercase() }
         
         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-            val mappedTeams = rawTeams.mapNotNull { team ->
+            val teamsMap = rawTeams.mapNotNull { team ->
                 val canonical = getCanonicalLigaTeam(team.name)
                 if (canonical != null) {
-                    val (canonName, zone) = canonical
-                    team.copy(name = canonName, group = zone, players = team.players ?: emptyList())
-                } else {
-                    null
-                }
-            }.distinctBy { it.name }
+                    canonical.first to team.copy(name = canonical.first, group = canonical.second, players = team.players ?: emptyList())
+                } else null
+            }.toMap()
 
-            mappedTeams
-                .groupBy { it.group }
-                .toSortedMap()
+            val zonaATeams = LIGA_ZONA_A_TEAMS.map { name ->
+                teamsMap[name] ?: Team(id = 8300 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona A", players = emptyList())
+            }
+            val zonaBTeams = LIGA_ZONA_B_TEAMS.map { name ->
+                teamsMap[name] ?: Team(id = 8300 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona B", players = emptyList())
+            }
+
+            mapOf(
+                "Zona A" to zonaATeams,
+                "Zona B" to zonaBTeams
+            ).toSortedMap()
         } else {
             rawTeams
                 .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
