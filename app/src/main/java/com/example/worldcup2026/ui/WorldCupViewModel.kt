@@ -77,8 +77,6 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             _favoriteTournamentIds.value = setOf(singleFav)
         }
         
-        _favoriteTeamNames.value = prefs.getStringSet("favorite_team_names", emptySet()) ?: emptySet()
-
         val primaryFav = _favoriteTournamentIds.value.firstOrNull() ?: 5
         currentTournamentId.value = primaryFav
         loadData()
@@ -86,6 +84,41 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         checkClaimableRounds()
         startLiveTournamentsChecker()
         checkForUpdates()
+        restoreUserPredictionsSession()
+    }
+
+    private fun restoreUserPredictionsSession() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                if (firebaseUser != null) {
+                    firebaseUser.getIdToken(false).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            val token = task.result?.token
+                            if (token != null) {
+                                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                    try {
+                                        val database = WorldCupDatabase.getDatabase(getApplication())
+                                        val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(database.leagueDao())
+                                        val authed = prodeRepo.authenticateWithFirebase(token)
+                                        if (authed) {
+                                            val restored = prodeRepo.fetchMyPredictions(repository, getApplication())
+                                            if (restored) {
+                                                loadData()
+                                            }
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     data class AppUpdateInfo(
@@ -631,28 +664,48 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
             _uiState.value = currentState.copy(matches = updatedList)
 
-            if (com.example.worldcup2026.data.repository.ProdeRepository.authToken != null) {
-                launch {
-                    try {
-                        val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(
-                            com.example.worldcup2026.data.local.WorldCupDatabase.getDatabase(getApplication()).leagueDao()
-                        )
-                        val matchToSync = updatedList.find { it.id == matchId } ?: targetMatch
-                        prodeRepo.submitPredictions(listOf(
-                            com.example.worldcup2026.data.api.SubmitPredictionRequest(
-                                matchId = matchId,
-                                predictedHomeScore = matchToSync.predictedHomeScore ?: 0,
-                                predictedAwayScore = matchToSync.predictedAwayScore ?: 0,
-                                predictedHomePenalties = matchToSync.predictedHomePenalties,
-                                predictedAwayPenalties = matchToSync.predictedAwayPenalties,
-                                predictedWinner = matchToSync.predictedWinner,
-                                isDoublePointsMultiplier = willBeFeatured
-                            )
-                        ))
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+            val matchToSync = updatedList.find { it.id == matchId } ?: targetMatch
+            syncPredictionToCloud(
+                com.example.worldcup2026.data.api.SubmitPredictionRequest(
+                    matchId = matchId,
+                    predictedHomeScore = matchToSync.predictedHomeScore ?: 0,
+                    predictedAwayScore = matchToSync.predictedAwayScore ?: 0,
+                    predictedHomePenalties = matchToSync.predictedHomePenalties,
+                    predictedAwayPenalties = matchToSync.predictedAwayPenalties,
+                    predictedWinner = matchToSync.predictedWinner,
+                    isDoublePointsMultiplier = willBeFeatured
+                )
+            )
+        }
+    }
+
+    private fun syncPredictionToCloud(request: com.example.worldcup2026.data.api.SubmitPredictionRequest) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val database = WorldCupDatabase.getDatabase(getApplication())
+                val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(database.leagueDao())
+                if (com.example.worldcup2026.data.repository.ProdeRepository.authToken == null) {
+                    val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                    if (firebaseUser != null) {
+                        firebaseUser.getIdToken(false).addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                val token = task.result?.token
+                                if (token != null) {
+                                    viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                        prodeRepo.authenticateWithFirebase(token)
+                                        prodeRepo.submitPredictions(listOf(request))
+                                    }
+                                }
+                            }
+                        }
+                        return@launch
                     }
                 }
+                if (com.example.worldcup2026.data.repository.ProdeRepository.authToken != null) {
+                    prodeRepo.submitPredictions(listOf(request))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -666,29 +719,17 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             AnalyticsManager.logMatchAction("prediction_updated", matchId, "winner=$winner, score=$homePredict-$awayPredict, pens=$homePenaltiesPredict-$awayPenaltiesPredict")
             repository.saveMatchPrediction(matchId, winner, homePredict, awayPredict, homePenaltiesPredict, awayPenaltiesPredict)
             
-            // Sincronizar automáticamente con el servidor si está autenticado
-            if (com.example.worldcup2026.data.repository.ProdeRepository.authToken != null) {
-                launch {
-                    try {
-                        val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(
-                            com.example.worldcup2026.data.local.WorldCupDatabase.getDatabase(getApplication()).leagueDao()
-                        )
-                        prodeRepo.submitPredictions(listOf(
-                            com.example.worldcup2026.data.api.SubmitPredictionRequest(
-                                matchId = matchId,
-                                predictedHomeScore = homePredict ?: 0,
-                                predictedAwayScore = awayPredict ?: 0,
-                                predictedHomePenalties = homePenaltiesPredict,
-                                predictedAwayPenalties = awayPenaltiesPredict,
-                                predictedWinner = winner,
-                                isDoublePointsMultiplier = isFeatured
-                            )
-                        ))
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
+            syncPredictionToCloud(
+                com.example.worldcup2026.data.api.SubmitPredictionRequest(
+                    matchId = matchId,
+                    predictedHomeScore = homePredict ?: 0,
+                    predictedAwayScore = awayPredict ?: 0,
+                    predictedHomePenalties = homePenaltiesPredict,
+                    predictedAwayPenalties = awayPenaltiesPredict,
+                    predictedWinner = winner,
+                    isDoublePointsMultiplier = isFeatured
+                )
+            )
 
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) it.copy(

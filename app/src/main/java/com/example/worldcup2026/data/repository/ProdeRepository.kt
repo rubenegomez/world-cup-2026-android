@@ -196,11 +196,17 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
             val serverPredictions = api.getMyPredictions(token)
             val prefs = context?.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
             serverPredictions.forEach { pred ->
+                val hScore = pred.predictedHomeScore
+                val aScore = pred.predictedAwayScore
+                val defaultWinner = if (hScore != null && aScore != null) {
+                    if (hScore > aScore) "home" else if (hScore < aScore) "away" else "draw"
+                } else null
+
                 worldCupRepository.saveMatchPrediction(
                     matchId = pred.matchId,
-                    winner = pred.predictedWinner ?: (if (pred.predictedHomeScore > pred.predictedAwayScore) "home" else if (pred.predictedHomeScore < pred.predictedAwayScore) "away" else "draw"),
-                    homePredict = pred.predictedHomeScore,
-                    awayPredict = pred.predictedAwayScore,
+                    winner = pred.predictedWinner ?: defaultWinner,
+                    homePredict = hScore,
+                    awayPredict = aScore,
                     homePenaltiesPredict = pred.predictedHomePenalties,
                     awayPenaltiesPredict = pred.predictedAwayPenalties
                 )
