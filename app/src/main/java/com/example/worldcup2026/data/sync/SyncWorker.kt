@@ -16,7 +16,7 @@ class SyncWorker(
             val database = WorldCupDatabase.getDatabase(applicationContext)
             val repository = WorldCupRepository(database.matchDao())
             var allSuccess = true
-            for (id in 1..12) {
+            for (id in listOf(5, 1)) {
                 if (!repository.syncMatchesWithLiveJson(applicationContext, id)) {
                     allSuccess = false
                 }

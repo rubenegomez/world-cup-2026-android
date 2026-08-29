@@ -68,7 +68,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val matches = mutableListOf<Match>()
         
         try {
-            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
+            val rawRemoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
+            val remoteMatches = rawRemoteMatches.filter { it.tournament_id == 5 || it.tournament_id == 1 || it.tournament_id == null }
             if (remoteMatches.isNotEmpty()) {
                 val validIds = remoteMatches.map { it.id }
                 matchDao.deleteObsoleteMatches(validIds)
@@ -76,7 +77,6 @@ class WorldCupRepository(private val matchDao: MatchDao) {
 
             remoteMatches.forEach { match ->
                 val saved = savedMatches.find { it.id == match.id }
-                // BUGFIX: Remote API is the source of truth for tournament_id, otherwise local DB corruption persists.
                 val tournamentId = match.tournament_id ?: saved?.tournamentId ?: 1
                 addMatchWithPersistence(matches, savedMatches, match, tournamentId)
             }
@@ -94,6 +94,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         
         try {
             val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(tournamentId)
+                .filter { it.tournament_id == 5 || it.tournament_id == 1 || it.tournament_id == null }
             remoteMatches.forEach { match ->
                 addMatchWithPersistence(matches, savedMatches, match, tournamentId)
             }
@@ -337,7 +338,9 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 }
 
                 // --- DETECCION DE INCIDENCIAS EN VIVO ---
-                if (saved != null) {
+                // NOTA: Solo notificar si el partido está actualmente EN VIVO y ya teníamos datos locales (evita notificar partidos viejos al instalar la app)
+                val isLiveState = effectiveStatus == "LIVE" || effectiveStatus == "HALFTIME" || saved?.status == "LIVE"
+                if (saved != null && saved.homeScore != null && isLiveState) {
                     val allGlobal = cachedMatches ?: getAllMatchesGlobal()
                     val matchInfo = allGlobal.find { it.id == liveMatch.matchId }
                     val homeTeamName = matchInfo?.homeTeam?.name?.takeIf { it.isNotBlank() }
