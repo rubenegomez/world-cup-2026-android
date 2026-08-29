@@ -89,16 +89,78 @@ val LIGA_ZONAS_MAP = mapOf(
     "Banfield" to "Zona B"
 )
 
-fun getLigaZona(name: String): String? {
-    val norm = normalizeTeamName(name).lowercase()
-    for ((key, zone) in LIGA_ZONAS_MAP) {
-        val normKey = normalizeTeamName(key).lowercase()
-        if (norm == normKey || norm.contains(normKey) || normKey.contains(norm)) {
-            return zone
-        }
+fun getCanonicalLigaTeam(name: String): Pair<String, String>? {
+    val norm = normalizeTeamName(name).lowercase().trim()
+    return when {
+        // ZONA B
+        norm.contains("independiente rivadavia") || (norm.contains("independiente") && norm.contains("rivadavia")) || norm.contains("rivadavia") ->
+            "Independiente Rivadavia" to "Zona B"
+        norm.contains("argentinos") ->
+            "Argentinos Juniors" to "Zona B"
+        norm.contains("belgrano") ->
+            "Belgrano (Córdoba)" to "Zona B"
+        norm.contains("racing") && (norm.contains("club") || !norm.contains("cordoba")) ->
+            "Racing Club" to "Zona B"
+        norm.contains("huracan") ->
+            "Huracán" to "Zona B"
+        norm.contains("godoy cruz") || norm.contains("tomba") || norm.contains("cuarto") ->
+            "Godoy Cruz Antonio Tomba" to "Zona B"
+        norm.contains("barracas") ->
+            "Barracas Central" to "Zona B"
+        norm.contains("aldosivi") ->
+            "Aldosivi" to "Zona B"
+        norm.contains("atletico tucuman") || (norm.contains("tucuman") && norm.contains("atletico")) ->
+            "Atlético Tucumán" to "Zona B"
+        norm.contains("sarmiento") ->
+            "Sarmiento (Junín)" to "Zona B"
+        norm.contains("rosario central") || norm == "rosario" ->
+            "Rosario Central" to "Zona B"
+        norm.contains("gimnasia") && (norm.contains("plata") || norm.contains("lp") || norm.contains("gelp") || !norm.contains("mendoza")) ->
+            "Gimnasia La Plata" to "Zona B"
+        norm.contains("river") ->
+            "River Plate" to "Zona B"
+        norm.contains("tigre") ->
+            "Tigre" to "Zona B"
+        norm.contains("banfield") ->
+            "Banfield" to "Zona B"
+
+        // ZONA A
+        norm.contains("mendoza") && (norm.contains("gimnasia") || norm.contains("esgrima")) ->
+            "Gimnasia y Esgrima (Mendoza)" to "Zona A"
+        norm.contains("newell") ->
+            "Newell's Old Boys" to "Zona A"
+        norm.contains("velez") ->
+            "Vélez Sarsfield" to "Zona A"
+        norm.contains("lanus") ->
+            "Lanús" to "Zona A"
+        (norm.contains("union") && norm.contains("santa fe")) || norm == "union" ->
+            "Unión (Santa Fe)" to "Zona A"
+        norm.contains("platense") ->
+            "Platense" to "Zona A"
+        norm.contains("defensa") ->
+            "Defensa y Justicia" to "Zona A"
+        norm.contains("boca") ->
+            "Boca Juniors" to "Zona A"
+        norm.contains("riestra") ->
+            "Deportivo Riestra" to "Zona A"
+        norm.contains("estudiantes") ->
+            "Estudiantes de La Plata" to "Zona A"
+        norm.contains("independiente") ->
+            "Independiente" to "Zona A"
+        norm.contains("central cordoba") || norm.contains("santiago del estero") ->
+            "Central Córdoba (Santiago del Estero)" to "Zona A"
+        norm.contains("instituto") ->
+            "Instituto (Córdoba)" to "Zona A"
+        norm.contains("talleres") ->
+            "Talleres (Córdoba)" to "Zona A"
+        norm.contains("san lorenzo") ->
+            "San Lorenzo" to "Zona A"
+
+        else -> null
     }
-    return LIGA_ZONAS_MAP[name]
 }
+
+fun getLigaZona(name: String): String? = getCanonicalLigaTeam(name)?.second ?: LIGA_ZONAS_MAP[name]
 
 @Composable
 fun StandingsScreen(matches: List<Match>) {
@@ -159,22 +221,15 @@ fun StandingsScreen(matches: List<Match>) {
             .distinctBy { it.name.trim().lowercase() }
         
         if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-            val nameAliasMap = mapOf(
-                "Gimnasia (Mendoza)" to "Gimnasia y Esgrima (Mendoza)",
-                "Estudiantes de Río Cuarto" to "Godoy Cruz Antonio Tomba",
-                "Godoy Cruz" to "Godoy Cruz Antonio Tomba"
-            )
-
             val mappedTeams = rawTeams.mapNotNull { team ->
-                val cleanName = team.name.trim()
-                val canonicalName = nameAliasMap[cleanName] ?: cleanName
-                val group = getLigaZona(canonicalName) ?: getLigaZona(cleanName)
-                if (group != null) {
-                    team.copy(name = canonicalName, group = group, players = team.players ?: emptyList())
+                val canonical = getCanonicalLigaTeam(team.name)
+                if (canonical != null) {
+                    val (canonName, zone) = canonical
+                    team.copy(name = canonName, group = zone, players = team.players ?: emptyList())
                 } else {
                     null
                 }
-            }.distinctBy { normalizeTeamName(it.name).lowercase() }
+            }.distinctBy { it.name }
 
             mappedTeams
                 .groupBy { it.group }
