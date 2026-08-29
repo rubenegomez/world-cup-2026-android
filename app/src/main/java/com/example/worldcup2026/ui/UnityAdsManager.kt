@@ -17,17 +17,21 @@ import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.UnityBannerSize
 
 object UnityAdsManager {
-    const val GAME_ID = "800359844"
+    const val GAME_ID = "5994219"
     const val REWARDED_PLACEMENT_ID = "Rewarded_Android"
     const val INTERSTITIAL_PLACEMENT_ID = "Interstitial_Android"
     const val BANNER_PLACEMENT_ID = "Banner_Android"
     const val TEST_MODE = true
 
     private var isInitialized = false
+    private var isRewardedLoaded = false
+    private var isInterstitialLoaded = false
 
     fun init(context: Context) {
         if (isInitialized || UnityAds.isInitialized) {
             isInitialized = true
+            loadRewardedAd()
+            loadInterstitialAd()
             return
         }
 
@@ -52,26 +56,35 @@ object UnityAdsManager {
     fun loadRewardedAd() {
         if (!isInitialized) return
         UnityAds.load(REWARDED_PLACEMENT_ID, object : IUnityAdsLoadListener {
-            override fun onUnityAdsAdLoaded(placementId: String?) {}
-            override fun onUnityAdsFailedToLoad(placementId: String?, error: UnityAds.UnityAdsLoadError?, message: String?) {}
+            override fun onUnityAdsAdLoaded(placementId: String?) {
+                isRewardedLoaded = true
+            }
+            override fun onUnityAdsFailedToLoad(placementId: String?, error: UnityAds.UnityAdsLoadError?, message: String?) {
+                isRewardedLoaded = false
+            }
         })
     }
 
     fun loadInterstitialAd() {
         if (!isInitialized) return
         UnityAds.load(INTERSTITIAL_PLACEMENT_ID, object : IUnityAdsLoadListener {
-            override fun onUnityAdsAdLoaded(placementId: String?) {}
-            override fun onUnityAdsFailedToLoad(placementId: String?, error: UnityAds.UnityAdsLoadError?, message: String?) {}
+            override fun onUnityAdsAdLoaded(placementId: String?) {
+                isInterstitialLoaded = true
+            }
+            override fun onUnityAdsFailedToLoad(placementId: String?, error: UnityAds.UnityAdsLoadError?, message: String?) {
+                isInterstitialLoaded = false
+            }
         })
     }
 
-    fun showRewardedAd(activity: Activity, onRewardGranted: () -> Unit) {
-        if (!isInitialized) {
+    fun showRewardedAd(activity: Activity, onRewardGranted: () -> Unit, onFallback: () -> Unit) {
+        if (!isInitialized || !isRewardedLoaded) {
             init(activity)
-            Toast.makeText(activity, "Cargando anuncio de Unity Ads, intente de nuevo en un instante...", Toast.LENGTH_SHORT).show()
+            onFallback()
             return
         }
 
+        isRewardedLoaded = false
         UnityAds.show(
             activity,
             REWARDED_PLACEMENT_ID,
@@ -79,15 +92,14 @@ object UnityAdsManager {
                 override fun onUnityAdsShowComplete(placementId: String?, state: UnityAds.UnityAdsShowCompletionState?) {
                     if (state == UnityAds.UnityAdsShowCompletionState.COMPLETED) {
                         onRewardGranted()
-                        Toast.makeText(activity, "🎉 ¡Recompensa obtenida!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
                     }
                     loadRewardedAd()
                 }
 
                 override fun onUnityAdsShowFailure(placementId: String?, error: UnityAds.UnityAdsShowError?, message: String?) {
-                    onRewardGranted()
-                    Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
                     loadRewardedAd()
+                    onFallback()
                 }
 
                 override fun onUnityAdsShowStart(placementId: String?) {}
@@ -96,14 +108,15 @@ object UnityAdsManager {
         )
     }
 
-    fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
+    fun showInterstitialAd(context: Context, onComplete: () -> Unit, onFallback: () -> Unit) {
         val activity = context as? Activity
-        if (activity == null || !isInitialized) {
+        if (activity == null || !isInitialized || !isInterstitialLoaded) {
             if (activity != null) init(activity)
-            onComplete()
+            onFallback()
             return
         }
 
+        isInterstitialLoaded = false
         UnityAds.show(
             activity,
             INTERSTITIAL_PLACEMENT_ID,
@@ -114,8 +127,8 @@ object UnityAdsManager {
                 }
 
                 override fun onUnityAdsShowFailure(placementId: String?, error: UnityAds.UnityAdsShowError?, message: String?) {
-                    onComplete()
                     loadInterstitialAd()
+                    onFallback()
                 }
 
                 override fun onUnityAdsShowStart(placementId: String?) {}
@@ -126,7 +139,7 @@ object UnityAdsManager {
 }
 
 @Composable
-fun UnityBannerView(modifier: Modifier = Modifier) {
+fun UnityBannerView(modifier: Modifier = Modifier, onBannerFailed: () -> Unit = {}) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? Activity
     
@@ -137,6 +150,11 @@ fun UnityBannerView(modifier: Modifier = Modifier) {
                 .height(50.dp),
             factory = { ctx ->
                 val bannerView = BannerView(activity, UnityAdsManager.BANNER_PLACEMENT_ID, UnityBannerSize(320, 50))
+                bannerView.listener = object : BannerView.Listener() {
+                    override fun onBannerFailedToLoad(bannerAdView: BannerView?, errorInfo: com.unity3d.services.banners.BannerErrorInfo?) {
+                        onBannerFailed()
+                    }
+                }
                 bannerView.load()
                 bannerView
             }

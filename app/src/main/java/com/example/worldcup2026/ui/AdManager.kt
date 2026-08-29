@@ -22,6 +22,14 @@ object AdManager {
     const val INTERSTITIAL_REAL_ID = "ca-app-pub-7768012635304880/8383774129"
     const val BANNER_REAL_ID = "ca-app-pub-7768012635304880/7721429148"
     const val REWARDED_TEST_ID = "ca-app-pub-3940256099942544/5224354917"
+    const val BANNER_TEST_ID = "ca-app-pub-3940256099942544/6300978111"
+    const val INTERSTITIAL_TEST_ID = "ca-app-pub-3940256099942544/1033173712"
+
+    val BANNER_AD_UNIT_ID: String
+        get() = if (com.example.worldcup2026.BuildConfig.DEBUG) BANNER_TEST_ID else BANNER_REAL_ID
+
+    val INTERSTITIAL_AD_UNIT_ID: String
+        get() = if (com.example.worldcup2026.BuildConfig.DEBUG) INTERSTITIAL_TEST_ID else INTERSTITIAL_REAL_ID
 
     private var mInterstitialAd: InterstitialAd? = null
     private var isLoading = false
@@ -56,31 +64,38 @@ object AdManager {
     fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
         val activity = context as? Activity
         if (activity != null) {
-            // Prioridad #1: Unity Ads (Óptimo para distribución Web / APK directa)
-            UnityAdsManager.showRewardedAd(activity) {
-                onRewardGranted()
-            }
-        } else {
-            val ad = mRewardedAd
-            if (ad != null && activity != null) {
-                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                    override fun onAdDismissedFullScreenContent() {
-                        mRewardedAd = null
+            // Prioridad #1: Unity Ads
+            UnityAdsManager.showRewardedAd(
+                activity = activity,
+                onRewardGranted = onRewardGranted,
+                onFallback = {
+                    // Respaldo #2: AdMob Rewarded
+                    val ad = mRewardedAd
+                    if (ad != null) {
+                        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                            override fun onAdDismissedFullScreenContent() {
+                                mRewardedAd = null
+                                loadRewardedAd(context)
+                            }
+                            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                                mRewardedAd = null
+                                onRewardGranted()
+                            }
+                        }
+                        ad.show(activity) { _ ->
+                            onRewardGranted()
+                            Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        // Concesión de cortesía si ambos están cargando
+                        onRewardGranted()
+                        Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
                         loadRewardedAd(context)
                     }
-
-                    override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                        mRewardedAd = null
-                        onRewardGranted()
-                    }
                 }
-                ad.show(activity) { _ ->
-                    onRewardGranted()
-                    Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                onRewardGranted()
-            }
+            )
+        } else {
+            onRewardGranted()
         }
     }
 
@@ -93,7 +108,7 @@ object AdManager {
         val adRequest = AdRequest.Builder().build()
         InterstitialAd.load(
             context,
-            INTERSTITIAL_REAL_ID,
+            INTERSTITIAL_AD_UNIT_ID,
             adRequest,
             object : InterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
@@ -111,41 +126,50 @@ object AdManager {
 
     fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
         val activity = context as? Activity
-        // Prioridad #1: Unity Ads
         if (activity != null) {
-            UnityAdsManager.showInterstitialAd(context) {
-                onComplete()
-            }
-        } else {
-            val ad = mInterstitialAd
-            if (activity != null && ad != null) {
-                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                    override fun onAdDismissedFullScreenContent() {
-                        mInterstitialAd = null
-                        onComplete()
-                        loadInterstitialAd(context)
-                    }
+            // Prioridad #1: Unity Ads
+            UnityAdsManager.showInterstitialAd(
+                context = context,
+                onComplete = onComplete,
+                onFallback = {
+                    // Respaldo #2: AdMob Interstitial
+                    val ad = mInterstitialAd
+                    if (ad != null) {
+                        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                            override fun onAdDismissedFullScreenContent() {
+                                mInterstitialAd = null
+                                onComplete()
+                                loadInterstitialAd(context)
+                            }
 
-                    override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                        mInterstitialAd = null
+                            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                                mInterstitialAd = null
+                                onComplete()
+                            }
+                        }
+                        ad.show(activity)
+                    } else {
                         onComplete()
                     }
                 }
-                ad.show(activity)
-            } else {
-                onComplete()
-            }
+            )
+        } else {
+            onComplete()
         }
     }
 }
 
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
-    // Prioridad #1: Unity Ads Banner
     val showAdmobFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
     if (!showAdmobFallback.value) {
-        UnityBannerView(modifier = modifier)
+        UnityBannerView(
+            modifier = modifier,
+            onBannerFailed = {
+                showAdmobFallback.value = true
+            }
+        )
     } else {
         AndroidView(
             modifier = modifier
@@ -154,7 +178,7 @@ fun AdmobBanner(modifier: Modifier = Modifier) {
             factory = { ctx ->
                 AdView(ctx).apply {
                     setAdSize(AdSize.BANNER)
-                    adUnitId = AdManager.BANNER_REAL_ID
+                    adUnitId = AdManager.BANNER_AD_UNIT_ID
                     loadAd(AdRequest.Builder().build())
                 }
             }

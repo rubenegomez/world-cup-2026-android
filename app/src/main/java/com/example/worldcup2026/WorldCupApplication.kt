@@ -13,6 +13,7 @@ class WorldCupApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         MobileAds.initialize(this) {}
+        com.example.worldcup2026.ui.UnityAdsManager.init(this)
         AnalyticsManager.initialize(this)
         SoundManager.init(this)
         
