@@ -1489,16 +1489,20 @@ fun MatchCard(
                 }
             }
 
-            // Referencia sutil del Estadio al final de la tarjeta
+            // Referencia sutil del Estadio / Sede Neutral al final de la tarjeta
             val safeStadium = match.stadium ?: ""
             val safeCity = match.city ?: ""
-            if (safeStadium.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
+            val venueText = if (safeStadium.isNotEmpty() && safeCity.isNotEmpty()) {
+                "$safeStadium - $safeCity"
+            } else safeStadium.ifEmpty { safeCity }
+
+            if (venueText.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "📍 ${safeStadium.uppercase()} - ${safeCity.uppercase()}",
+                    text = "📍 ${venueText.uppercase()}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.4f),
-                    fontSize = 9.sp,
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
