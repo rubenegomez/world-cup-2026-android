@@ -118,8 +118,8 @@ val LIGA_ZONAS_MAP = mapOf(
     "Belgrano (Córdoba)" to "Zona B",
     "Racing Club" to "Zona B",
     "Huracán" to "Zona B",
-    "Godoy Cruz Antonio Tomba" to "Zona B",
-    "Godoy Cruz" to "Zona B",
+    "Estudiantes de Río Cuarto" to "Zona B",
+    "Estudiantes (Río Cuarto)" to "Zona B",
     "Barracas Central" to "Zona B",
     "Aldosivi" to "Zona B",
     "Atlético Tucumán" to "Zona B",
@@ -146,8 +146,8 @@ fun getCanonicalLigaTeam(name: String): Pair<String, String>? {
             "Racing Club" to "Zona B"
         norm.contains("huracan") ->
             "Huracán" to "Zona B"
-        norm.contains("godoy cruz") || norm.contains("tomba") || norm.contains("cuarto") ->
-            "Godoy Cruz Antonio Tomba" to "Zona B"
+        norm.contains("rio cuarto") || norm.contains("río cuarto") || norm.contains("cuarto") ->
+            "Estudiantes de Río Cuarto" to "Zona B"
         norm.contains("barracas") ->
             "Barracas Central" to "Zona B"
         norm.contains("aldosivi") ->
@@ -186,7 +186,7 @@ fun getCanonicalLigaTeam(name: String): Pair<String, String>? {
             "Boca Juniors" to "Zona A"
         norm.contains("riestra") ->
             "Deportivo Riestra" to "Zona A"
-        norm.contains("estudiantes") ->
+        norm.contains("estudiantes") && !norm.contains("cuarto") && !norm.contains("caseros") && !norm.contains("buenos aires") ->
             "Estudiantes de La Plata" to "Zona A"
         norm.contains("independiente") ->
             "Independiente" to "Zona A"
@@ -279,8 +279,8 @@ val LIGA_ZONA_B_TEAMS = listOf(
     "Banfield",
     "Barracas Central",
     "Belgrano (Córdoba)",
+    "Estudiantes de Río Cuarto",
     "Gimnasia La Plata",
-    "Godoy Cruz Antonio Tomba",
     "Huracán",
     "Independiente Rivadavia",
     "Racing Club",
