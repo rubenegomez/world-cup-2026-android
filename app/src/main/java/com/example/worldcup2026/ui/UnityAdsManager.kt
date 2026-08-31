@@ -17,9 +17,9 @@ import com.unity3d.services.banners.BannerView
 import com.unity3d.services.banners.UnityBannerSize
 
 object UnityAdsManager {
-    const val GAME_ID = "5994219"
+    const val GAME_ID = "800359844"
     const val REWARDED_PLACEMENT_ID = "Rewarded_Android"
-    const val INTERSTITIAL_PLACEMENT_ID = "Interstitial_Android"
+    const val INTERSTITIAL_PLACEMENT_ID = "Intersticial_Android"
     const val BANNER_PLACEMENT_ID = "Banner_Android"
     const val TEST_MODE = true
 
