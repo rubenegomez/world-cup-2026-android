@@ -68,8 +68,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val matches = mutableListOf<Match>()
         
         try {
-            val rawRemoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
-            val remoteMatches = rawRemoteMatches.filter { it.tournament_id == 5 || it.tournament_id == 1 || it.tournament_id == null }
+            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
             if (remoteMatches.isNotEmpty()) {
                 val validIds = remoteMatches.map { it.id }
                 matchDao.deleteObsoleteMatches(validIds)
@@ -94,7 +93,6 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         
         try {
             val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(tournamentId)
-                .filter { it.tournament_id == 5 || it.tournament_id == 1 || it.tournament_id == null }
             remoteMatches.forEach { match ->
                 addMatchWithPersistence(matches, savedMatches, match, tournamentId)
             }
