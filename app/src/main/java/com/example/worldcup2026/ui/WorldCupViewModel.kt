@@ -53,7 +53,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     
     private var autoSyncJob: kotlinx.coroutines.Job? = null
 
-    private val _favoriteTournamentIds = mutableStateOf<Set<Int>>(setOf(5))
+    private val _favoriteTournamentIds = mutableStateOf<Set<Int>>(emptySet())
     val favoriteTournamentIds: State<Set<Int>> = _favoriteTournamentIds
 
     private val _favoriteTeamNames = mutableStateOf<Set<String>>(emptySet())
@@ -73,8 +73,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         if (favTournamentsSaved != null) {
             _favoriteTournamentIds.value = favTournamentsSaved.mapNotNull { it.toIntOrNull() }.toSet()
         } else {
-            val singleFav = prefs.getInt("favorite_tournament_id", 5)
-            _favoriteTournamentIds.value = setOf(singleFav)
+            val singleFav = prefs.getInt("favorite_tournament_id", -1)
+            if (singleFav > 0) {
+                _favoriteTournamentIds.value = setOf(singleFav)
+            } else {
+                _favoriteTournamentIds.value = emptySet()
+            }
         }
         
         val favTeamsSaved = prefs.getStringSet("favorite_team_names", null)
