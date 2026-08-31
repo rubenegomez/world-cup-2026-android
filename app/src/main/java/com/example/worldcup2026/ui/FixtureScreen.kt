@@ -1326,7 +1326,21 @@ fun MatchCard(
                     if (showTeamStats) {
                         Spacer(modifier = Modifier.height(16.dp))
                         HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
-                        MatchTeamStatsView(match = match, allMatches = allMatches)
+                        MatchTeamStatsView(
+                            match = match,
+                            allMatches = allMatches,
+                            isEditing = isEditingProde,
+                            onApplyPrediction = { suggestedWinner, suggestedHomeScore, suggestedAwayScore ->
+                                onPredictionChange(
+                                    match.id,
+                                    suggestedWinner,
+                                    suggestedHomeScore ?: match.predictedHomeScore,
+                                    suggestedAwayScore ?: match.predictedAwayScore,
+                                    match.predictedHomePenalties,
+                                    match.predictedAwayPenalties
+                                )
+                            }
+                        )
                     }
                     if (showGameRules) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -1722,84 +1736,305 @@ fun MatchRulesHelpView() {
     }
 }
 
-@Composable
-fun MatchTeamStatsView(match: Match, allMatches: List<Match>) {
-    val homeForm = remember(match.homeTeam.name, allMatches.size) {
-        computeRealTeamForm(match.homeTeam.name, allMatches)
-    }
-    val awayForm = remember(match.awayTeam.name, allMatches.size) {
-        computeRealTeamForm(match.awayTeam.name, allMatches)
-    }
+private data class Tuple5<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
 
-    val homeFormPts = homeForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) }
-    val awayFormPts = awayForm.fold(0) { acc, res -> acc + (if (res == "V") 3 else if (res == "E") 1 else 0) }
-    val drawWeight = 4
+data class SmartPredictionAnalysis(
+    val homeProb: Int,
+    val drawProb: Int,
+    val awayProb: Int,
+    val suggestedWinner: String,
+    val suggestedLabel: String,
+    val suggestedHomeScore: Int?,
+    val suggestedAwayScore: Int?,
+    val homeGeneralForm: List<String>,
+    val awayGeneralForm: List<String>,
+    val homeVenueForm: List<String>,
+    val awayVenueForm: List<String>,
+    val h2hSummary: String,
+    val insightText: String
+)
 
-    val totalPts = (homeFormPts + awayFormPts + drawWeight).coerceAtLeast(1).toFloat()
-    val homeProb = (((homeFormPts + 2) / totalPts) * 100).toInt().coerceIn(10, 80)
-    val awayProb = ((awayFormPts / totalPts) * 100).toInt().coerceIn(10, 80)
-    val drawProb = (100 - homeProb - awayProb).coerceAtLeast(10)
+fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): SmartPredictionAnalysis {
+    val homeName = match.homeTeam.name
+    val awayName = match.awayTeam.name
+
+    // 1. Forma Reciente General (Últimos 5 partidos jugados)
+    val homeGeneral = computeRealTeamForm(homeName, allMatches, venueOnly = null)
+    val awayGeneral = computeRealTeamForm(awayName, allMatches, venueOnly = null)
+
+    // 2. Forma Específica por Condición (Últimos 4 partidos de local / visitante)
+    val homeVenue = computeRealTeamForm(homeName, allMatches, venueOnly = true)
+    val awayVenue = computeRealTeamForm(awayName, allMatches, venueOnly = false)
+
+    // Pesos decrecientes para los últimos 5 partidos: [5, 4, 3, 2, 1]
+    val weights = listOf(5, 4, 3, 2, 1)
     
-    val h2hSummary = remember(match.id, allMatches.size) {
-        computeRealH2H(match.homeTeam.name, match.awayTeam.name, allMatches)
+    var homeGeneralPts = 0f
+    homeGeneral.take(5).forEachIndexed { i, res ->
+        val w = weights.getOrElse(i) { 1 }
+        homeGeneralPts += (if (res == "V") 3f else if (res == "E") 1f else 0f) * w
+    }
+
+    var awayGeneralPts = 0f
+    awayGeneral.take(5).forEachIndexed { i, res ->
+        val w = weights.getOrElse(i) { 1 }
+        awayGeneralPts += (if (res == "V") 3f else if (res == "E") 1f else 0f) * w
+    }
+
+    // Puntos por condición de local/visita (Últimos 4 partidos en casa/fuera)
+    var homeVenueBonus = 0f
+    homeVenue.take(4).forEach { res ->
+        homeVenueBonus += (if (res == "V") 3f else if (res == "E") 1f else -1f) // Penaliza si pierde en casa
+    }
+
+    var awayVenueBonus = 0f
+    awayVenue.take(4).forEach { res ->
+        awayVenueBonus += (if (res == "V") 3.5f else if (res == "E") 1.5f else 0f) // Premia si suma de visitante
+    }
+
+    // 3. Historial H2H
+    val h2h = allMatches.filter {
+        it.status == "Finished" &&
+        ((it.homeTeam.name.equals(homeName, ignoreCase = true) && it.awayTeam.name.equals(awayName, ignoreCase = true)) ||
+         (it.homeTeam.name.equals(awayName, ignoreCase = true) && it.awayTeam.name.equals(homeName, ignoreCase = true)))
+    }
+    var h2hHomePts = 0f
+    var h2hAwayPts = 0f
+    var h2hHomeWins = 0
+    var h2hDraws = 0
+    var h2hAwayWins = 0
+
+    h2h.forEach { m ->
+        val h = m.homeScore ?: 0
+        val a = m.awayScore ?: 0
+        val isTargetHome = m.homeTeam.name.equals(homeName, ignoreCase = true)
+        when {
+            h == a -> {
+                h2hDraws++
+                h2hHomePts += 1f
+                h2hAwayPts += 1f
+            }
+            (isTargetHome && h > a) || (!isTargetHome && a > h) -> {
+                h2hHomeWins++
+                h2hHomePts += 3f
+            }
+            else -> {
+                h2hAwayWins++
+                h2hAwayPts += 3f
+            }
+        }
+    }
+
+    // Ponderación compuesta: 60% Forma General + 25% Local/Visita + 15% H2H
+    val homeStrength = (homeGeneralPts * 0.60f) + (homeVenueBonus * 0.25f * 3f) + (h2hHomePts * 0.15f * 3f) + 10f
+    val awayStrength = (awayGeneralPts * 0.60f) + (awayVenueBonus * 0.25f * 3f) + (h2hAwayPts * 0.15f * 3f) + 10f
+
+    val strengthDiff = kotlin.math.abs(homeStrength - awayStrength)
+    val totalScore = (homeStrength + awayStrength + 15f).coerceAtLeast(1f)
+
+    val rawHomeProb = ((homeStrength / totalScore) * 100).toInt()
+    val rawAwayProb = ((awayStrength / totalScore) * 100).toInt()
+    val drawBonus = (14f - (strengthDiff * 0.4f)).coerceIn(0f, 15f).toInt()
+    val rawDrawProb = (100 - rawHomeProb - rawAwayProb + drawBonus).coerceIn(18, 38)
+    
+    val sum = (rawHomeProb + rawDrawProb + rawAwayProb).toFloat()
+    val homeProb = ((rawHomeProb / sum) * 100).toInt().coerceIn(10, 75)
+    val awayProb = ((rawAwayProb / sum) * 100).toInt().coerceIn(10, 75)
+    val drawProb = (100 - homeProb - awayProb).coerceAtLeast(15)
+
+    // Decisión de sugerencia inteligente
+    val (suggestedWinner, suggestedLabel, predHomeG, predAwayG, insight) = when {
+        homeProb - awayProb >= 18 -> {
+            val hg = if (homeProb >= 55) 2 else 1
+            val ag = 0
+            Tuple5("L", "Local (L)", hg, ag, "$homeName llega con mejor racha y fortaleza como local.")
+        }
+        awayProb - homeProb >= 18 -> {
+            val hg = 0
+            val ag = if (awayProb >= 55) 2 else 1
+            Tuple5("V", "Visitante (V)", hg, ag, "$awayName muestra mayor solidez reciente fuera de casa.")
+        }
+        kotlin.math.abs(homeProb - awayProb) <= 6 || drawProb >= 32 -> {
+            Tuple5("E", "Empate (E)", 1, 1, "Duelo muy parejo con alta tendencia de empate.")
+        }
+        homeProb > awayProb -> {
+            Tuple5("L,E", "Doble L / E", 1, 0, "Ligera ventaja para $homeName con alta probabilidad de paridad.")
+        }
+        else -> {
+            Tuple5("E,V", "Doble E / V", 0, 1, "Ligera ventaja para $awayName con alta probabilidad de paridad.")
+        }
+    }
+
+    val h2hStr = if (h2h.isEmpty()) {
+        "Sin enfrentamientos previos registrados este año."
+    } else {
+        "Últimos ${h2h.size} cruces: $h2hHomeWins victorias $homeName, $h2hDraws empates, $h2hAwayWins $awayName"
+    }
+
+    return SmartPredictionAnalysis(
+        homeProb = homeProb,
+        drawProb = drawProb,
+        awayProb = awayProb,
+        suggestedWinner = suggestedWinner,
+        suggestedLabel = suggestedLabel,
+        suggestedHomeScore = predHomeG,
+        suggestedAwayScore = predAwayG,
+        homeGeneralForm = homeGeneral,
+        awayGeneralForm = awayGeneral,
+        homeVenueForm = homeVenue,
+        awayVenueForm = awayVenue,
+        h2hSummary = h2hStr,
+        insightText = insight
+    )
+}
+
+@Composable
+fun MatchTeamStatsView(
+    match: Match,
+    allMatches: List<Match>,
+    isEditing: Boolean = false,
+    onApplyPrediction: ((String, Int?, Int?) -> Unit)? = null
+) {
+    val analysis = remember(match.id, allMatches.size) {
+        computeSmartPredictionAnalysis(match, allMatches)
     }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Bloque 1: Sugerencia Inteligente Destacada
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = Color(0xFFFFD700).copy(alpha = 0.12f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💡 Sugerencia Prode: ", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFFFD700),
+                            modifier = Modifier.padding(start = 4.dp)
+                        ) {
+                            Text(
+                                text = analysis.suggestedLabel,
+                                color = Color.Black,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    if (isEditing && onApplyPrediction != null) {
+                        Button(
+                            onClick = {
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                onApplyPrediction(analysis.suggestedWinner, analysis.suggestedHomeScore, analysis.suggestedAwayScore)
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(26.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                        ) {
+                            Text("⚡ Aplicar", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = analysis.insightText,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+            }
+        }
+
+        // Bloque 2: Probabilidad Estimada
         Column {
-            Text("Probabilidad estimada", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Probabilidad Estimada (Historial + Momento)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(6.dp))
             Row(modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp))) {
-                Box(modifier = Modifier.weight(homeProb.toFloat()).fillMaxHeight().background(Color(0xFF4CAF50)))
-                Box(modifier = Modifier.weight(drawProb.toFloat()).fillMaxHeight().background(Color(0xFFFFC107)))
-                Box(modifier = Modifier.weight(awayProb.toFloat()).fillMaxHeight().background(Color(0xFFF44336)))
+                Box(modifier = Modifier.weight(analysis.homeProb.toFloat()).fillMaxHeight().background(Color(0xFF4CAF50)))
+                Box(modifier = Modifier.weight(analysis.drawProb.toFloat()).fillMaxHeight().background(Color(0xFFFFC107)))
+                Box(modifier = Modifier.weight(analysis.awayProb.toFloat()).fillMaxHeight().background(Color(0xFFF44336)))
             }
             Spacer(modifier = Modifier.height(6.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("🟩 $homeProb% (${match.homeTeam.name})", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
-                Text("🟨 $drawProb% (Empate)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
-                Text("🟥 $awayProb% (${match.awayTeam.name})", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
+                Text("🟩 ${analysis.homeProb}% (${match.homeTeam.name})", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+                Text("🟨 ${analysis.drawProb}% (Empate)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
+                Text("🟥 ${analysis.awayProb}% (${match.awayTeam.name})", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.9f))
             }
         }
         
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
         
-        Column {
+        // Bloque 3: Racha General y de Condición
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Racha últimos partidos (Reales)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Forma y Rendimiento Reciente", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
                 Text("← Más reciente", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFC107), fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🏠 ${match.homeTeam.name}: ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(110.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (homeForm.isEmpty()) {
-                        Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
-                    } else {
-                        homeForm.forEach { 
-                            FormCircle(result = it)
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
+
+            // Local General
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("🏠 ${match.homeTeam.name} (Global): ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(160.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (analysis.homeGeneralForm.isEmpty()) {
+                    Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
+                } else {
+                    analysis.homeGeneralForm.forEach { 
+                        FormCircle(result = it)
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("✈️ ${match.awayTeam.name}: ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(110.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (awayForm.isEmpty()) {
-                        Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
-                    } else {
-                        awayForm.forEach { 
-                            FormCircle(result = it)
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
+
+            // Local en Casa
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("    ↳ En su Estadio: ", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.width(160.dp), maxLines = 1)
+                if (analysis.homeVenueForm.isEmpty()) {
+                    Text("Sin datos en casa", fontSize = 11.sp, color = Color.Gray)
+                } else {
+                    analysis.homeVenueForm.forEach { 
+                        FormCircle(result = it)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+            }
+
+            // Visitante General
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("✈️ ${match.awayTeam.name} (Global): ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(160.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (analysis.awayGeneralForm.isEmpty()) {
+                    Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
+                } else {
+                    analysis.awayGeneralForm.forEach { 
+                        FormCircle(result = it)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+            }
+
+            // Visitante Fuera
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("    ↳ Como Visitante: ", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.width(160.dp), maxLines = 1)
+                if (analysis.awayVenueForm.isEmpty()) {
+                    Text("Sin datos fuera", fontSize = 11.sp, color = Color.Gray)
+                } else {
+                    analysis.awayVenueForm.forEach { 
+                        FormCircle(result = it)
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
             }
@@ -1807,20 +2042,25 @@ fun MatchTeamStatsView(match: Match, allMatches: List<Match>) {
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
 
+        // Bloque 4: H2H Historial Directo
         Column {
             Text("Historial Directo (H2H entre sí)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(h2hSummary, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.8f))
+            Text(analysis.h2hSummary, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
         }
     }
 }
 
-fun computeRealTeamForm(teamName: String, allMatches: List<Match>): List<String> {
+fun computeRealTeamForm(teamName: String, allMatches: List<Match>, venueOnly: Boolean? = null): List<String> {
     if (teamName.isBlank() || allMatches.isEmpty()) return emptyList()
     val finishedMatches = allMatches.filter { 
         it.status == "Finished" && 
-        (it.homeTeam.name.equals(teamName, ignoreCase = true) || it.awayTeam.name.equals(teamName, ignoreCase = true))
-    }.sortedByDescending { it.date ?: "" }.take(5)
+        when (venueOnly) {
+            true -> it.homeTeam.name.equals(teamName, ignoreCase = true)
+            false -> it.awayTeam.name.equals(teamName, ignoreCase = true)
+            null -> (it.homeTeam.name.equals(teamName, ignoreCase = true) || it.awayTeam.name.equals(teamName, ignoreCase = true))
+        }
+    }.sortedByDescending { it.date ?: "" }.take(if (venueOnly != null) 4 else 5)
 
     return finishedMatches.map { match ->
         val isHome = match.homeTeam.name.equals(teamName, ignoreCase = true)
