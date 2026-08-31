@@ -44,12 +44,55 @@ enum class TournamentFormat {
     PRIMERA_NACIONAL,
     PRIMERA_B,
     PRIMERA_C,
+    TORNEO_FEDERAL_A,
     COPA_DIRECTA,
     COPA_INTERCONTINENTAL
 }
 
 // Compatibilidad con código previo
 typealias TournamentKind = TournamentFormat
+
+val PN_ZONA_A_TEAMS = listOf(
+    "Acassuso",
+    "All Boys",
+    "Almirante Brown",
+    "Central Norte (Salta)",
+    "Chaco For Ever",
+    "Ciudad de Bolívar",
+    "Colón (Santa Fe)",
+    "Defensores de Belgrano",
+    "Deportivo Madryn",
+    "Deportivo Morón",
+    "Estudiantes (Buenos Aires)",
+    "Ferro Carril Oeste",
+    "Godoy Cruz Antonio Tomba",
+    "Los Andes",
+    "Mitre (Santiago del Estero)",
+    "Racing (Córdoba)",
+    "San Miguel",
+    "San Telmo"
+)
+
+val PN_ZONA_B_TEAMS = listOf(
+    "Agropecuario",
+    "Almagro",
+    "Atlanta",
+    "Atlético de Rafaela",
+    "Chacarita Juniors",
+    "Colegiales",
+    "Deportivo Maipú",
+    "Gimnasia y Esgrima (Jujuy)",
+    "Gimnasia y Tiro (Salta)",
+    "Güemes (Santiago del Estero)",
+    "Midland",
+    "Nueva Chicago",
+    "Patronato",
+    "Quilmes",
+    "San Martín (San Juan)",
+    "San Martín (Tucumán)",
+    "Temperley",
+    "Tristán Suárez"
+)
 
 val LIGA_ZONAS_MAP = mapOf(
     // ZONA A (15 equipos)
@@ -163,16 +206,9 @@ fun getCanonicalLigaTeam(name: String): Pair<String, String>? {
 fun getLigaZona(name: String): String? = getCanonicalLigaTeam(name)?.second ?: LIGA_ZONAS_MAP[name]
 
 @Composable
-fun StandingsScreen(matches: List<Match>) {
-    val tournamentId = remember(matches) {
-        matches.firstOrNull { it.tournament_id != null }?.tournament_id ?: run {
-            val firstId = matches.minOfOrNull { it.id } ?: 0
-            when {
-                firstId <= 300 -> 1
-                firstId <= 499 -> 3
-                else -> 5
-            }
-        }
+fun StandingsScreen(matches: List<Match>, initialTournamentId: Int? = null) {
+    val tournamentId = remember(matches, initialTournamentId) {
+        initialTournamentId ?: matches.firstOrNull { it.tournament_id != null }?.tournament_id ?: 5
     }
 
     val tournamentFormat = remember(tournamentId) {
@@ -182,12 +218,13 @@ fun StandingsScreen(matches: List<Match>) {
             3 -> TournamentFormat.LIBERTADORES
             4 -> TournamentFormat.SUDAMERICANA
             5 -> TournamentFormat.LIGA_PROFESIONAL
-            6, 7 -> TournamentFormat.COPA_DIRECTA
-            8 -> TournamentFormat.PRIMERA_NACIONAL
-            9 -> TournamentFormat.PRIMERA_B
-            10, 11 -> TournamentFormat.PRIMERA_C
+            6 -> TournamentFormat.COPA_DIRECTA
+            7 -> TournamentFormat.PRIMERA_NACIONAL
+            8 -> TournamentFormat.PRIMERA_B
+            9, 10 -> TournamentFormat.PRIMERA_C
+            15 -> TournamentFormat.TORNEO_FEDERAL_A
             12 -> TournamentFormat.WORLD_CUP
-            13 -> TournamentFormat.COPA_INTERCONTINENTAL
+            13, 18 -> TournamentFormat.COPA_INTERCONTINENTAL
             else -> TournamentFormat.LIGA_PROFESIONAL
         }
     }
@@ -198,9 +235,10 @@ fun StandingsScreen(matches: List<Match>) {
         TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES")
         TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES")
         TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES")
-        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "REDUCIDO", "GOLEADORES")
-        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "COPA ARGENTINA", "GOLEADORES")
-        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "FINAL Y REDUCIDO", "GOLEADORES")
+        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES")
+        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "GOLEADORES")
+        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES")
+        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "GOLEADORES")
         TournamentFormat.COPA_DIRECTA,
         TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "GOLEADORES")
     }
@@ -252,34 +290,66 @@ val LIGA_ZONA_B_TEAMS = listOf(
     "Tigre"
 )
 
-    val teamsByGroup = remember(matches, tournamentFormat) {
-        val rawTeams = matches.flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }
+    val currentTournamentMatches = remember(matches, tournamentId) {
+        matches.filter { it.tournament_id == tournamentId }
+    }
+
+    val teamsByGroup = remember(currentTournamentMatches, tournamentFormat) {
+        val rawTeams = currentTournamentMatches.flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }
             .distinctBy { it.name.trim().lowercase() }
         
-        if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-            val teamsMap = rawTeams.mapNotNull { team ->
-                val canonical = getCanonicalLigaTeam(team.name)
-                if (canonical != null) {
-                    canonical.first to team.copy(name = canonical.first, group = canonical.second, players = team.players ?: emptyList())
-                } else null
-            }.toMap()
+        when (tournamentFormat) {
+            TournamentFormat.LIGA_PROFESIONAL -> {
+                val teamsMap = rawTeams.mapNotNull { team ->
+                    val canonical = getCanonicalLigaTeam(team.name)
+                    if (canonical != null) {
+                        canonical.first to team.copy(name = canonical.first, group = canonical.second, players = team.players ?: emptyList())
+                    } else null
+                }.toMap()
 
-            val zonaATeams = LIGA_ZONA_A_TEAMS.map { name ->
-                teamsMap[name] ?: Team(id = 8300 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona A", players = emptyList())
-            }
-            val zonaBTeams = LIGA_ZONA_B_TEAMS.map { name ->
-                teamsMap[name] ?: Team(id = 8300 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona B", players = emptyList())
-            }
+                val zonaATeams = LIGA_ZONA_A_TEAMS.map { name ->
+                    teamsMap[name] ?: Team(id = 8300 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona A", players = emptyList())
+                }
+                val zonaBTeams = LIGA_ZONA_B_TEAMS.map { name ->
+                    teamsMap[name] ?: Team(id = 8300 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona B", players = emptyList())
+                }
 
-            mapOf(
-                "Zona A" to zonaATeams,
-                "Zona B" to zonaBTeams
-            ).toSortedMap()
-        } else {
-            rawTeams
-                .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
-                .groupBy { it.group }
-                .toSortedMap()
+                mapOf(
+                    "Zona A" to zonaATeams,
+                    "Zona B" to zonaBTeams
+                ).toSortedMap()
+            }
+            TournamentFormat.PRIMERA_NACIONAL -> {
+                val teamsMap = rawTeams.associateBy { it.name.trim().lowercase() }
+                val zonaATeams = PN_ZONA_A_TEAMS.map { name ->
+                    teamsMap[name.lowercase()] ?: rawTeams.find { it.name.contains(name, ignoreCase = true) } ?: Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona A", players = emptyList())
+                }
+                val zonaBTeams = PN_ZONA_B_TEAMS.map { name ->
+                    teamsMap[name.lowercase()] ?: rawTeams.find { it.name.contains(name, ignoreCase = true) } ?: Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona B", players = emptyList())
+                }
+                mapOf(
+                    "Zona A" to zonaATeams,
+                    "Zona B" to zonaBTeams,
+                    "Tabla General" to (zonaATeams + zonaBTeams)
+                )
+            }
+            TournamentFormat.TORNEO_FEDERAL_A -> {
+                mapOf(
+                    "Tabla General" to rawTeams
+                )
+            }
+            else -> {
+                val grouped = rawTeams
+                    .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
+                    .groupBy { it.group }
+                    .toSortedMap()
+                
+                if (grouped.isEmpty() && rawTeams.isNotEmpty()) {
+                    mapOf("Tabla General" to rawTeams)
+                } else {
+                    grouped
+                }
+            }
         }
     }
 

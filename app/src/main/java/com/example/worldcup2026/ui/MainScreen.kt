@@ -396,9 +396,10 @@ fun MainScreen(
                                     }
                                      5 -> {
                                          if (selectedTournamentForStandings != null) {
-                                             val tMatches = state.matches.filter { it.tournament_id == selectedTournamentForStandings }
-                                             val finalStandingsMatches = if (tMatches.isNotEmpty()) tMatches else state.matches.filter { it.tournament_id == 5 }
-                                             StandingsScreen(matches = if (finalStandingsMatches.isNotEmpty()) finalStandingsMatches else state.matches)
+                                             StandingsScreen(
+                                                 matches = state.matches,
+                                                 initialTournamentId = selectedTournamentForStandings
+                                             )
                                          } else {
                                              selectedScreen = 0
                                          }
