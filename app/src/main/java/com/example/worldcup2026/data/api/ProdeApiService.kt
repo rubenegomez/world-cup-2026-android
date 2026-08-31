@@ -21,7 +21,14 @@ data class UserDto(
     val firebaseUid: String,
     val email: String,
     val fullName: String,
-    val avatarUrl: String
+    val avatarUrl: String,
+    val favoriteTournaments: List<Int>? = emptyList(),
+    val favoriteTeams: List<String>? = emptyList()
+)
+
+data class UpdateFavoritesRequest(
+    val favoriteTournaments: List<Int> = emptyList(),
+    val favoriteTeams: List<String> = emptyList()
 )
 
 data class CreateLeagueRequest(
@@ -163,4 +170,15 @@ interface ProdeApiService {
     suspend fun getUserStats(
         @Header("Authorization") token: String
     ): UserMedalsDto
+
+    @GET("api/prode/users/me/favorites")
+    suspend fun getUserFavorites(
+        @Header("Authorization") token: String
+    ): UpdateFavoritesRequest
+
+    @PUT("api/prode/users/me/favorites")
+    suspend fun updateUserFavorites(
+        @Header("Authorization") token: String,
+        @Body req: UpdateFavoritesRequest
+    ): UpdateFavoritesRequest
 }

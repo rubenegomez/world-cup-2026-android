@@ -77,6 +77,11 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             _favoriteTournamentIds.value = setOf(singleFav)
         }
         
+        val favTeamsSaved = prefs.getStringSet("favorite_team_names", null)
+        if (favTeamsSaved != null) {
+            _favoriteTeamNames.value = favTeamsSaved
+        }
+        
         val primaryFav = _favoriteTournamentIds.value.firstOrNull() ?: 5
         currentTournamentId.value = primaryFav
         loadData()
@@ -105,6 +110,27 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                                             val restored = prodeRepo.fetchMyPredictions(repository, getApplication())
                                             if (restored) {
                                                 loadData()
+                                            }
+                                            
+                                            // Restaurar / sincronizar favoritos con la cuenta en la nube
+                                            val user = prodeRepo.currentUser
+                                            val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+                                            if (user != null) {
+                                                val cloudTournaments = user.favoriteTournaments
+                                                val cloudTeams = user.favoriteTeams
+                                                if (!cloudTournaments.isNullOrEmpty()) {
+                                                    _favoriteTournamentIds.value = cloudTournaments.toSet()
+                                                    prefs.edit().putStringSet("favorite_tournament_ids", cloudTournaments.map { it.toString() }.toSet()).apply()
+                                                }
+                                                if (!cloudTeams.isNullOrEmpty()) {
+                                                    _favoriteTeamNames.value = cloudTeams.toSet()
+                                                    prefs.edit().putStringSet("favorite_team_names", cloudTeams.toSet()).apply()
+                                                }
+                                                // Si la nube estaba vacía pero el dispositivo tiene favoritos locales, subirlos
+                                                if ((cloudTournaments.isNullOrEmpty() && _favoriteTournamentIds.value.isNotEmpty()) ||
+                                                    (cloudTeams.isNullOrEmpty() && _favoriteTeamNames.value.isNotEmpty())) {
+                                                    prodeRepo.syncFavorites(_favoriteTournamentIds.value.toList(), _favoriteTeamNames.value.toList())
+                                                }
                                             }
                                         }
                                     } catch (e: Exception) {
@@ -175,6 +201,16 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
         _favoriteTournamentIds.value = currentSet
         prefs.edit().putStringSet("favorite_tournament_ids", currentSet.map { it.toString() }.toSet()).apply()
+        
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val database = WorldCupDatabase.getDatabase(getApplication())
+                val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(database.leagueDao())
+                prodeRepo.syncFavorites(currentSet.toList(), _favoriteTeamNames.value.toList())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun toggleFavoriteTeam(teamName: String) {
@@ -187,6 +223,16 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
         _favoriteTeamNames.value = currentSet
         prefs.edit().putStringSet("favorite_team_names", currentSet).apply()
+        
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val database = WorldCupDatabase.getDatabase(getApplication())
+                val prodeRepo = com.example.worldcup2026.data.repository.ProdeRepository(database.leagueDao())
+                prodeRepo.syncFavorites(_favoriteTournamentIds.value.toList(), currentSet.toList())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private var cachedGlobalMatches: List<Match> = emptyList()

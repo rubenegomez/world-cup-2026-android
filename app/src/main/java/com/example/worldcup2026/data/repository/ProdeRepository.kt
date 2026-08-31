@@ -220,4 +220,24 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
             false
         }
     }
+
+    suspend fun syncFavorites(tournaments: List<Int>, teams: List<String>): com.example.worldcup2026.data.api.UpdateFavoritesRequest? {
+        val token = authToken ?: return null
+        return try {
+            api.updateUserFavorites(token, com.example.worldcup2026.data.api.UpdateFavoritesRequest(tournaments, teams))
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error updating user favorites", e)
+            null
+        }
+    }
+
+    suspend fun fetchFavorites(): com.example.worldcup2026.data.api.UpdateFavoritesRequest? {
+        val token = authToken ?: return null
+        return try {
+            api.getUserFavorites(token)
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error fetching user favorites", e)
+            null
+        }
+    }
 }

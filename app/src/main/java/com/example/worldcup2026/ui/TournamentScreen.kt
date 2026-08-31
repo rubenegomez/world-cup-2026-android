@@ -50,7 +50,7 @@ data class TournamentItem(
 val internacionales = listOf(
     TournamentItem(1, "Mundial de Fútbol 2030", "Internacional", active = false),
     TournamentItem(2, "Eliminatorias Mundial 2030", "Internacional", active = false),
-    TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = false),
+    TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = true),
     TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true),
     TournamentItem(12, "Finalíssima", "Internacional", active = false),
     TournamentItem(14, "Amistosos Internacionales CONMEBOL", "Internacional", active = false),
@@ -79,13 +79,9 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
     
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Internacionales", "Nacionales")
-        // Estado de favoritos locales (Sincronizado con favorite_tournament_ids de ViewModel)
-    var favoriteTournaments by remember {
-        val favs = sharedPrefs.getStringSet("favorite_tournament_ids", null)
-            ?: sharedPrefs.getStringSet("favorite_tournaments", emptySet())
-            ?: setOf("5")
-        mutableStateOf(favs)
-    }
+    
+    // Estado de favoritos reactivo sincronizado con ViewModel
+    val favoriteTournaments by viewModel.favoriteTournamentIds
 
     // Estado de Selección / Club favoritos
     var favCountry by remember { mutableStateOf(sharedPrefs.getString("favorite_country", "Ninguna") ?: "Ninguna") }
@@ -117,18 +113,6 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
 
     // Función para alternar favorito sincronizada con ViewModel
     val toggleFavorite: (Int) -> Unit = { id ->
-        val currentSet = favoriteTournaments.toMutableSet()
-        val idStr = id.toString()
-        if (currentSet.contains(idStr)) {
-            currentSet.remove(idStr)
-        } else {
-            currentSet.add(idStr)
-        }
-        sharedPrefs.edit()
-            .putStringSet("favorite_tournaments", currentSet)
-            .putStringSet("favorite_tournament_ids", currentSet)
-            .apply()
-        favoriteTournaments = currentSet
         viewModel.toggleFavoriteTournament(id)
     }
 
@@ -253,7 +237,7 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
         val baseList = (if (selectedTabIndex == 0) internacionales else nacionales).filter { it.active }
         val tournamentsToList = remember(baseList, favoriteTournaments) {
             baseList.sortedWith(
-                compareByDescending<TournamentItem> { favoriteTournaments.contains(it.id.toString()) }
+                compareByDescending<TournamentItem> { favoriteTournaments.contains(it.id) }
                 .thenBy { it.id }
             )
         }
@@ -283,7 +267,7 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
                         else -> Icons.Default.Book
                     }
                     val isLive = liveStatuses[tournament.id] == true
-                    val isFav = favoriteTournaments.contains(tournament.id.toString())
+                    val isFav = favoriteTournaments.contains(tournament.id)
 
                     GoldButton(
                         text = tournament.name,
