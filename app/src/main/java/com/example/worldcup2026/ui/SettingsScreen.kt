@@ -607,26 +607,29 @@ fun TeamsListScreen(
         } else {
             // TAB EQUIPOS / SELECCIONES
             val favTeamNames = viewModel.favoriteTeamNames.value
-            val domesticLeagueIds = setOf(5, 7, 8, 9, 10, 13, 15, 16, 20)
+            val domesticLeagueIds = setOf(5, 7, 15, 8)
+            val internationalClubTournamentIds = setOf(3, 4)
 
             val argTeamNames = remember(allTeams) {
-                allTeams.filter { it.tournament_id in domesticLeagueIds }
+                allTeams.filter { it.tournament_id in setOf(5, 6, 7, 8, 9, 10, 13, 15, 16, 20) }
                     .map { it.name.trim().lowercase() }
                     .toSet()
             }
 
             val filteredTeams = remember(allTeams, selectedTab, argTeamNames) {
                 when (selectedTab) {
-                    // Tab 1: Selecciones Nacionales (Argentina, Brasil, Francia, etc.)
-                    1 -> allTeams.filter { t -> t.tournament_id in listOf(1, 2) || isNationalSelection(t.name) }
+                    // Tab 1: Selecciones Nacionales (Mundial + Eliminatorias/Amistosos CONMEBOL)
+                    1 -> allTeams.filter { t -> t.tournament_id in listOf(1, 2, 14) || isNationalSelection(t.name) }
+                        .distinctBy { it.name.trim().lowercase() }
                     
-                    // Tab 2: Equipos Nacionales (Ligas domésticas argentinas sin duplicados de Copa Argentina/Libertadores)
+                    // Tab 2: Equipos Nacionales (Liga Profesional, Primera Nacional, Torneo Federal A, Primera B Metro)
                     2 -> allTeams.filter { t -> 
                         t.tournament_id in domesticLeagueIds && !isNationalSelection(t.name)
                     }.distinctBy { normalizeTeamName(it.name) }
                     
-                    // Tab 3: Equipos Internacionales (SOLO equipos de AFUERA de Argentina)
+                    // Tab 3: Equipos Internacionales (Clubes Libertadores y Sudamericana SIN equipos argentinos)
                     3 -> allTeams.filter { t -> 
+                        t.tournament_id in internationalClubTournamentIds &&
                         !isNationalSelection(t.name) && 
                         !argTeamNames.contains(t.name.trim().lowercase()) &&
                         !isArgentineTeamName(t.name)
@@ -636,24 +639,17 @@ fun TeamsListScreen(
                 }
             }
 
-            val tournamentOrder = listOf(5, 7, 8, 15, 10, 9, 16, 13, 20, 1, 2, 3, 4, 12, 14, 17, 18, 19)
+            val tournamentOrder = listOf(5, 7, 15, 8, 1, 2, 14, 3, 4)
             val tournamentNamesMap = mapOf(
                 5 to "🏆 LIGA PROFESIONAL",
                 7 to "⚽ PRIMERA NACIONAL",
-                8 to "🏟️ PRIMERA B METROPOLITANA",
                 15 to "🏔️ TORNEO FEDERAL A",
-                10 to "🥅 PRIMERA C METROPOLITANA",
-                9 to "🥅 PRIMERA C",
-                16 to "🚩 TORNEO REGIONAL FEDERAL AMATEUR",
-                13 to "🎖️ TORNEO PROMOCIONAL AMATEUR",
-                20 to "🇦🇷 AMISTOSOS AFA",
+                8 to "🏟️ PRIMERA B METROPOLITANA",
                 1 to "🌍 MUNDIAL 2030",
                 2 to "🌎 ELIMINATORIAS SUDAMERICANAS",
+                14 to "🌎 AMISTOSOS CONMEBOL",
                 3 to "🏆 COPA LIBERTADORES",
-                4 to "🏆 COPA SUDAMERICANA",
-                17 to "🏆 MUNDIAL DE CLUBES",
-                18 to "🏆 COPA INTERCONTINENTAL",
-                19 to "⚽ AMISTOSOS DE CLUBES INT."
+                4 to "🏆 COPA SUDAMERICANA"
             )
 
             val groupedTeams = remember(filteredTeams, favTeamNames) {
@@ -739,10 +735,11 @@ private data class TournamentInfo(val id: Int, val fullName: String, val display
 
 private fun isNationalSelection(name: String): Boolean {
     val selections = listOf(
-        "argentina", "brasil", "uruguay", "colombia", "chile", "perú", "ecuador", "paraguay", "venezuela", "bolivia",
-        "españa", "francia", "alemania", "inglaterra", "italia", "holanda", "países bajos", "portugal", "méxico", "estados unidos"
+        "argentina", "bolivia", "brasil", "chile", "colombia", "ecuador", "paraguay", "perú", "peru", "uruguay", "venezuela",
+        "españa", "francia", "alemania", "inglaterra", "italia", "holanda", "países bajos", "portugal", "méxico", "mexico", "estados unidos", "usa"
     )
-    return selections.any { name.lowercase().trim() == it }
+    val lower = name.lowercase().trim()
+    return selections.any { lower == it || lower.startsWith("$it (") }
 }
 
 private fun isArgentineTeamName(name: String): Boolean {
