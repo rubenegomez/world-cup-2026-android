@@ -35,6 +35,7 @@ fun DailyMatchesScreen(
     var searchQuery by remember { mutableStateOf("") }
     var filterLiveOnly by remember { mutableStateOf(false) }
     val favTournaments by viewModel.favoriteTournamentIds
+    val favTeams by viewModel.favoriteTeamNames
     var selectedTournamentIds by remember { 
         mutableStateOf(setOf(5)) 
     }
@@ -43,7 +44,7 @@ fun DailyMatchesScreen(
         listOf(0 to "🏆 Todos") + (internacionales + nacionales).map { it.id to it.name }
     }
 
-    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentIds, favTournaments) {
+    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentIds, favTournaments, favTeams) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
             .filter { it.date?.startsWith(dateStr) == true }
@@ -71,7 +72,12 @@ fun DailyMatchesScreen(
                     .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
             )
             .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
-            .sortedBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
+            .sortedWith(
+                compareByDescending<Match> { it.homeTeam.name in favTeams || it.awayTeam.name in favTeams }
+                    .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") }
+                    .thenBy { it.status.uppercase() == "FINISHED" }
+                    .thenBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
+            )
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -265,7 +271,8 @@ fun DailyMatchesScreen(
                         allMatches = matches,
                         onToggleComodin = { matchId ->
                             viewModel.toggleComodin(matchId)
-                        }
+                        },
+                        favoriteTeamNames = favTeams
                     )
                 }
             }

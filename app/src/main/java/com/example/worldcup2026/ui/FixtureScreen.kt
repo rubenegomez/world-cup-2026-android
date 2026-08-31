@@ -57,7 +57,8 @@ fun FixtureScreen(
     onShowVipStats: (Match) -> Unit = {},
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _, _, _ -> },
     showAds: Boolean = true,
-    onToggleComodin: ((Int) -> Unit)? = null
+    onToggleComodin: ((Int) -> Unit)? = null,
+    favoriteTeamNames: Set<String> = emptySet()
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val tabs = remember(isWorldCup) {
@@ -132,7 +133,7 @@ fun FixtureScreen(
             modifier = Modifier.weight(1f)
         ) { page ->
             when (page) {
-                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
+                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin, favoriteTeamNames)
                 1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
                 2 -> if (isWorldCup) {
                     KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
@@ -303,7 +304,8 @@ fun DayFilteredFixture(
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean,
-    onToggleComodin: ((Int) -> Unit)? = null
+    onToggleComodin: ((Int) -> Unit)? = null,
+    favoriteTeamNames: Set<String> = emptySet()
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val matchdays = remember(matches) {
@@ -370,7 +372,12 @@ fun DayFilteredFixture(
                 .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
         )
         .distinctBy { "${it.homeTeam.name.lowercase().trim()}_vs_${it.awayTeam.name.lowercase().trim()}" }
-        .sortedBy { it.date ?: "" }
+        .sortedWith(
+            compareByDescending<Match> { it.homeTeam.name in favoriteTeamNames || it.awayTeam.name in favoriteTeamNames }
+                .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") }
+                .thenBy { it.status.uppercase() == "FINISHED" }
+                .thenBy { it.date ?: "" }
+        )
 
     val listState = rememberLazyListState()
 
@@ -522,7 +529,7 @@ fun DayFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, favoriteTeamNames = favoriteTeamNames)
             }
         }
     }
@@ -586,7 +593,8 @@ fun MatchCard(
     onNavigateToTournament: ((Int) -> Unit)? = null,
     tournamentName: String? = null,
     allMatches: List<Match> = emptyList(),
-    onToggleComodin: ((Int) -> Unit)? = null
+    onToggleComodin: ((Int) -> Unit)? = null,
+    favoriteTeamNames: Set<String> = emptySet()
 ) {
     var showTeamStats by remember { mutableStateOf(false) }
     var showGameRules by remember { mutableStateOf(false) }
@@ -594,6 +602,7 @@ fun MatchCard(
 
     val statusUpper = match.status.uppercase()
     val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+    val hasFav = match.homeTeam.name in favoriteTeamNames || match.awayTeam.name in favoriteTeamNames
     
     val infiniteTransition = rememberInfiniteTransition()
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -611,8 +620,8 @@ fun MatchCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF141924).copy(alpha = 0.95f)),
         border = androidx.compose.foundation.BorderStroke(
-            width = if (isLive) 1.5.dp else 1.dp,
-            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else Color.White.copy(alpha = 0.12f)
+            width = if (isLive) 1.5.dp else if (hasFav) 1.2.dp else 1.dp,
+            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else if (hasFav) Color(0xFFFFD700).copy(alpha = 0.55f) else Color.White.copy(alpha = 0.12f)
         )
     ) {
         Column(
@@ -804,7 +813,8 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null
+                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
+                    isFavorite = match.homeTeam.name in favoriteTeamNames
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -922,7 +932,8 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null
+                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
+                    isFavorite = match.awayTeam.name in favoriteTeamNames
                 )
             }
  
@@ -1511,22 +1522,42 @@ fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
 }
 
 @Composable
-fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null) {
+fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null, isFavorite: Boolean = false) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp)
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(team.flagUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = null,
-            modifier = Modifier.size(54.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)),
-            contentScale = ContentScale.Crop
-        )
+        Box(contentAlignment = Alignment.TopEnd) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(team.flagUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier.size(54.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)),
+                contentScale = ContentScale.Crop
+            )
+            if (isFavorite) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.size(16.dp).offset(x = 2.dp, y = (-2).dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("⭐", fontSize = 8.sp)
+                    }
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(team.name, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White)
+        Text(
+            text = team.name, 
+            style = MaterialTheme.typography.labelMedium, 
+            fontWeight = if (isFavorite) FontWeight.Black else FontWeight.ExtraBold, 
+            maxLines = 1, 
+            overflow = TextOverflow.Ellipsis, 
+            color = if (isFavorite) Color(0xFFFFD700) else Color.White
+        )
         Spacer(modifier = Modifier.height(8.dp))
         val displayText = (score?.toString() ?: "0") + (if (penalties != null) " ($penalties)" else "")
         Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
