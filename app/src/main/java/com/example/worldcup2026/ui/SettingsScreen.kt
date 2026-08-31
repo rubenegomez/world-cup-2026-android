@@ -1,5 +1,6 @@
 package com.example.worldcup2026.ui
 
+import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -400,6 +401,32 @@ fun SettingsMenuScreen(
                     title = "Equipos y Selecciones",
                     subtitle = "Gestiona tus favoritos y revisa la base de datos",
                     onClick = onShowTeamsList
+                )
+            }
+        }
+        item {
+            SettingSection(title = "Publicidad y Anuncios") {
+                val adFreeUntil by worldCupViewModel.adFreeUntil
+                val isAdFree = adFreeUntil > System.currentTimeMillis()
+                val remainingMinutes = if (isAdFree) ((adFreeUntil - System.currentTimeMillis()) / 60000) + 1 else 0
+                val activityContext = context as? Activity
+
+                SettingItem(
+                    icon = Icons.Default.Star,
+                    title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Publicidad Habilitada",
+                    subtitle = if (isAdFree) "Toca para reactivar anuncios y probar banners/videos" else "Toca para ver video y obtener +2 horas sin anuncios",
+                    onClick = {
+                        if (isAdFree) {
+                            worldCupViewModel.resetAdFreeTime()
+                            android.widget.Toast.makeText(context, "Publicidad reactivada para pruebas", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            if (activityContext != null) {
+                                AdManager.showRewardedAd(activityContext) {
+                                    worldCupViewModel.addAdFreeTime(2 * 60 * 60 * 1000L)
+                                }
+                            }
+                        }
+                    }
                 )
             }
         }

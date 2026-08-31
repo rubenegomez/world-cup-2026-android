@@ -564,6 +564,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         _adFreeUntil.value = newUntil
     }
 
+    fun resetAdFreeTime() {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putLong("ad_free_until", 0L).apply()
+        _adFreeUntil.value = 0L
+    }
+
     fun getAvailablePointsToClaim(totalUserPoints: Int): Int {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         val isInit = prefs.getBoolean("is_claimed_initialized", false)
