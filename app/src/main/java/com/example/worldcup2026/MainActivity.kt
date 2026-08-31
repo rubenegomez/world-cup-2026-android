@@ -44,7 +44,8 @@ class MainActivity : ComponentActivity() {
         // Inicializamos Remote Config para IDs dinámicos
         RemoteConfigManager.init()
         
-        // Inicializamos Unity Ads y precargamos anuncios
+        // Inicializamos Google Mobile Ads (AdMob) y Unity Ads
+        com.google.android.gms.ads.MobileAds.initialize(this) {}
         com.example.worldcup2026.ui.UnityAdsManager.init(this)
         com.example.worldcup2026.ui.AdManager.loadRewardedAd(this)
         com.example.worldcup2026.ui.AdManager.loadInterstitialAd(this)

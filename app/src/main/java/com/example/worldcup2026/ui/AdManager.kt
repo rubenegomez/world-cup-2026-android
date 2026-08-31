@@ -87,10 +87,9 @@ object AdManager {
                             Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        // Concesión de cortesía si ambos están cargando
-                        onRewardGranted()
-                        Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Cargando video anuncio...", Toast.LENGTH_SHORT).show()
                         loadRewardedAd(context)
+                        onRewardGranted()
                     }
                 }
             )
