@@ -61,7 +61,7 @@ val internacionales = listOf(
 
 val nacionales = listOf(
     TournamentItem(5, "Nivel 1: Liga Profesional", "Nacional", active = true),
-    TournamentItem(6, "Copa Argentina", "Nacional", active = false),
+    TournamentItem(6, "Copa Argentina", "Nacional", active = true),
     TournamentItem(7, "Nivel 2: Primera Nacional", "Nacional", active = false),
     TournamentItem(8, "Nivel 3 Metro: Primera B Metropolitana", "Nacional", active = false),
     TournamentItem(15, "Nivel 3 Interior: Torneo Federal A", "Nacional", active = false),
