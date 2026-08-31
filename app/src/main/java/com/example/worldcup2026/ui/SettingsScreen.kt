@@ -639,33 +639,86 @@ fun TeamsListScreen(
                 }
             }
 
-            val tournamentOrder = listOf(5, 7, 15, 8, 1, 2, 14, 3, 4)
-            val tournamentNamesMap = mapOf(
-                5 to "🏆 LIGA PROFESIONAL",
-                7 to "⚽ PRIMERA NACIONAL",
-                15 to "🏔️ TORNEO FEDERAL A",
-                8 to "🏟️ PRIMERA B METROPOLITANA",
-                1 to "🌍 MUNDIAL 2030",
-                2 to "🌎 ELIMINATORIAS SUDAMERICANAS",
-                14 to "🌎 AMISTOSOS CONMEBOL",
-                3 to "🏆 COPA LIBERTADORES",
-                4 to "🏆 COPA SUDAMERICANA"
+            val LPF_CANONICAL_NAMES = setOf(
+                "boca juniors", "central córdoba", "defensa y justicia", "deportivo riestra",
+                "estudiantes de la plata", "gimnasia y esgrima (mendoza)", "gimnasia (mendoza)", "independiente", "instituto",
+                "lanús", "newell", "platense", "san lorenzo", "talleres (córdoba)", "unión (santa fe)", "union",
+                "vélez", "aldosivi", "argentinos juniors", "atlético tucumán", "banfield", "barracas central",
+                "belgrano", "estudiantes de río cuarto", "estudiantes (río cuarto)", "gimnasia la plata", "huracán", "independiente rivadavia",
+                "racing club", "river plate", "rosario central", "sarmiento (junín)", "tigre"
             )
 
-            val groupedTeams = remember(filteredTeams, favTeamNames) {
-                filteredTeams.groupBy { it.tournament_id ?: 5 }
-                    .mapValues { (_, teamList) ->
-                        teamList.distinctBy { it.name.trim().lowercase() }
+            val PN_CANONICAL_NAMES = setOf(
+                "acassuso", "all boys", "almirante brown", "central norte", "chaco for ever",
+                "ciudad de bolívar", "colón", "defensores de belgrano", "deportivo madryn",
+                "deportivo morón", "estudiantes (buenos aires)", "estudiantes ba", "ferro carril oeste", "ferro", "godoy cruz",
+                "los andes", "mitre", "racing (córdoba)", "san miguel", "san telmo",
+                "agropecuario", "almagro", "atlanta", "atlético de rafaela", "atletico rafaela", "chacarita",
+                "colegiales", "deportivo maipú", "gimnasia y esgrima (jujuy)", "gimnasia (jujuy)", "gimnasia y tiro",
+                "güemes", "midland", "nueva chicago", "patronato", "quilmes",
+                "san martín (san juan)", "san martín (tucumán)", "temperley", "tristán suárez"
+            )
+
+            val FA_CANONICAL_NAMES = setOf(
+                "9 de julio", "alvarado", "argentino monte maíz", "atenas río cuarto", "atlético escobar",
+                "bartolomé mitre", "boca unidos", "chivilcoy", "cipolletti",
+                "costa brava", "círculo deportivo", "vilelas",
+                "villa ramallo", "deportivo rincón", "douglas haig", "el linqueño",
+                "fundación amigos", "germinal", "gimnasia de concepción",
+                "guillermo brown", "huracán las heras",
+                "juventud antoniana", "juventud unida universitario", "kimberley", "olimpo",
+                "santamarina", "san martín de formosa", "san martín de mendoza", "sarmiento (la banda)",
+                "sarmiento (resistencia)", "sol de américa", "sol de mayo", "sportivo belgrano",
+                "sportivo las parejas", "tucumán central", "villa mitre"
+            )
+
+            val groupedTeams: List<Pair<String, List<com.example.worldcup2026.data.model.Team>>> = remember(filteredTeams, favTeamNames, selectedTab) {
+                when (selectedTab) {
+                    // Tab 1: Selecciones Nacionales (Lista única y unificada)
+                    1 -> {
+                        val list = filteredTeams.distinctBy { normalizeTeamName(it.name).lowercase() }
                             .sortedWith(
                                 compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
                                     .thenBy { it.name }
                             )
+                        if (list.isNotEmpty()) listOf("🌍 SELECCIONES NACIONALES" to list) else emptyList()
                     }
-                    .entries
-                    .sortedBy { (tId, _) ->
-                        val idx = tournamentOrder.indexOf(tId)
-                        if (idx != -1) idx else 999
+                    // Tab 2: Equipos Nacionales (Separados estrictamente por categoría)
+                    2 -> {
+                        val distinctNational = filteredTeams.distinctBy { normalizeTeamName(it.name).lowercase() }
+                        val lpf = mutableListOf<com.example.worldcup2026.data.model.Team>()
+                        val pn = mutableListOf<com.example.worldcup2026.data.model.Team>()
+                        val fa = mutableListOf<com.example.worldcup2026.data.model.Team>()
+                        val pb = mutableListOf<com.example.worldcup2026.data.model.Team>()
+
+                        distinctNational.forEach { team ->
+                            val norm = normalizeTeamName(team.name).lowercase()
+                            when {
+                                LPF_CANONICAL_NAMES.any { norm.contains(it) || it.contains(norm) } || team.tournament_id == 5 -> lpf.add(team)
+                                PN_CANONICAL_NAMES.any { norm.contains(it) || it.contains(norm) } || team.tournament_id == 7 -> pn.add(team)
+                                FA_CANONICAL_NAMES.any { norm.contains(it) || it.contains(norm) } || team.tournament_id == 15 -> fa.add(team)
+                                else -> pb.add(team)
+                            }
+                        }
+
+                        val result = mutableListOf<Pair<String, List<com.example.worldcup2026.data.model.Team>>>()
+                        if (lpf.isNotEmpty()) result.add("🏆 LIGA PROFESIONAL" to lpf.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
+                        if (pn.isNotEmpty()) result.add("⚽ PRIMERA NACIONAL" to pn.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
+                        if (fa.isNotEmpty()) result.add("🏔️ TORNEO FEDERAL A" to fa.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
+                        if (pb.isNotEmpty()) result.add("🏟️ PRIMERA B METROPOLITANA" to pb.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
+                        result
                     }
+                    // Tab 3: Equipos Internacionales (Lista única y desduplicada)
+                    3 -> {
+                        val list = filteredTeams.distinctBy { normalizeTeamName(it.name).lowercase() }
+                            .sortedWith(
+                                compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
+                                    .thenBy { it.name }
+                            )
+                        if (list.isNotEmpty()) listOf("🏆 CLUBES INTERNACIONALES (CONMEBOL)" to list) else emptyList()
+                    }
+                    else -> emptyList()
+                }
             }
 
             if (groupedTeams.isEmpty()) {
@@ -674,8 +727,7 @@ fun TeamsListScreen(
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    groupedTeams.forEach { (tId, teamList) ->
-                        val tTitle = tournamentNamesMap[tId] ?: "⚽ TORNEO #$tId"
+                    groupedTeams.forEach { (tTitle, teamList) ->
                         item {
                             Text(
                                 text = "$tTitle (${teamList.size})",
@@ -685,7 +737,7 @@ fun TeamsListScreen(
                                 modifier = Modifier.padding(top = 12.dp, bottom = 4.dp, start = 4.dp)
                             )
                         }
-                        items(teamList, key = { "${tId}_${it.name}" }) { team ->
+                        items(teamList, key = { "${tTitle}_${it.name}" }) { team ->
                             val isFavorite = team.name in favTeamNames
                             
                             Card(
