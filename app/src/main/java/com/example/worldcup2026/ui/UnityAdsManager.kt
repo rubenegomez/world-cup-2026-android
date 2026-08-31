@@ -143,7 +143,7 @@ fun UnityBannerView(modifier: Modifier = Modifier, onBannerFailed: () -> Unit = 
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? Activity
     
-    if (activity != null) {
+    if (activity != null && UnityAds.isInitialized) {
         AndroidView(
             modifier = modifier
                 .fillMaxWidth()
@@ -159,5 +159,9 @@ fun UnityBannerView(modifier: Modifier = Modifier, onBannerFailed: () -> Unit = 
                 bannerView
             }
         )
+    } else {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            onBannerFailed()
+        }
     }
 }
