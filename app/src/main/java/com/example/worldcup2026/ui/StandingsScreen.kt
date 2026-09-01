@@ -8,8 +8,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -1279,7 +1283,7 @@ fun TournamentFixtureView(matches: List<Match>) {
         return
     }
 
-    // Agrupamos por Matchday / Fecha
+    // Agrupamos por Matchday / Fecha ordenado
     val matchdaysGrouped = remember(matches) {
         val hasMatchdays = matches.any { (it.matchday ?: 0) > 0 }
         if (hasMatchdays) {
@@ -1292,15 +1296,49 @@ fun TournamentFixtureView(matches: List<Match>) {
     val matchdaysList = remember(matchdaysGrouped) { matchdaysGrouped.keys.toList() }
     
     // Auto-detectar la fecha actual o próxima más relevante
-    var selectedMatchday by remember(matchdaysList) {
-        val upcoming = matches.firstOrNull { it.status == "Scheduled" || it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA") }?.matchday
-        mutableStateOf(upcoming ?: matchdaysList.lastOrNull() ?: 1)
+    val defaultMatchday = remember(matches, matchdaysList) {
+        val todayStr = java.time.LocalDate.now().toString()
+        // 1. Partido en vivo
+        val liveMatch = matches.firstOrNull { 
+            it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") 
+        }
+        if (liveMatch?.matchday != null && liveMatch.matchday in matchdaysList) {
+            return@remember liveMatch.matchday
+        }
+        // 2. Primer partido hoy o a futuro
+        val nextUpcoming = matches.filter {
+            it.status.equals("Scheduled", ignoreCase = true) || (it.date != null && it.date >= todayStr)
+        }.minByOrNull { it.date ?: "9999" }
+        if (nextUpcoming?.matchday != null && nextUpcoming.matchday in matchdaysList) {
+            return@remember nextUpcoming.matchday
+        }
+        // 3. Última fecha jugada o primera
+        matchdaysList.lastOrNull() ?: 1
+    }
+
+    var selectedMatchday by remember(matches, defaultMatchday) {
+        mutableStateOf(defaultMatchday)
+    }
+
+    val listState = rememberLazyListState()
+
+    // Auto-scroll del selector horizontal al chip de la fecha actual
+    LaunchedEffect(selectedMatchday, matchdaysList) {
+        val index = matchdaysList.indexOf(selectedMatchday)
+        if (index >= 0) {
+            try {
+                listState.animateScrollToItem((index - 1).coerceAtLeast(0))
+            } catch (e: Exception) {
+                // Ignore scroll exceptions
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Selector horizontal de Fechas / Jornadas
         if (matchdaysList.size > 1) {
             LazyRow(
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -1333,15 +1371,92 @@ fun TournamentFixtureView(matches: List<Match>) {
             }
         }
 
+        // Barra de navegación de Fecha y estado
+        val currentIndex = matchdaysList.indexOf(selectedMatchday)
         val matchesForSelectedMatchday = remember(matches, selectedMatchday, matchdaysGrouped) {
-            matchdaysGrouped[selectedMatchday] ?: matches
+            (matchdaysGrouped[selectedMatchday] ?: matches).sortedBy { it.date ?: "" }
+        }
+
+        val hasLiveInMatchday = matchesForSelectedMatchday.any { 
+            it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA", "PAUSE") 
+        }
+        val allFinished = matchesForSelectedMatchday.all { 
+            it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
+        }
+
+        Surface(
+            color = Color.White.copy(alpha = 0.04f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        if (currentIndex > 0) {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            selectedMatchday = matchdaysList[currentIndex - 1]
+                        }
+                    },
+                    enabled = currentIndex > 0,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronLeft,
+                        contentDescription = "Fecha anterior",
+                        tint = if (currentIndex > 0) Color.White else Color.White.copy(alpha = 0.2f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Text(
+                    text = when {
+                        hasLiveInMatchday -> "🔴 FECHA $selectedMatchday · EN JUEGO"
+                        allFinished -> "🏁 FECHA $selectedMatchday · FINALIZADA"
+                        selectedMatchday == defaultMatchday -> "⭐ FECHA $selectedMatchday · PRÓXIMA"
+                        else -> "FECHA $selectedMatchday"
+                    },
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 12.sp,
+                    color = when {
+                        hasLiveInMatchday -> Color(0xFFE53935)
+                        selectedMatchday == defaultMatchday -> Color(0xFFFFD700)
+                        else -> Color.White
+                    }
+                )
+
+                IconButton(
+                    onClick = {
+                        if (currentIndex < matchdaysList.size - 1) {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            selectedMatchday = matchdaysList[currentIndex + 1]
+                        }
+                    },
+                    enabled = currentIndex < matchdaysList.size - 1,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Fecha siguiente",
+                        tint = if (currentIndex < matchdaysList.size - 1) Color.White else Color.White.copy(alpha = 0.2f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 12.dp),
-            contentPadding = PaddingValues(top = 6.dp, bottom = 80.dp),
+            contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(matchesForSelectedMatchday) { match ->
