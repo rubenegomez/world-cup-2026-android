@@ -231,17 +231,17 @@ fun StandingsScreen(matches: List<Match>, initialTournamentId: Int? = null) {
     }
 
     val tabs = when (tournamentFormat) {
-        TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "MEJORES TERCEROS", "GOLEADORES")
-        TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES")
-        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES")
-        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES")
-        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES")
-        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES")
-        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "GOLEADORES")
-        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES")
-        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "GOLEADORES")
+        TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "FIXTURE", "MEJORES TERCEROS", "GOLEADORES")
+        TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "FIXTURE", "GOLEADORES")
+        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "FIXTURE", "GOLEADORES")
+        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "FIXTURE", "GOLEADORES")
+        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "FIXTURE", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES")
+        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "FIXTURE", "TABLA GENERAL", "GOLEADORES")
+        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "FIXTURE", "GOLEADORES")
+        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "FIXTURE", "REDUCIDO", "GOLEADORES")
+        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "FIXTURE", "GOLEADORES")
         TournamentFormat.COPA_DIRECTA,
-        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "GOLEADORES")
+        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "FIXTURE", "GOLEADORES")
     }
 
     var selectedTab by remember { mutableStateOf(0) }
@@ -445,10 +445,22 @@ val LIGA_ZONA_B_TEAMS = listOf(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        val filteredMatches = remember(matches, tournamentFormat, tournamentId) {
+            if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
+                matches.filter { match ->
+                    (match.tournament_id == null || match.tournament_id == 5) &&
+                    isClausuraMatch(match.date)
+                }
+            } else {
+                matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
+            }
+        }
 
         Box(modifier = Modifier.weight(1f)) {
             when (currentTabTitle) {
+                "FIXTURE" -> {
+                    TournamentFixtureView(filteredMatches)
+                }
                 "GRUPOS", "ZONAS", "ZONA A", "ZONA B", "TABLA GENERAL", "TABLA ÚNICA" -> {
                     val filterGroup = when (currentTabTitle) {
                         "ZONA A" -> "Zona A"
@@ -459,17 +471,6 @@ val LIGA_ZONA_B_TEAMS = listOf(
                         teamsByGroup.filterKeys { it.equals(filterGroup, ignoreCase = true) }
                     } else {
                         teamsByGroup
-                    }
-
-                    val filteredMatches = remember(matches, tournamentFormat, tournamentId) {
-                        if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
-                            matches.filter { match ->
-                                (match.tournament_id == null || match.tournament_id == 5) &&
-                                isClausuraMatch(match.date)
-                            }
-                        } else {
-                            matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
-                        }
                     }
 
                     LazyColumn(
@@ -1263,4 +1264,230 @@ private fun isClausuraMatch(dateStr: String?): Boolean {
                      dateStr.startsWith("2026-01") || dateStr.startsWith("2026-02") || dateStr.startsWith("2026-03") ||
                      dateStr.startsWith("2026-04") || dateStr.startsWith("2026-05") || dateStr.startsWith("2026-06")
     return !isApertura
+}
+
+@Composable
+fun TournamentFixtureView(matches: List<Match>) {
+    if (matches.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "No hay partidos registrados para este torneo",
+                color = Color.White.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        return
+    }
+
+    // Agrupamos por Matchday / Fecha
+    val matchdaysGrouped = remember(matches) {
+        val hasMatchdays = matches.any { (it.matchday ?: 0) > 0 }
+        if (hasMatchdays) {
+            matches.groupBy { it.matchday ?: 1 }.toSortedMap()
+        } else {
+            matches.groupBy { 1 }.toSortedMap()
+        }
+    }
+
+    val matchdaysList = remember(matchdaysGrouped) { matchdaysGrouped.keys.toList() }
+    
+    // Auto-detectar la fecha actual o próxima más relevante
+    var selectedMatchday by remember(matchdaysList) {
+        val upcoming = matches.firstOrNull { it.status == "Scheduled" || it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA") }?.matchday
+        mutableStateOf(upcoming ?: matchdaysList.lastOrNull() ?: 1)
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Selector horizontal de Fechas / Jornadas
+        if (matchdaysList.size > 1) {
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(matchdaysList) { md ->
+                    val isSelected = md == selectedMatchday
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            selectedMatchday = md
+                        },
+                        label = {
+                            Text(
+                                text = "Fecha $md",
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal,
+                                color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFFFC107),
+                            containerColor = Color.White.copy(alpha = 0.08f)
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(28.dp)
+                    )
+                }
+            }
+        }
+
+        val matchesForSelectedMatchday = remember(matches, selectedMatchday, matchdaysGrouped) {
+            matchdaysGrouped[selectedMatchday] ?: matches
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            contentPadding = PaddingValues(top = 6.dp, bottom = 80.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(matchesForSelectedMatchday) { match ->
+                FixtureMatchCard(match)
+            }
+        }
+    }
+}
+
+@Composable
+fun FixtureMatchCard(match: Match) {
+    val isLive = match.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+    val isFinished = match.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO")
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A28)),
+        border = if (isLive) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE53935)) else null
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            // Cabecera: Fecha / Estado
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = match.date ?: "",
+                    fontSize = 10.sp,
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Medium
+                )
+                
+                Surface(
+                    color = when {
+                        isLive -> Color(0xFFE53935).copy(alpha = 0.2f)
+                        isFinished -> Color.White.copy(alpha = 0.08f)
+                        else -> Color(0xFFFFC107).copy(alpha = 0.15f)
+                    },
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = when {
+                            isLive -> "🔴 EN VIVO"
+                            isFinished -> "FINALIZADO"
+                            else -> "PROGRAMADO"
+                        },
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                            isLive -> Color(0xFFE53935)
+                            isFinished -> Color.White.copy(alpha = 0.7f)
+                            else -> Color(0xFFFFC107)
+                        },
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Fila de Partido (Local vs Visitante)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Local
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = match.homeTeam.name,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.End,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    if (!match.homeTeam.flagUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = match.homeTeam.flagUrl,
+                            contentDescription = match.homeTeam.name,
+                            modifier = Modifier.size(24.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                }
+
+                // Resultado / Marcador
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isFinished || isLive) {
+                        Text(
+                            text = "${match.homeScore ?: 0} - ${match.awayScore ?: 0}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (isLive) Color(0xFFE53935) else Color(0xFFFFC107)
+                        )
+                    } else {
+                        Text(
+                            text = "vs",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+
+                // Visitante
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    if (!match.awayTeam.flagUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = match.awayTeam.flagUrl,
+                            contentDescription = match.awayTeam.name,
+                            modifier = Modifier.size(24.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = match.awayTeam.name,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
 }
