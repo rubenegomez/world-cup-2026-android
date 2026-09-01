@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ElectricBolt
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -149,6 +151,7 @@ fun FeaturedMatchSpotlight(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .wrapContentHeight()
             .padding(horizontal = 16.dp, vertical = 6.dp)
             .shadow(14.dp, RoundedCornerShape(20.dp))
             .border(
@@ -166,11 +169,15 @@ fun FeaturedMatchSpotlight(
             containerColor = Color(0xFF131722)
         )
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            // Fondo con brillo degradado de gala
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+        ) {
+            // Fondo con brillo degradado de gala ajustado al tamaño exacto del contenido
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .matchParentSize()
                     .background(
                         Brush.verticalGradient(
                             listOf(
@@ -184,6 +191,7 @@ fun FeaturedMatchSpotlight(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .wrapContentHeight()
                     .padding(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -346,7 +354,7 @@ fun FeaturedMatchSpotlight(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Cuenta Regresiva Grande e Imponente
                 Surface(
@@ -408,6 +416,58 @@ fun FeaturedMatchSpotlight(
                         fontSize = 12.sp,
                         letterSpacing = 0.6.sp
                     )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Fila de información extra (Estadio / Sede e Incentivo de Puntos)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.05f))
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (!match.stadium.isNullOrBlank()) match.stadium else "Estadio Principal",
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Stars,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Hasta +5 Pts Prode",
+                            color = Color(0xFFFFD700),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
