@@ -630,117 +630,50 @@ fun TeamsListScreen(
                 }
             }
         } else {
-            // TAB EQUIPOS / SELECCIONES
+            // TAB EQUIPOS / SELECCIONES (CATÁLOGO MAESTRO ESTÁTICO)
             val favTeamNames = viewModel.favoriteTeamNames.value
-            val domesticLeagueIds = setOf(5, 7, 15, 8)
-            val internationalClubTournamentIds = setOf(3, 4)
 
-            val argTeamNames = remember(allTeams) {
-                allTeams.filter { it.tournament_id in setOf(5, 6, 7, 8, 9, 10, 13, 15, 16, 20) }
-                    .map { it.name.trim().lowercase() }
-                    .toSet()
-            }
-
-            val filteredTeams = remember(allTeams, selectedTab, argTeamNames) {
+            val groupedTeams: List<Pair<String, List<com.example.worldcup2026.data.model.MasterTeam>>> = remember(favTeamNames, selectedTab) {
                 when (selectedTab) {
-                    // Tab 1: Selecciones Nacionales (Mundial + Eliminatorias/Amistosos CONMEBOL)
-                    1 -> allTeams.filter { t -> t.tournament_id in listOf(1, 2, 14) || isNationalSelection(t.name) }
-                        .distinctBy { it.name.trim().lowercase() }
-                    
-                    // Tab 2: Equipos Nacionales (Liga Profesional, Primera Nacional, Torneo Federal A, Primera B Metro)
-                    2 -> allTeams.filter { t -> 
-                        t.tournament_id in domesticLeagueIds && !isNationalSelection(t.name)
-                    }.distinctBy { normalizeTeamName(it.name) }
-                    
-                    // Tab 3: Equipos Internacionales (Clubes Libertadores y Sudamericana SIN equipos argentinos)
-                    3 -> allTeams.filter { t -> 
-                        t.tournament_id in internationalClubTournamentIds &&
-                        !isNationalSelection(t.name) && 
-                        !argTeamNames.contains(t.name.trim().lowercase()) &&
-                        !isArgentineTeamName(t.name)
-                    }.distinctBy { normalizeTeamName(it.name) }
-                    
-                    else -> allTeams
-                }
-            }
-
-            val LPF_CANONICAL_NAMES = setOf(
-                "boca juniors", "central córdoba", "defensa y justicia", "deportivo riestra",
-                "estudiantes de la plata", "gimnasia y esgrima (mendoza)", "gimnasia (mendoza)", "independiente", "instituto",
-                "lanús", "newell", "platense", "san lorenzo", "talleres (córdoba)", "unión (santa fe)", "union",
-                "vélez", "aldosivi", "argentinos juniors", "atlético tucumán", "banfield", "barracas central",
-                "belgrano", "estudiantes de río cuarto", "estudiantes (río cuarto)", "gimnasia la plata", "huracán", "independiente rivadavia",
-                "racing club", "river plate", "rosario central", "sarmiento (junín)", "tigre"
-            )
-
-            val PN_CANONICAL_NAMES = setOf(
-                "acassuso", "all boys", "almirante brown", "central norte", "chaco for ever",
-                "ciudad de bolívar", "colón", "defensores de belgrano", "deportivo madryn",
-                "deportivo morón", "estudiantes (buenos aires)", "estudiantes ba", "ferro carril oeste", "ferro", "godoy cruz",
-                "los andes", "mitre", "racing (córdoba)", "san miguel", "san telmo",
-                "agropecuario", "almagro", "atlanta", "atlético de rafaela", "atletico rafaela", "chacarita",
-                "colegiales", "deportivo maipú", "gimnasia y esgrima (jujuy)", "gimnasia (jujuy)", "gimnasia y tiro",
-                "güemes", "midland", "nueva chicago", "patronato", "quilmes",
-                "san martín (san juan)", "san martín (tucumán)", "temperley", "tristán suárez"
-            )
-
-            val FA_CANONICAL_NAMES = setOf(
-                "9 de julio", "alvarado", "argentino monte maíz", "atenas río cuarto", "atlético escobar",
-                "bartolomé mitre", "boca unidos", "chivilcoy", "cipolletti",
-                "costa brava", "círculo deportivo", "vilelas",
-                "villa ramallo", "deportivo rincón", "douglas haig", "el linqueño",
-                "fundación amigos", "germinal", "gimnasia de concepción",
-                "guillermo brown", "huracán las heras",
-                "juventud antoniana", "juventud unida universitario", "kimberley", "olimpo",
-                "santamarina", "san martín de formosa", "san martín de mendoza", "sarmiento (la banda)",
-                "sarmiento (resistencia)", "sol de américa", "sol de mayo", "sportivo belgrano",
-                "sportivo las parejas", "tucumán central", "villa mitre"
-            )
-
-            val groupedTeams: List<Pair<String, List<com.example.worldcup2026.data.model.Team>>> = remember(filteredTeams, favTeamNames, selectedTab) {
-                when (selectedTab) {
-                    // Tab 1: Selecciones Nacionales (Lista única y unificada)
+                    // Tab 1: Selecciones Nacionales (CONMEBOL Oficial)
                     1 -> {
-                        val list = filteredTeams.distinctBy { normalizeTeamName(it.name).lowercase() }
+                        val list = com.example.worldcup2026.data.model.MasterTeamCatalog.CONMEBOL_SELECTIONS
                             .sortedWith(
-                                compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
+                                compareByDescending<com.example.worldcup2026.data.model.MasterTeam> { it.name in favTeamNames }
                                     .thenBy { it.name }
                             )
-                        if (list.isNotEmpty()) listOf("🌍 SELECCIONES NACIONALES" to list) else emptyList()
+                        listOf("🌍 SELECCIONES CONMEBOL" to list)
                     }
-                    // Tab 2: Equipos Nacionales (Separados estrictamente por categoría)
+                    // Tab 2: Equipos Nacionales (4 Divisiones Oficiales Estrictas)
                     2 -> {
-                        val distinctNational = filteredTeams.distinctBy { normalizeTeamName(it.name).lowercase() }
-                        val lpf = mutableListOf<com.example.worldcup2026.data.model.Team>()
-                        val pn = mutableListOf<com.example.worldcup2026.data.model.Team>()
-                        val fa = mutableListOf<com.example.worldcup2026.data.model.Team>()
-                        val pb = mutableListOf<com.example.worldcup2026.data.model.Team>()
+                        val result = mutableListOf<Pair<String, List<com.example.worldcup2026.data.model.MasterTeam>>>()
+                        
+                        val lpf = com.example.worldcup2026.data.model.MasterTeamCatalog.LIGA_PROFESIONAL
+                            .sortedWith(compareByDescending<com.example.worldcup2026.data.model.MasterTeam> { it.name in favTeamNames }.thenBy { it.name })
+                        result.add("🏆 LIGA PROFESIONAL" to lpf)
 
-                        distinctNational.forEach { team ->
-                            val norm = normalizeTeamName(team.name).lowercase()
-                            when {
-                                LPF_CANONICAL_NAMES.any { norm.contains(it) || it.contains(norm) } || team.tournament_id == 5 -> lpf.add(team)
-                                PN_CANONICAL_NAMES.any { norm.contains(it) || it.contains(norm) } || team.tournament_id == 7 -> pn.add(team)
-                                FA_CANONICAL_NAMES.any { norm.contains(it) || it.contains(norm) } || team.tournament_id == 15 -> fa.add(team)
-                                else -> pb.add(team)
-                            }
-                        }
+                        val pn = com.example.worldcup2026.data.model.MasterTeamCatalog.PRIMERA_NACIONAL
+                            .sortedWith(compareByDescending<com.example.worldcup2026.data.model.MasterTeam> { it.name in favTeamNames }.thenBy { it.name })
+                        result.add("⚽ PRIMERA NACIONAL" to pn)
 
-                        val result = mutableListOf<Pair<String, List<com.example.worldcup2026.data.model.Team>>>()
-                        if (lpf.isNotEmpty()) result.add("🏆 LIGA PROFESIONAL" to lpf.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
-                        if (pn.isNotEmpty()) result.add("⚽ PRIMERA NACIONAL" to pn.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
-                        if (fa.isNotEmpty()) result.add("🏔️ TORNEO FEDERAL A" to fa.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
-                        if (pb.isNotEmpty()) result.add("🏟️ PRIMERA B METROPOLITANA" to pb.sortedWith(compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }.thenBy { it.name }))
+                        val fa = com.example.worldcup2026.data.model.MasterTeamCatalog.TORNEO_FEDERAL_A
+                            .sortedWith(compareByDescending<com.example.worldcup2026.data.model.MasterTeam> { it.name in favTeamNames }.thenBy { it.name })
+                        result.add("🏔️ TORNEO FEDERAL A" to fa)
+
+                        val pb = com.example.worldcup2026.data.model.MasterTeamCatalog.PRIMERA_B_METRO
+                            .sortedWith(compareByDescending<com.example.worldcup2026.data.model.MasterTeam> { it.name in favTeamNames }.thenBy { it.name })
+                        result.add("🏟️ PRIMERA B METROPOLITANA" to pb)
+
                         result
                     }
-                    // Tab 3: Equipos Internacionales (Lista única y desduplicada)
+                    // Tab 3: Equipos Internacionales (CONMEBOL Sin Argentinos)
                     3 -> {
-                        val list = filteredTeams.distinctBy { normalizeTeamName(it.name).lowercase() }
+                        val list = com.example.worldcup2026.data.model.MasterTeamCatalog.INTERNATIONAL_CLUBS
                             .sortedWith(
-                                compareByDescending<com.example.worldcup2026.data.model.Team> { it.name in favTeamNames }
+                                compareByDescending<com.example.worldcup2026.data.model.MasterTeam> { it.name in favTeamNames }
                                     .thenBy { it.name }
                             )
-                        if (list.isNotEmpty()) listOf("🏆 CLUBES INTERNACIONALES (CONMEBOL)" to list) else emptyList()
+                        listOf("🏆 CLUBES INTERNACIONALES (CONMEBOL)" to list)
                     }
                     else -> emptyList()
                 }
