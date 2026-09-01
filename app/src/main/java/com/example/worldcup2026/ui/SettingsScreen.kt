@@ -36,9 +36,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
+import android.content.Intent
 import kotlinx.coroutines.launch
 import com.example.worldcup2026.data.api.AuthManager
 
@@ -328,6 +329,30 @@ fun SettingsMenuScreen(
                             }
                         }
                         context.startActivity(intent)
+                    }
+                )
+            }
+        }
+        item {
+            SettingSection(title = "Pruebas y Simulación") {
+                SettingItem(
+                    icon = Icons.Default.PlayArrow,
+                    title = "⚽ Simular Gol en Vivo",
+                    subtitle = "Probar el nuevo festejo animado transparente y sonido",
+                    onClick = {
+                        val testIntent = Intent("com.example.worldcup2026.MATCH_EVENT").apply {
+                            setPackage(context.packageName)
+                            putExtra("match_id", 9999)
+                            putExtra("eventType", "goal")
+                            putExtra("homeTeam", "Boca Juniors")
+                            putExtra("awayTeam", "River Plate")
+                            putExtra("homeScore", "1")
+                            putExtra("awayScore", "0")
+                            putExtra("scorer", "Edinson Cavani")
+                            putExtra("minute", "78")
+                            putExtra("homeFlag", "https://a.espncdn.com/i/teamlogos/soccer/500/5.png")
+                        }
+                        context.sendBroadcast(testIntent)
                     }
                 )
             }
