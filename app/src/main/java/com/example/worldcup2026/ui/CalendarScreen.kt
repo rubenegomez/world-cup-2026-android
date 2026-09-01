@@ -45,7 +45,8 @@ enum class CalendarViewMode {
 fun CalendarScreen(
     viewModel: WorldCupViewModel,
     matches: List<Match>,
-    onNavigateToMatches: (LocalDate) -> Unit
+    onNavigateToMatches: (LocalDate) -> Unit,
+    onNavigateToProde: () -> Unit = {}
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     
@@ -79,13 +80,29 @@ fun CalendarScreen(
                 SoundManager.playTic()
                 selectedDate = it 
             },
-            onNavigateToMatches = {
+            onNavigateToMatches = { 
                 SoundManager.playTic()
                 onNavigateToMatches(it)
             }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Banner / Tarjeta de Partido Destacado (Amistosos de receso, Superclásico, Finales)
+        FeaturedMatchSpotlight(
+            matches = matches,
+            onNavigateToProde = onNavigateToProde,
+            onNavigateToMatch = { m ->
+                try {
+                    val datePart = m.date?.substringBefore(" ")
+                    if (!datePart.isNullOrBlank()) {
+                        onNavigateToMatches(LocalDate.parse(datePart))
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Vistas de Selector
         AnimatedContent(targetState = viewMode, label = "CalendarView", modifier = Modifier.weight(1f)) { mode ->

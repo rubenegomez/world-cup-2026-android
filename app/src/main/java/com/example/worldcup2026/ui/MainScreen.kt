@@ -369,6 +369,9 @@ fun MainScreen(
                                         onNavigateToMatches = { date ->
                                             selectedDate = date
                                             selectedScreen = 4
+                                        },
+                                        onNavigateToProde = {
+                                            selectedScreen = 1
                                         }
                                     )
                                     1 -> ProdeScreen(worldCupViewModel = viewModel, initialJoinCode = initialJoinCode, onNavigateToSettings = { selectedScreen = 3 })
