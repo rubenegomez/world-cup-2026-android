@@ -11,30 +11,34 @@ data class MasterTournament(
     val id: Int,
     val name: String,
     val displayName: String,
-    val category: String
+    val category: String,
+    val isActive: Boolean = false
 )
 
 object MasterTeamCatalog {
 
     // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (16)
     val MASTER_TOURNAMENTS = listOf(
-        MasterTournament(5, "Torneo Apertura Liga Profesional", "🏆 Torneo Apertura Liga Profesional", "Nacional"),
-        MasterTournament(17, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional"),
-        MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional"),
-        MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional"),
-        MasterTournament(8, "Torneo Apertura B Metropolitana", "🏟️ Torneo Apertura B Metropolitana", "Nacional"),
-        MasterTournament(18, "Torneo Clausura B Metropolitana", "🏟️ Torneo Clausura B Metropolitana", "Nacional"),
-        MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional"),
-        MasterTournament(3, "Copa Conmebol Libertadores", "🏆 Copa Conmebol Libertadores", "Internacional"),
-        MasterTournament(4, "Copa Conmebol Sudamericana", "🏆 Copa Conmebol Sudamericana", "Internacional"),
-        MasterTournament(2, "Eliminatorias Conmebol", "🌎 Eliminatorias Conmebol", "Selecciones"),
-        MasterTournament(21, "Amistosos Clubes Conmebol", "🤝 Amistosos Clubes Conmebol", "Internacional"),
-        MasterTournament(1, "Campeonato Mundial De Fútbol", "🌍 Campeonato Mundial De Fútbol", "Selecciones"),
-        MasterTournament(12, "Finalísima", "👑 Finalísima", "Selecciones"),
-        MasterTournament(22, "Campeonato Mundial de Clubes", "🌐 Campeonato Mundial de Clubes", "Internacional"),
-        MasterTournament(23, "Copa Intercontinental", "🌐 Copa Intercontinental", "Internacional"),
-        MasterTournament(14, "Amistosos FIFA", "⚽ Amistosos FIFA", "Selecciones")
+        MasterTournament(5, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional", isActive = true),
+        MasterTournament(17, "Torneo Apertura Liga Profesional", "🏆 Torneo Apertura Liga Profesional (Concluido)", "Nacional", isActive = false),
+        MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true),
+        MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true),
+        MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ Torneo Clausura B Metropolitana", "Nacional", isActive = true),
+        MasterTournament(18, "Torneo Apertura B Metropolitana", "🏟️ Torneo Apertura B Metropolitana (Concluido)", "Nacional", isActive = false),
+        MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional", isActive = false),
+        MasterTournament(3, "Copa Conmebol Libertadores", "🏆 Copa Conmebol Libertadores", "Internacional", isActive = true),
+        MasterTournament(4, "Copa Conmebol Sudamericana", "🏆 Copa Conmebol Sudamericana", "Internacional", isActive = true),
+        MasterTournament(2, "Eliminatorias Conmebol", "🌎 Eliminatorias Conmebol", "Selecciones", isActive = false),
+        MasterTournament(21, "Amistosos Clubes Conmebol", "🤝 Amistosos Clubes Conmebol", "Internacional", isActive = false),
+        MasterTournament(1, "Campeonato Mundial De Fútbol", "🌍 Campeonato Mundial De Fútbol", "Selecciones", isActive = false),
+        MasterTournament(12, "Finalísima", "👑 Finalísima", "Selecciones", isActive = false),
+        MasterTournament(22, "Campeonato Mundial de Clubes", "🌐 Campeonato Mundial de Clubes", "Internacional", isActive = false),
+        MasterTournament(23, "Copa Intercontinental", "🌐 Copa Intercontinental", "Internacional", isActive = false),
+        MasterTournament(14, "Amistosos FIFA", "⚽ Amistosos FIFA", "Selecciones", isActive = false)
     )
+
+    val ACTIVE_TOURNAMENTS = MASTER_TOURNAMENTS.filter { it.isActive }
+    val ACTIVE_TOURNAMENT_IDS = ACTIVE_TOURNAMENTS.map { it.id }.toSet()
 
     // 1. SELECCIONES OFICIALES CONMEBOL (10)
     val CONMEBOL_SELECTIONS = listOf(

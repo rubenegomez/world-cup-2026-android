@@ -127,18 +127,22 @@ fun DailyMatchesScreen(
             )
         }
 
-        // Filtro Por Torneo en 2 Renglones Compactos (Internacionales y Regionales)
-        val intlList = remember { listOf(0 to "🏆 Todos") + internacionales.map { it.id to it.name } }
-        val nacList = remember { nacionales.map { it.id to it.name } }
+        // Filtro Por Torneo: Renglón 1 (Torneos Activos en Juego) y Renglón 2 (Próximos y Otros)
+        val activeTournamentsList = remember {
+            listOf(0 to "🔥 Todos los Activos") + com.example.worldcup2026.data.model.MasterTeamCatalog.ACTIVE_TOURNAMENTS.map { it.id to it.displayName }
+        }
+        val otherTournamentsList = remember {
+            com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS.filter { !it.isActive }.map { it.id to it.displayName }
+        }
 
         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-            // Renglón 1: Internacionales
+            // Renglón 1: Torneos en Juego (Activos)
             LazyRow(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                items(intlList) { (tId, tName) ->
+                items(activeTournamentsList) { (tId, tName) ->
                     val isSelected = (tId == 0 && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())) || 
                                      (tId != 0 && selectedTournamentIds.contains(tId))
                     val isFav = tId in favTournaments
@@ -180,13 +184,13 @@ fun DailyMatchesScreen(
                 }
             }
 
-            // Renglón 2: Regionales / Locales
+            // Renglón 2: Próximos y Otros Torneos
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                items(nacList) { (tId, tName) ->
+                items(otherTournamentsList) { (tId, tName) ->
                     val isSelected = selectedTournamentIds.contains(tId)
                     val isFav = tId in favTournaments
                     val labelText = if (isFav) "$tName ⭐" else tName
@@ -209,12 +213,12 @@ fun DailyMatchesScreen(
                                 text = labelText, 
                                 fontSize = 10.sp, 
                                 fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
-                                color = if (isSelected) Color.Black else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
+                                color = if (isSelected) Color.Black else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.7f)
                             ) 
                         },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFFFFC107),
-                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
+                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f)
                         ),
                         border = if (isFav && !isSelected) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
                         shape = RoundedCornerShape(10.dp),

@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -207,8 +208,8 @@ fun getLigaZona(name: String): String? = getCanonicalLigaTeam(name)?.second ?: L
 
 @Composable
 fun StandingsScreen(matches: List<Match>, initialTournamentId: Int? = null) {
-    val tournamentId = remember(matches, initialTournamentId) {
-        initialTournamentId ?: matches.firstOrNull { it.tournament_id != null }?.tournament_id ?: 5
+    var tournamentId by remember(initialTournamentId) {
+        mutableStateOf(initialTournamentId ?: 5)
     }
 
     val tournamentFormat = remember(tournamentId) {
@@ -383,7 +384,44 @@ val LIGA_ZONA_B_TEAMS = listOf(
         }
     }
 
+    val activeTournaments = remember {
+        com.example.worldcup2026.data.model.MasterTeamCatalog.ACTIVE_TOURNAMENTS
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
+        // Selector Rápido de Torneos en Juego
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(activeTournaments) { t ->
+                val isSelected = t.id == tournamentId
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                        tournamentId = t.id
+                        selectedTab = 0
+                    },
+                    label = {
+                        Text(
+                            text = t.displayName,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.85f)
+                        )
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFFFC107),
+                        containerColor = Color.White.copy(alpha = 0.08f)
+                    ),
+                    border = if (isSelected) null else androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.height(30.dp)
+                )
+            }
+        }
+
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
