@@ -401,17 +401,24 @@ fun MainScreen(
                                                  initialTournamentId = selectedTournamentForStandings
                                              )
                                          } else {
-                                             selectedScreen = 0
                                          }
                                      }
                                  }
 
-                                 if (celebrationMatch != null) {
-                                     com.example.worldcup2026.ui.GoalCelebrationDialog(
-                                         match = celebrationMatch!!,
-                                         onDismiss = { viewModel.dismissCelebration() }
-                                     )
-                                 }
+                                  if (celebrationMatch != null) {
+                                      val match = celebrationMatch!!
+                                      if (match.status.equals("Finished", ignoreCase = true)) {
+                                          com.example.worldcup2026.ui.GoalCelebrationDialog(
+                                              match = match,
+                                              onDismiss = { viewModel.dismissCelebration() }
+                                          )
+                                      } else {
+                                          com.example.worldcup2026.ui.GoalCelebrationOverlay(
+                                              match = match,
+                                              onDismiss = { viewModel.dismissCelebration() }
+                                          )
+                                      }
+                                  }
 
                                  if (showVipDialog && selectedMatchForVip != null) {
                                      VipStatsDialog(

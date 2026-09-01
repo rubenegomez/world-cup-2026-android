@@ -170,7 +170,8 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val notifId = ((matchId?.hashCode() ?: 0) * 31) + (eventType?.hashCode() ?: 0)
+        // Unificar ID por partido para que se actualice la notificación del mismo partido en vez de apilarse
+        val notifId = matchId?.toIntOrNull() ?: (matchId?.hashCode() ?: 10001)
         notificationManager.notify(notifId, notificationBuilder.build())
     }
 

@@ -808,6 +808,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
     
+    private var lastCelebratedMatchKey: String? = null
+    private var lastCelebratedTimestamp: Long = 0L
+
     fun triggerCelebration(matchId: Int, fallbackMatch: Match? = null) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success
@@ -821,6 +824,29 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 match = fallbackMatch
             }
             if (match != null) {
+                // Si el fallbackMatch trae marcador más reciente que el local, priorizar el actualizado
+                if (fallbackMatch != null) {
+                    val fbH = fallbackMatch.homeScore ?: 0
+                    val fbA = fallbackMatch.awayScore ?: 0
+                    val mH = match.homeScore ?: 0
+                    val mA = match.awayScore ?: 0
+                    if (fbH > mH || fbA > mA) {
+                        match = match.copy(homeScore = fbH, awayScore = fbA)
+                    }
+                }
+
+                val h = match.homeScore ?: 0
+                val a = match.awayScore ?: 0
+                val key = "${match.id}_${h}_${a}"
+                val now = System.currentTimeMillis()
+
+                // Evitar doble festejo para el mismo partido y marcador dentro de 10 segundos
+                if (lastCelebratedMatchKey == key && (now - lastCelebratedTimestamp) < 10000L) {
+                    return@launch
+                }
+
+                lastCelebratedMatchKey = key
+                lastCelebratedTimestamp = now
                 _celebrationMatch.value = match
             }
         }
