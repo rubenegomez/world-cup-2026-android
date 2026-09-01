@@ -543,22 +543,7 @@ fun TeamsListScreen(
         }
     }
 
-    val tournamentsList = listOf(
-        TournamentInfo(5, "Liga Profesional Argentina", "🏆 Liga Profesional"),
-        TournamentInfo(6, "Copa Argentina", "🇦🇷 Copa Argentina"),
-        TournamentInfo(7, "Primera Nacional (B)", "⚽ Primera Nacional"),
-        TournamentInfo(8, "Primera B Metropolitana", "🏟️ Primera B"),
-        TournamentInfo(15, "Torneo Federal A", "🏔️ Torneo Federal A"),
-        TournamentInfo(10, "Primera C Metropolitana", "🥅 Primera C"),
-        TournamentInfo(16, "Torneo Regional Federal Amateur", "🚩 Torneo Regional Amateur"),
-        TournamentInfo(13, "Torneo Promocional Amateur", "🎖️ Promocional Amateur"),
-        TournamentInfo(3, "Copa Libertadores", "🏆 Copa Libertadores"),
-        TournamentInfo(4, "Copa Sudamericana", "🏆 Copa Sudamericana"),
-        TournamentInfo(2, "Eliminatorias Sudamericanas", "🌎 Eliminatorias"),
-        TournamentInfo(12, "Finalíssima", "🏆 Finalíssima"),
-        TournamentInfo(14, "Amistosos Internacionales", "⚽ Amistosos FIFA"),
-        TournamentInfo(1, "Campeonato Mundial", "🌍 Mundial 2026")
-    )
+    val tournamentsList = com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {

@@ -7,7 +7,34 @@ data class MasterTeam(
     val categoryName: String
 )
 
+data class MasterTournament(
+    val id: Int,
+    val name: String,
+    val displayName: String,
+    val category: String
+)
+
 object MasterTeamCatalog {
+
+    // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (16)
+    val MASTER_TOURNAMENTS = listOf(
+        MasterTournament(5, "Torneo Apertura Liga Profesional", "🏆 Torneo Apertura Liga Profesional", "Nacional"),
+        MasterTournament(17, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional"),
+        MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional"),
+        MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional"),
+        MasterTournament(8, "Torneo Apertura B Metropolitana", "🏟️ Torneo Apertura B Metropolitana", "Nacional"),
+        MasterTournament(18, "Torneo Clausura B Metropolitana", "🏟️ Torneo Clausura B Metropolitana", "Nacional"),
+        MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional"),
+        MasterTournament(3, "Copa Conmebol Libertadores", "🏆 Copa Conmebol Libertadores", "Internacional"),
+        MasterTournament(4, "Copa Conmebol Sudamericana", "🏆 Copa Conmebol Sudamericana", "Internacional"),
+        MasterTournament(2, "Eliminatorias Conmebol", "🌎 Eliminatorias Conmebol", "Selecciones"),
+        MasterTournament(21, "Amistosos Clubes Conmebol", "🤝 Amistosos Clubes Conmebol", "Internacional"),
+        MasterTournament(1, "Campeonato Mundial De Fútbol", "🌍 Campeonato Mundial De Fútbol", "Selecciones"),
+        MasterTournament(12, "Finalísima", "👑 Finalísima", "Selecciones"),
+        MasterTournament(22, "Campeonato Mundial de Clubes", "🌐 Campeonato Mundial de Clubes", "Internacional"),
+        MasterTournament(23, "Copa Intercontinental", "🌐 Copa Intercontinental", "Internacional"),
+        MasterTournament(14, "Amistosos FIFA", "⚽ Amistosos FIFA", "Selecciones")
+    )
 
     // 1. SELECCIONES OFICIALES CONMEBOL (10)
     val CONMEBOL_SELECTIONS = listOf(
