@@ -235,17 +235,17 @@ fun StandingsScreen(matches: List<Match>, initialTournamentId: Int? = null) {
     }
 
     val tabs = when (tournamentFormat) {
-        TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "FIXTURE", "MEJORES TERCEROS", "GOLEADORES")
-        TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "FIXTURE", "GOLEADORES")
-        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "FIXTURE", "GOLEADORES")
-        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "FIXTURE", "GOLEADORES")
-        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "FIXTURE", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES")
-        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "FIXTURE", "TABLA GENERAL", "GOLEADORES")
-        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "FIXTURE", "GOLEADORES")
-        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "FIXTURE", "REDUCIDO", "GOLEADORES")
-        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "FIXTURE", "GOLEADORES")
+        TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "MEJORES TERCEROS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES", "FIXTURE")
+        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES", "FIXTURE")
+        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "GOLEADORES", "FIXTURE")
+        TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES", "FIXTURE")
+        TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "GOLEADORES", "FIXTURE")
         TournamentFormat.COPA_DIRECTA,
-        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "FIXTURE", "GOLEADORES")
+        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "GOLEADORES", "FIXTURE")
     }
 
     var selectedTab by remember { mutableStateOf(0) }
@@ -1305,19 +1305,30 @@ fun TournamentFixtureView(matches: List<Match>) {
         if (liveMatch?.matchday != null && liveMatch.matchday in matchdaysList) {
             return@remember liveMatch.matchday
         }
-        // 2. Primer partido hoy o a futuro
+        // 2. Primer partido hoy o a futuro no finalizado
         val nextUpcoming = matches.filter {
-            it.status.equals("Scheduled", ignoreCase = true) || (it.date != null && it.date >= todayStr)
+            !it.date.isNullOrBlank() && it.date >= todayStr && it.status.uppercase() !in listOf("FINISHED", "FT", "FINALIZADO")
         }.minByOrNull { it.date ?: "9999" }
         if (nextUpcoming?.matchday != null && nextUpcoming.matchday in matchdaysList) {
             return@remember nextUpcoming.matchday
         }
-        // 3. Última fecha jugada o primera
+        // 3. Primera fecha que contenga partidos pendientes / programados
+        for (md in matchdaysList) {
+            val mdMatches = matchdaysGrouped[md] ?: emptyList()
+            if (mdMatches.isNotEmpty() && mdMatches.any { it.status.uppercase() !in listOf("FINISHED", "FT", "FINALIZADO") }) {
+                return@remember md
+            }
+        }
+        // 4. Última fecha jugada o primera
         matchdaysList.lastOrNull() ?: 1
     }
 
     var selectedMatchday by remember(matches, defaultMatchday) {
         mutableStateOf(defaultMatchday)
+    }
+
+    LaunchedEffect(defaultMatchday) {
+        selectedMatchday = defaultMatchday
     }
 
     val listState = rememberLazyListState()

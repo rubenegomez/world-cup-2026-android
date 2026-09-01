@@ -196,44 +196,26 @@ fun CalendarHeader(
                 }
             }
             
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                // Botón directo a Tablas y Fixture
-                Button(
-                    onClick = onNavigateToStandings,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFC107),
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("🏆 FIXTURE / TABLAS", fontSize = 10.sp, fontWeight = FontWeight.Black)
-                }
-
-                IconButton(
-                    onClick = { 
-                        SoundManager.playTic()
-                        val now = LocalDate.now()
-                        onDateSelected(now)
-                        onNavigateToMatches(now)
-                    },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Today,
-                        contentDescription = "Ir a hoy",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+            IconButton(
+                onClick = { 
+                    SoundManager.playTic()
+                    val now = LocalDate.now()
+                    onDateSelected(now)
+                    onNavigateToMatches(now)
+                },
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Today,
+                    contentDescription = "Ir a hoy",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Segmented Control (Simple implementation)
         Row(
