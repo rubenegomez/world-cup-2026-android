@@ -299,6 +299,19 @@ fun MainScreen(
                                         )
                                     )
                                     NavigationBarItem(
+                                        selected = selectedScreen == 5,
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 5 
+                                        },
+                                        icon = { Icon(Icons.Default.EmojiEvents, contentDescription = null) },
+                                        label = { Text("Tablas / Fixture", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
+                                    )
+                                    NavigationBarItem(
                                         selected = selectedScreen == 1,
                                         onClick = { 
                                             com.example.worldcup2026.data.util.SoundManager.playTic()
@@ -372,6 +385,9 @@ fun MainScreen(
                                         },
                                         onNavigateToProde = {
                                             selectedScreen = 1
+                                        },
+                                        onNavigateToStandings = {
+                                            selectedScreen = 5
                                         }
                                     )
                                     1 -> ProdeScreen(worldCupViewModel = viewModel, initialJoinCode = initialJoinCode, onNavigateToSettings = { selectedScreen = 3 })

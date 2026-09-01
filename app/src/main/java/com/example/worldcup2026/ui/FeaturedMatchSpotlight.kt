@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ElectricBolt
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -69,27 +68,26 @@ object FeaturedMatchDetector {
 
             // 1. Selección Argentina
             if (h.contains("argentina") || a.contains("argentina")) {
-                val label = if (match.tournament_id == 14) "🇦🇷 AMISTOSO INTERNACIONAL" else "🇦🇷 SELECCIÓN ARGENTINA"
+                val label = if (match.tournament_id == 14) "🇦🇷 AMISTOSO SELECCIÓN ARGENTINA" else "🇦🇷 SELECCIÓN ARGENTINA"
                 return match to label
             }
 
-            // 2. Superclásico o Clásicos de Fútbol
+            // 2. Superclásico o Clásicos
             if (CLASICOS.any { pair -> (pair.any { h.contains(it) } && pair.any { a.contains(it) }) }) {
                 val label = if ((h.contains("boca") && a.contains("river")) || (h.contains("river") && a.contains("boca"))) {
-                    "🔥 EL SUPERCLÁSICO"
+                    "🔥 EL SUPERCLÁSICO ARGENTINO"
                 } else {
-                    "⚔️ CLÁSICO DESTACADO"
+                    "⚔️ CLÁSICO DE LA FECHA"
                 }
                 return match to label
             }
 
-            // 3. Partidos destacados por API o torneos internacionales / finales
+            // 3. Partidos destacados por API o finales
             if (match.is_featured || match.tournament_id in listOf(3, 4, 12, 22, 23)) {
                 return match to "🏆 PARTIDO DESTACADO"
             }
         }
 
-        // Fallback: Si no hay clásico, devolver el próximo partido más cercano si faltan menos de 7 días
         if (upcomingMatches.isNotEmpty()) {
             val (nextMatch, nextDt) = upcomingMatches.first()
             if (Duration.between(now, nextDt).toDays() <= 7) {
@@ -105,7 +103,7 @@ object FeaturedMatchDetector {
 fun FeaturedMatchSpotlight(
     matches: List<Match>,
     onNavigateToProde: () -> Unit,
-    onNavigateToMatch: (Match) -> Unit,
+    onNavigateToMatch: (Match) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val featured = remember(matches) { FeaturedMatchDetector.findFeaturedMatch(matches) } ?: return
@@ -139,10 +137,10 @@ fun FeaturedMatchSpotlight(
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val borderAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 0.9f,
+        initialValue = 0.5f,
+        targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
+            animation = tween(1400, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glow"
@@ -151,33 +149,33 @@ fun FeaturedMatchSpotlight(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
-            .shadow(8.dp, RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .shadow(14.dp, RoundedCornerShape(20.dp))
             .border(
-                1.dp,
+                1.5.dp,
                 Brush.horizontalGradient(
                     listOf(
                         Color(0xFFFFD700).copy(alpha = borderAlpha),
-                        Color(0xFFFF9800).copy(alpha = borderAlpha)
+                        Color(0xFFFF8F00).copy(alpha = borderAlpha)
                     )
                 ),
-                RoundedCornerShape(16.dp)
+                RoundedCornerShape(20.dp)
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF141722)
+            containerColor = Color(0xFF131722)
         )
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Fondo con gradiente sutil
+            // Fondo con brillo degradado de gala
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                Color(0xFFFF9800).copy(alpha = 0.10f),
-                                Color(0xFF0D0F18).copy(alpha = 0.95f)
+                                Color(0xFFFF9800).copy(alpha = 0.16f),
+                                Color(0xFF0C0E17).copy(alpha = 0.96f)
                             )
                         )
                     )
@@ -186,120 +184,100 @@ fun FeaturedMatchSpotlight(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header con Etiqueta y Botón Cerrar
+                // Header: Etiqueta de Gala y Botón Cerrar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Surface(
-                        color = Color(0xFFFFD700).copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(6.dp),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                        color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.6f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ElectricBolt,
                                 contentDescription = null,
                                 tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(11.dp)
+                                modifier = Modifier.size(14.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = badgeLabel,
-                                fontSize = 9.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFFFFD700),
-                                letterSpacing = 0.3.sp
+                                letterSpacing = 0.6.sp
                             )
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Cuenta Regresiva compacta
-                        Surface(
-                            color = Color.Black.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Timer,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFFC107),
-                                    modifier = Modifier.size(11.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (days > 0) "${days}d ${hours}h ${minutes}m" else "${hours}h ${minutes}m ${seconds}s",
-                                    color = Color.White,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(4.dp))
-
-                        IconButton(
-                            onClick = { isDismissed = true },
-                            modifier = Modifier.size(20.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Cerrar",
-                                tint = Color.White.copy(alpha = 0.4f),
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
+                    IconButton(
+                        onClick = { isDismissed = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cerrar",
+                            tint = Color.White.copy(alpha = 0.45f),
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Equipos, Escudos y Botón Prode
+                // Fila de Equipos: Escudos GRANDES y Nombres en segundo renglón
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Local
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.End
+                    // Equipo Local
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            text = match.homeTeam.name,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            textAlign = TextAlign.End,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         if (!match.homeTeam.flagUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = match.homeTeam.flagUrl,
                                 contentDescription = match.homeTeam.name,
-                                modifier = Modifier.size(26.dp),
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .shadow(6.dp, CircleShape),
                                 contentScale = ContentScale.Fit
                             )
                         } else {
-                            Text("⚽", fontSize = 16.sp)
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚽", fontSize = 28.sp)
+                            }
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = match.homeTeam.name,
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
 
-                    // VS / Fecha
+                    // VS Central y Horario
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(horizontal = 8.dp)
@@ -308,53 +286,102 @@ fun FeaturedMatchSpotlight(
                             text = "VS",
                             color = Color(0xFFFFD700),
                             fontWeight = FontWeight.Black,
-                            fontSize = 12.sp
+                            fontSize = 20.sp,
+                            letterSpacing = 1.sp
                         )
-                        Text(
-                            text = try {
-                                matchDateTime.format(DateTimeFormatter.ofPattern("dd/MM HH:mm"))
-                            } catch (e: Exception) {
-                                match.date ?: ""
-                            },
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 8.sp,
-                            fontWeight = FontWeight.Normal
-                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Surface(
+                            color = Color.White.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = try {
+                                    matchDateTime.format(DateTimeFormatter.ofPattern("dd/MM HH:mm")) + " hs"
+                                } catch (e: Exception) {
+                                    match.date ?: ""
+                                },
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
 
-                    // Visitante
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
+                    // Equipo Visitante
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
                     ) {
                         if (!match.awayTeam.flagUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = match.awayTeam.flagUrl,
                                 contentDescription = match.awayTeam.name,
-                                modifier = Modifier.size(26.dp),
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .shadow(6.dp, CircleShape),
                                 contentScale = ContentScale.Fit
                             )
                         } else {
-                            Text("⚽", fontSize = 16.sp)
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚽", fontSize = 28.sp)
+                            }
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = match.awayTeam.name,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            textAlign = TextAlign.Start,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f)
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 12.sp,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Botón Acción: Jugar en el Prode Compacto
+                // Cuenta Regresiva Grande e Imponente
+                Surface(
+                    color = Color.Black.copy(alpha = 0.65f),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 7.dp, horizontal = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Timer,
+                            contentDescription = null,
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (days > 0) "FALTAN ${days}d ${hours}h ${minutes}m ${seconds}s" else "FALTAN ${hours}h ${minutes}m ${seconds}s",
+                            color = Color(0xFFFFD700),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.8.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Botón Acción: Jugar en el Prode
                 Button(
                     onClick = {
                         SoundManager.playTic()
@@ -364,23 +391,22 @@ fun FeaturedMatchSpotlight(
                         containerColor = Color(0xFFFFD700),
                         contentColor = Color.Black
                     ),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(30.dp)
+                        .height(42.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ElectricBolt,
                         contentDescription = null,
-                        modifier = Modifier.size(13.dp)
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "¡CARGAR PRONÓSTICO EN EL PRODE!",
                         fontWeight = FontWeight.Black,
-                        fontSize = 10.sp,
-                        letterSpacing = 0.4.sp
+                        fontSize = 12.sp,
+                        letterSpacing = 0.6.sp
                     )
                 }
             }

@@ -46,7 +46,8 @@ fun CalendarScreen(
     viewModel: WorldCupViewModel,
     matches: List<Match>,
     onNavigateToMatches: (LocalDate) -> Unit,
-    onNavigateToProde: () -> Unit = {}
+    onNavigateToProde: () -> Unit = {},
+    onNavigateToStandings: () -> Unit = {}
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     
@@ -83,6 +84,10 @@ fun CalendarScreen(
             onNavigateToMatches = { 
                 SoundManager.playTic()
                 onNavigateToMatches(it)
+            },
+            onNavigateToStandings = {
+                SoundManager.playTic()
+                onNavigateToStandings()
             }
         )
 
@@ -102,7 +107,7 @@ fun CalendarScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         // Vistas de Selector
         AnimatedContent(targetState = viewMode, label = "CalendarView", modifier = Modifier.weight(1f)) { mode ->
@@ -148,12 +153,13 @@ fun CalendarHeader(
     viewMode: CalendarViewMode,
     onViewModeChanged: (CalendarViewMode) -> Unit,
     onDateSelected: (LocalDate) -> Unit,
-    onNavigateToMatches: (LocalDate) -> Unit
+    onNavigateToMatches: (LocalDate) -> Unit,
+    onNavigateToStandings: () -> Unit = {}
 ) {
     val monthName = selectedDate.month.getDisplayName(TextStyle.FULL, Locale("es", "ES")).replaceFirstChar { it.uppercase() }
     val year = selectedDate.year
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -173,9 +179,9 @@ fun CalendarHeader(
                 }
                 Text(
                     text = "$monthName $year",
-                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 IconButton(onClick = {
                     SoundManager.playTic()
@@ -189,26 +195,45 @@ fun CalendarHeader(
                     Icon(Icons.Default.ChevronRight, contentDescription = "Siguiente", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
-            IconButton(
-                onClick = { 
-                    SoundManager.playTic()
-                    val now = LocalDate.now()
-                    onDateSelected(now)
-                    onNavigateToMatches(now)
-                },
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Today,
-                    contentDescription = "Ir a hoy",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Botón directo a Tablas y Fixture
+                Button(
+                    onClick = onNavigateToStandings,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFC107),
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("🏆 FIXTURE / TABLAS", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                }
+
+                IconButton(
+                    onClick = { 
+                        SoundManager.playTic()
+                        val now = LocalDate.now()
+                        onDateSelected(now)
+                        onNavigateToMatches(now)
+                    },
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Today,
+                        contentDescription = "Ir a hoy",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Segmented Control (Simple implementation)
         Row(
