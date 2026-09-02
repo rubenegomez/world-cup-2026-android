@@ -389,33 +389,73 @@ fun FeaturedMatchSpotlight(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Botón Acción: Jugar en el Prode
-                Button(
-                    onClick = {
-                        SoundManager.playTic()
-                        onNavigateToProde()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFD700),
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(42.dp)
+                // Botones de Acción divididos: 1. Ir al partido / 2. Ir al Prode
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ElectricBolt,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "¡CARGAR PRONÓSTICO EN EL PRODE!",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                        letterSpacing = 0.6.sp
-                    )
+                    // Botón 1: Ir directo al partido para votar / ver estadísticas
+                    Button(
+                        onClick = {
+                            SoundManager.playTic()
+                            onNavigateToMatch(match)
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFD700),
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ElectricBolt,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "VER PARTIDO / VOTAR",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 10.5.sp,
+                            maxLines = 1
+                        )
+                    }
+
+                    // Botón 2: Ir a la sección del Prode
+                    Button(
+                        onClick = {
+                            SoundManager.playTic()
+                            onNavigateToProde()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.12f),
+                            contentColor = Color.White
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Stars,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "IR AL PRODE",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 11.sp,
+                            maxLines = 1
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
