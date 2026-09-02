@@ -1286,37 +1286,47 @@ fun assignInferredMatchdays(matches: List<Match>): List<Match> {
     if (countWithMatchdays >= (matches.size * 0.7)) {
         return matches.map { if ((it.matchday ?: 0) <= 0) it.copy(matchday = 1) else it }
     }
-    
-    // Inferir fechas agrupando cronológicamente por jornadas reales
+
+    val tournamentId = matches.firstOrNull()?.tournament_id ?: 5
     val sorted = matches.sortedWith(compareBy({ it.date ?: "" }, { it.id }))
+
+    // Cantidad exacta de partidos por fecha según estructura de cada torneo:
+    val matchesPerRound = when (tournamentId) {
+        5 -> 15     // Liga Profesional (30 equipos = 15 partidos por fecha)
+        7 -> 19     // Primera Nacional (38 equipos = 19 partidos por fecha)
+        8 -> 11     // Primera B Metropolitana (22 equipos = 11 partidos por fecha)
+        9, 10 -> 12 // Primera C (25 equipos = 12 partidos por fecha)
+        15 -> 18    // Torneo Federal A (~18 partidos por jornada)
+        else -> null
+    }
+
+    if (matchesPerRound != null && matchesPerRound > 0) {
+        return sorted.mapIndexed { index, m ->
+            m.copy(matchday = (index / matchesPerRound) + 1)
+        }
+    }
+    
+    // Algoritmo adaptativo para copas o torneos sin estructura fija
     var currentMatchday = 1
     val teamsInCurrent = mutableSetOf<String>()
-    var lastDate: java.time.LocalDate? = null
-    
+    var matchesInCurrent = 0
     val result = mutableListOf<Match>()
     
     for (m in sorted) {
         val home = m.homeTeam.name.trim()
         val away = m.awayTeam.name.trim()
-        val mDate = try {
-            m.date?.substringBefore(" ")?.let { java.time.LocalDate.parse(it) }
-        } catch (e: Exception) {
-            null
-        }
         
         val teamCollision = (home.isNotBlank() && home in teamsInCurrent) || (away.isNotBlank() && away in teamsInCurrent)
-        val bigDateGap = if (lastDate != null && mDate != null) {
-            java.time.temporal.ChronoUnit.DAYS.between(lastDate, mDate) >= 3
-        } else false
         
-        if (teamCollision || (bigDateGap && teamsInCurrent.size >= 8)) {
+        if (teamCollision && matchesInCurrent >= 4) {
             currentMatchday++
             teamsInCurrent.clear()
+            matchesInCurrent = 0
         }
         
         if (home.isNotBlank()) teamsInCurrent.add(home)
         if (away.isNotBlank()) teamsInCurrent.add(away)
-        if (mDate != null) lastDate = mDate
+        matchesInCurrent++
         
         result.add(m.copy(matchday = currentMatchday))
     }
