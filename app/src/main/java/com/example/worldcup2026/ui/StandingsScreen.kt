@@ -1278,6 +1278,52 @@ private fun isClausuraMatch(dateStr: String?): Boolean {
     return !isApertura
 }
 
+fun assignInferredMatchdays(matches: List<Match>): List<Match> {
+    if (matches.isEmpty()) return matches
+    
+    // Si ya tienen matchdays válidos asignados (> 0) y cubren la gran mayoría, los usamos
+    val countWithMatchdays = matches.count { (it.matchday ?: 0) > 0 }
+    if (countWithMatchdays >= (matches.size * 0.7)) {
+        return matches.map { if ((it.matchday ?: 0) <= 0) it.copy(matchday = 1) else it }
+    }
+    
+    // Inferir fechas agrupando cronológicamente por jornadas reales
+    val sorted = matches.sortedWith(compareBy({ it.date ?: "" }, { it.id }))
+    var currentMatchday = 1
+    val teamsInCurrent = mutableSetOf<String>()
+    var lastDate: java.time.LocalDate? = null
+    
+    val result = mutableListOf<Match>()
+    
+    for (m in sorted) {
+        val home = m.homeTeam.name.trim()
+        val away = m.awayTeam.name.trim()
+        val mDate = try {
+            m.date?.substringBefore(" ")?.let { java.time.LocalDate.parse(it) }
+        } catch (e: Exception) {
+            null
+        }
+        
+        val teamCollision = (home.isNotBlank() && home in teamsInCurrent) || (away.isNotBlank() && away in teamsInCurrent)
+        val bigDateGap = if (lastDate != null && mDate != null) {
+            java.time.temporal.ChronoUnit.DAYS.between(lastDate, mDate) >= 3
+        } else false
+        
+        if (teamCollision || (bigDateGap && teamsInCurrent.size >= 8)) {
+            currentMatchday++
+            teamsInCurrent.clear()
+        }
+        
+        if (home.isNotBlank()) teamsInCurrent.add(home)
+        if (away.isNotBlank()) teamsInCurrent.add(away)
+        if (mDate != null) lastDate = mDate
+        
+        result.add(m.copy(matchday = currentMatchday))
+    }
+    
+    return result
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -1294,30 +1340,30 @@ fun TournamentFixtureView(
         return
     }
 
+    // Procesamos e inferimos las fechas reales de los partidos
+    val processedMatches = remember(matches) {
+        assignInferredMatchdays(matches)
+    }
+
     // Agrupamos por Matchday / Fecha ordenado
-    val matchdaysGrouped = remember(matches) {
-        val hasMatchdays = matches.any { (it.matchday ?: 0) > 0 }
-        if (hasMatchdays) {
-            matches.groupBy { it.matchday ?: 1 }.toSortedMap()
-        } else {
-            matches.groupBy { 1 }.toSortedMap()
-        }
+    val matchdaysGrouped = remember(processedMatches) {
+        processedMatches.groupBy { it.matchday ?: 1 }.toSortedMap()
     }
 
     val matchdaysList = remember(matchdaysGrouped) { matchdaysGrouped.keys.toList() }
     
     // Auto-detectar la fecha actual o próxima más relevante según fecha real de calendario
-    val defaultMatchday = remember(matches, matchdaysList) {
+    val defaultMatchday = remember(processedMatches, matchdaysList) {
         val todayStr = java.time.LocalDate.now().toString()
         // 1. Partido en vivo
-        val liveMatch = matches.firstOrNull { 
+        val liveMatch = processedMatches.firstOrNull { 
             it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") 
         }
         if (liveMatch?.matchday != null && liveMatch.matchday in matchdaysList) {
             return@remember liveMatch.matchday
         }
         // 2. Buscar por fecha: encontrar el primer matchday que tenga partidos con fecha >= hoy (ej: septiembre 2026 -> Fecha 8)
-        val upcomingMatch = matches.filter {
+        val upcomingMatch = processedMatches.filter {
             val d = it.date ?: ""
             d.length >= 10 && d.substring(0, 10) >= todayStr
         }.minByOrNull { it.date ?: "9999" }
@@ -1327,7 +1373,7 @@ fun TournamentFixtureView(
         }
         
         // 3. Si no hay partidos futuros, buscar la fecha más reciente jugada
-        val latestPastMatch = matches.filter {
+        val latestPastMatch = processedMatches.filter {
             val d = it.date ?: ""
             d.length >= 10
         }.maxByOrNull { it.date ?: "" }
@@ -1339,7 +1385,7 @@ fun TournamentFixtureView(
         matchdaysList.firstOrNull() ?: 1
     }
 
-    var selectedMatchday by remember(matches, defaultMatchday) {
+    var selectedMatchday by remember(processedMatches, defaultMatchday) {
         mutableStateOf(defaultMatchday)
     }
 
@@ -1400,8 +1446,8 @@ fun TournamentFixtureView(
 
         // Barra de navegación de Fecha y estado
         val currentIndex = matchdaysList.indexOf(selectedMatchday)
-        val matchesForSelectedMatchday = remember(matches, selectedMatchday, matchdaysGrouped) {
-            (matchdaysGrouped[selectedMatchday] ?: matches).sortedBy { it.date ?: "" }
+        val matchesForSelectedMatchday = remember(processedMatches, selectedMatchday, matchdaysGrouped) {
+            (matchdaysGrouped[selectedMatchday] ?: processedMatches).sortedBy { it.date ?: "" }
         }
 
         val hasLiveInMatchday = matchesForSelectedMatchday.any { 
