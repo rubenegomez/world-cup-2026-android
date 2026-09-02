@@ -428,19 +428,19 @@ fun MainScreen(
                                  }
 
                                   if (celebrationMatch != null) {
-                                      val match = celebrationMatch!!
-                                      if (match.status.equals("Finished", ignoreCase = true)) {
-                                          com.example.worldcup2026.ui.GoalCelebrationDialog(
-                                              match = match,
-                                              onDismiss = { viewModel.dismissCelebration() }
-                                          )
-                                      } else {
-                                          com.example.worldcup2026.ui.GoalCelebrationOverlay(
-                                              match = match,
-                                              onDismiss = { viewModel.dismissCelebration() }
-                                          )
-                                      }
-                                  }
+                                       val match = celebrationMatch!!
+                                       if (match.status.equals("Finished", ignoreCase = true)) {
+                                           com.example.worldcup2026.ui.MatchFinishedOverlay(
+                                               match = match,
+                                               onDismiss = { viewModel.dismissCelebration() }
+                                           )
+                                       } else {
+                                           com.example.worldcup2026.ui.GoalCelebrationOverlay(
+                                               match = match,
+                                               onDismiss = { viewModel.dismissCelebration() }
+                                           )
+                                       }
+                                   }
 
                                  if (showVipDialog && selectedMatchForVip != null) {
                                      VipStatsDialog(
