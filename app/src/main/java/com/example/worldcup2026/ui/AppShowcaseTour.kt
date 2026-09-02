@@ -27,146 +27,113 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.worldcup2026.data.util.SoundManager
 
-data class ScreenTourStep(
+data class InteractiveTourStep(
     val id: Int,
     val icon: String,
     val title: String,
     val description: String,
+    val callToAction: String,
     val targetXPercent: Float,
     val targetYPercent: Float,
     val targetRadiusDp: Float,
-    val isBottomCard: Boolean
+    val isBottomCard: Boolean,
+    val screenTarget: Int // 0: Calendario, 4: Partidos del Día, 1: Prode, 3: Ajustes
 )
 
-// 1. TOUR PANTALLA INICIO (CALENDARIO)
-val calendarScreenSteps = listOf(
-    ScreenTourStep(
+val interactiveJourneySteps = listOf(
+    // PASO 1: Inicio en Calendario - Partido Destacado
+    InteractiveTourStep(
         id = 1,
         icon = "🌟",
-        title = "Partido Destacado",
-        description = "Al iniciar la app, este cartel estelar te anuncia el clásico o partido más importante de la fecha con cuenta regresiva y acceso directo a votar.",
+        title = "1. Partido Destacado de la Fecha",
+        description = "Al ingresar, este cartel estelar te anuncia el clásico o partido más importante con cuenta regresiva. Toca 'Ver Partido' para ir al encuentro.",
+        callToAction = "Ir a Ver Partido ➔",
         targetXPercent = 0.5f,
-        targetYPercent = 0.40f,
-        targetRadiusDp = 80f,
-        isBottomCard = true
+        targetYPercent = 0.35f,
+        targetRadiusDp = 78f,
+        isBottomCard = true,
+        screenTarget = 0
     ),
-    ScreenTourStep(
+    // PASO 2: En Partidos del Día - Selector de Torneo
+    InteractiveTourStep(
         id = 2,
-        icon = "🗓️",
-        title = "Vistas del Calendario & Hoy",
-        description = "Alterna entre vista por Mes, Semana o Día para explorar partidos. Toca el botón 'HOY' para saltar instantáneamente a la fecha actual.",
-        targetXPercent = 0.5f,
-        targetYPercent = 0.14f,
-        targetRadiusDp = 65f,
-        isBottomCard = true
-    ),
-    ScreenTourStep(
-        id = 3,
-        icon = "⭐",
-        title = "Pestaña Prode & Ajustes",
-        description = "En la barra inferior entra al Prode para cargar tus apuestas y competir. En el engranaje superior podrás configurar alertas y favoritos.",
-        targetXPercent = 0.5f,
-        targetYPercent = 0.94f,
-        targetRadiusDp = 48f,
-        isBottomCard = false
-    )
-)
-
-// 2. TOUR PANTALLA PARTIDOS DEL DÍA
-val dailyMatchesScreenSteps = listOf(
-    ScreenTourStep(
-        id = 1,
         icon = "🏆",
-        title = "Selector de Torneos",
-        description = "Filtra los partidos del día por Liga Profesional, Libertadores, Copa Argentina, Ascenso o el Mundial.",
+        title = "2. Selector de Torneos",
+        description = "Aquí puedes filtrar los partidos del día entre Liga Profesional, Libertadores, Copa Argentina, Ascenso o el Mundial.",
+        callToAction = "Siguiente ➔",
         targetXPercent = 0.5f,
         targetYPercent = 0.12f,
         targetRadiusDp = 58f,
-        isBottomCard = true
+        isBottomCard = true,
+        screenTarget = 4
     ),
-    ScreenTourStep(
-        id = 2,
-        icon = "✍️",
-        title = "Carga tu Pronóstico",
-        description = "Ingresa los goles de cada equipo antes de que empiece el partido. ¡Los pronósticos cerrarán automáticamente al inicio!",
-        targetXPercent = 0.5f,
-        targetYPercent = 0.46f,
-        targetRadiusDp = 75f,
-        isBottomCard = true
-    ),
-    ScreenTourStep(
+    // PASO 3: En Partidos del Día - Cómo Cargar Pronóstico
+    InteractiveTourStep(
         id = 3,
+        icon = "✍️",
+        title = "3. Carga tu Pronóstico (Prode)",
+        description = "Ingresa los goles del Local y Visitante antes de que empiece el partido. ¡El sistema guarda tu predicción automáticamente!",
+        callToAction = "Siguiente ➔",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.48f,
+        targetRadiusDp = 80f,
+        isBottomCard = true,
+        screenTarget = 4
+    ),
+    // PASO 4: En Prode - Botón de Ayuda y Reglas
+    InteractiveTourStep(
+        id = 4,
         icon = "❓",
-        title = "Ayuda y Reglas de Puntos",
-        description = "Usa el botón '?' para conocer cómo funciona esta pantalla y '📖 Reglas' para ver cómo se suman los 3 puntos por acierto exacto o 1 por ganador.",
-        targetXPercent = 0.85f,
-        targetYPercent = 0.20f,
-        targetRadiusDp = 42f,
-        isBottomCard = true
-    )
-)
-
-// 3. TOUR PANTALLA PRODE
-val prodeScreenSteps = listOf(
-    ScreenTourStep(
-        id = 1,
+        title = "4. Ayuda y Reglas de Puntuación",
+        description = "En la sección Prode toca '❓ Ayuda' para ver el sistema de puntos: 3 puntos por acierto exacto o 1 punto por acertar el ganador/empate.",
+        callToAction = "Siguiente ➔",
+        targetXPercent = 0.22f,
+        targetYPercent = 0.28f,
+        targetRadiusDp = 48f,
+        isBottomCard = true,
+        screenTarget = 1
+    ),
+    // PASO 5: En Prode - Ligas de Amigos
+    InteractiveTourStep(
+        id = 5,
         icon = "👥",
-        title = "Ligas de Amigos",
-        description = "Crea tu propia liga privada o únete con un código de invitación para competir mano a mano con tus amigos.",
+        title = "5. Ligas Privadas con Amigos",
+        description = "Crea tu propia liga de amigos o únete con un código de invitación para competir mano a mano durante todo el torneo.",
+        callToAction = "Siguiente ➔",
         targetXPercent = 0.5f,
-        targetYPercent = 0.22f,
+        targetYPercent = 0.38f,
         targetRadiusDp = 65f,
-        isBottomCard = true
+        isBottomCard = true,
+        screenTarget = 1
     ),
-    ScreenTourStep(
-        id = 2,
-        icon = "📊",
-        title = "Ranking y Posiciones",
-        description = "Sigue tu puesto en la tabla global, tus aciertos exactos, porcentajes de efectividad y rachas ganadoras.",
-        targetXPercent = 0.5f,
-        targetYPercent = 0.52f,
-        targetRadiusDp = 75f,
-        isBottomCard = true
-    )
-)
-
-// 4. TOUR PANTALLA AJUSTES
-val settingsScreenSteps = listOf(
-    ScreenTourStep(
-        id = 1,
-        icon = "⭐",
-        title = "Equipos y Torneos Favoritos",
-        description = "Marca tus clubes favoritos para recibir alertas prioritarias de goles, inicio y tarjetas.",
-        targetXPercent = 0.5f,
-        targetYPercent = 0.35f,
-        targetRadiusDp = 60f,
-        isBottomCard = true
-    ),
-    ScreenTourStep(
-        id = 2,
+    // PASO 6: En Ajustes - Favoritos y Batería
+    InteractiveTourStep(
+        id = 6,
         icon = "🔋",
-        title = "Batería Sin Restricciones",
-        description = "Pon la aplicación 'Sin Restricciones' para garantizar que las notificaciones de goles y eventos en vivo lleguen al instante.",
+        title = "6. Alertas y Batería Sin Restricciones",
+        description = "En Ajustes marca tus clubes favoritos y activa el modo 'Sin Restricciones' para no perderte ningún gol ni aviso en vivo.",
+        callToAction = "¡Terminar Tour! ⭐",
         targetXPercent = 0.5f,
-        targetYPercent = 0.55f,
-        targetRadiusDp = 60f,
-        isBottomCard = false
+        targetYPercent = 0.45f,
+        targetRadiusDp = 70f,
+        isBottomCard = true,
+        screenTarget = 3
     )
 )
 
 /**
- * Overlay de Showcase Reutilizable por pantalla en Jetpack Compose.
+ * Showcase Interactivo Guiado ("Camino del Usuario") que navega entre pantallas automáticamente.
  */
 @Composable
-fun ContextualShowcaseTour(
-    steps: List<ScreenTourStep>,
+fun InteractiveJourneyTour(
+    currentStepIndex: Int,
+    onStepChange: (Int) -> Unit,
     onTourFinished: () -> Unit
 ) {
-    if (steps.isEmpty()) return
+    val totalSteps = interactiveJourneySteps.size
+    if (currentStepIndex !in 0 until totalSteps) return
 
-    var currentStepIndex by remember { mutableIntStateOf(0) }
-    val step = steps[currentStepIndex]
-    val totalSteps = steps.size
+    val step = interactiveJourneySteps[currentStepIndex]
 
     val density = LocalDensity.current
     val config = LocalConfiguration.current
@@ -202,7 +169,7 @@ fun ContextualShowcaseTour(
             ) {
                 SoundManager.playTic()
                 if (currentStepIndex < totalSteps - 1) {
-                    currentStepIndex++
+                    onStepChange(currentStepIndex + 1)
                 } else {
                     onTourFinished()
                 }
@@ -215,9 +182,7 @@ fun ContextualShowcaseTour(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer {
-                    alpha = 0.99f
-                }
+                .graphicsLayer { alpha = 0.99f }
         ) {
             drawRect(color = Color.Black.copy(alpha = 0.78f))
 
@@ -246,7 +211,7 @@ fun ContextualShowcaseTour(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 50.dp),
+                .padding(horizontal = 20.dp, vertical = 40.dp),
             contentAlignment = if (step.isBottomCard) Alignment.BottomCenter else Alignment.TopCenter
         ) {
             Surface(
@@ -262,7 +227,7 @@ fun ContextualShowcaseTour(
                     ) { }
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.padding(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Row(
@@ -291,7 +256,7 @@ fun ContextualShowcaseTour(
                             }
                         ) {
                             Text(
-                                text = "Omitir",
+                                text = "Omitir Tour",
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -299,23 +264,23 @@ fun ContextualShowcaseTour(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Text(text = step.icon, fontSize = 26.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(text = step.icon, fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = step.title,
                             color = Color.White,
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Black
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
                         text = step.description,
@@ -326,19 +291,19 @@ fun ContextualShowcaseTour(
                         lineHeight = 18.sp
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             repeat(totalSteps) { idx ->
                                 val isActive = idx == currentStepIndex
                                 Box(
                                     modifier = Modifier
-                                        .size(if (isActive) 18.dp else 8.dp, 8.dp)
+                                        .size(if (isActive) 16.dp else 7.dp, 7.dp)
                                         .clip(RoundedCornerShape(4.dp))
                                         .background(if (isActive) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f))
                                 )
@@ -349,7 +314,7 @@ fun ContextualShowcaseTour(
                             onClick = {
                                 SoundManager.playTic()
                                 if (currentStepIndex < totalSteps - 1) {
-                                    currentStepIndex++
+                                    onStepChange(currentStepIndex + 1)
                                 } else {
                                     onTourFinished()
                                 }
@@ -359,10 +324,10 @@ fun ContextualShowcaseTour(
                                 contentColor = Color.Black
                             ),
                             shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
+                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = if (currentStepIndex < totalSteps - 1) "Siguiente ➔" else "¡Entendido! ⭐",
+                                text = step.callToAction,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 13.sp
                             )

@@ -59,6 +59,7 @@ fun MainScreen(
     
     var selectedMatchForVip by remember { mutableStateOf<Match?>(null) }
     var showTour by remember { mutableStateOf(!prefs.getBoolean("has_completed_showcase_tour_v1", false)) }
+    var tourStepIndex by remember { mutableIntStateOf(0) }
     
     val adFreeUntil by viewModel.adFreeUntil
     val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
@@ -381,7 +382,7 @@ fun MainScreen(
                                     )
                                     1 -> ProdeScreen(worldCupViewModel = viewModel, initialJoinCode = initialJoinCode, onNavigateToSettings = { selectedScreen = 3 })
                                     2 -> AboutScreen()
-                                    3 -> SettingsContainer(viewModel, onReplayTour = { selectedScreen = 0; showTour = true })
+                                    3 -> SettingsContainer(viewModel, onReplayTour = { selectedScreen = 0; tourStepIndex = 0; showTour = true })
                                     4 -> {
                                         if (selectedDate != null) {
                                             DailyMatchesScreen(
@@ -560,18 +561,22 @@ fun MainScreen(
             }
 
             if (!showSplash && !showCelebration && !isWatchingAd && showTour) {
-                val currentSteps = when (selectedScreen) {
-                    0 -> calendarScreenSteps
-                    1 -> prodeScreenSteps
-                    3 -> settingsScreenSteps
-                    4 -> dailyMatchesScreenSteps
-                    else -> calendarScreenSteps
-                }
-
-                ContextualShowcaseTour(
-                    steps = currentSteps,
+                InteractiveJourneyTour(
+                    currentStepIndex = tourStepIndex,
+                    onStepChange = { nextIndex ->
+                        tourStepIndex = nextIndex
+                        if (nextIndex in interactiveJourneySteps.indices) {
+                            val nextTargetScreen = interactiveJourneySteps[nextIndex].screenTarget
+                            if (nextTargetScreen == 4 && selectedDate == null) {
+                                selectedDate = java.time.LocalDate.now()
+                            }
+                            selectedScreen = nextTargetScreen
+                        }
+                    },
                     onTourFinished = {
                         showTour = false
+                        tourStepIndex = 0
+                        selectedScreen = 0
                         prefs.edit().putBoolean("has_completed_showcase_tour_v1", true).apply()
                     }
                 )
