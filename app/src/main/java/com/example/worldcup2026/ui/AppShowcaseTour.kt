@@ -2,8 +2,6 @@ package com.example.worldcup2026.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,10 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
@@ -31,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.worldcup2026.data.util.SoundManager
 
-data class TourStep(
+data class ScreenTourStep(
     val id: Int,
     val icon: String,
     val title: String,
@@ -42,66 +38,141 @@ data class TourStep(
     val isBottomCard: Boolean
 )
 
-val defaultTourSteps = listOf(
-    TourStep(
+// 1. TOUR PANTALLA INICIO (CALENDARIO)
+val calendarScreenSteps = listOf(
+    ScreenTourStep(
+        id = 1,
+        icon = "🌟",
+        title = "Partido Destacado",
+        description = "Al iniciar la app, este cartel estelar te anuncia el clásico o partido más importante de la fecha con cuenta regresiva y acceso directo a votar.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.40f,
+        targetRadiusDp = 80f,
+        isBottomCard = true
+    ),
+    ScreenTourStep(
+        id = 2,
+        icon = "🗓️",
+        title = "Vistas del Calendario & Hoy",
+        description = "Alterna entre vista por Mes, Semana o Día para explorar partidos. Toca el botón 'HOY' para saltar instantáneamente a la fecha actual.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.14f,
+        targetRadiusDp = 65f,
+        isBottomCard = true
+    ),
+    ScreenTourStep(
+        id = 3,
+        icon = "⭐",
+        title = "Pestaña Prode & Ajustes",
+        description = "En la barra inferior entra al Prode para cargar tus apuestas y competir. En el engranaje superior podrás configurar alertas y favoritos.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.94f,
+        targetRadiusDp = 48f,
+        isBottomCard = false
+    )
+)
+
+// 2. TOUR PANTALLA PARTIDOS DEL DÍA
+val dailyMatchesScreenSteps = listOf(
+    ScreenTourStep(
         id = 1,
         icon = "🏆",
         title = "Selector de Torneos",
-        description = "Explora la Liga Profesional, Copa Libertadores, Copa Sudamericana, Copa Argentina, Ascenso y el Mundial.",
+        description = "Filtra los partidos del día por Liga Profesional, Libertadores, Copa Argentina, Ascenso o el Mundial.",
         targetXPercent = 0.5f,
         targetYPercent = 0.12f,
         targetRadiusDp = 58f,
         isBottomCard = true
     ),
-    TourStep(
+    ScreenTourStep(
         id = 2,
-        icon = "📅",
-        title = "Fixture y Tablas",
-        description = "Consulta el cronograma fecha por fecha, tablas de posiciones, zonas y promedios actualizados en vivo.",
+        icon = "✍️",
+        title = "Carga tu Pronóstico",
+        description = "Ingresa los goles de cada equipo antes de que empiece el partido. ¡Los pronósticos cerrarán automáticamente al inicio!",
         targetXPercent = 0.5f,
-        targetYPercent = 0.38f,
+        targetYPercent = 0.46f,
         targetRadiusDp = 75f,
         isBottomCard = true
     ),
-    TourStep(
+    ScreenTourStep(
         id = 3,
-        icon = "⭐",
-        title = "Prode y Predicciones",
-        description = "Vota el resultado de cada partido antes de que comience para sumar puntos y competir en el ranking.",
-        targetXPercent = 0.5f,
-        targetYPercent = 0.93f,
-        targetRadiusDp = 48f,
-        isBottomCard = false
-    ),
-    TourStep(
-        id = 4,
-        icon = "🎁",
-        title = "Puntos y Beneficios",
-        description = "Canjea tus puntos acumulados para desactivar la publicidad o activar estadísticas exclusivas.",
-        targetXPercent = 0.88f,
-        targetYPercent = 0.06f,
-        targetRadiusDp = 36f,
+        icon = "❓",
+        title = "Ayuda y Reglas de Puntos",
+        description = "Usa el botón '?' para conocer cómo funciona esta pantalla y '📖 Reglas' para ver cómo se suman los 3 puntos por acierto exacto o 1 por ganador.",
+        targetXPercent = 0.85f,
+        targetYPercent = 0.20f,
+        targetRadiusDp = 42f,
         isBottomCard = true
     )
 )
 
+// 3. TOUR PANTALLA PRODE
+val prodeScreenSteps = listOf(
+    ScreenTourStep(
+        id = 1,
+        icon = "👥",
+        title = "Ligas de Amigos",
+        description = "Crea tu propia liga privada o únete con un código de invitación para competir mano a mano con tus amigos.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.22f,
+        targetRadiusDp = 65f,
+        isBottomCard = true
+    ),
+    ScreenTourStep(
+        id = 2,
+        icon = "📊",
+        title = "Ranking y Posiciones",
+        description = "Sigue tu puesto en la tabla global, tus aciertos exactos, porcentajes de efectividad y rachas ganadoras.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.52f,
+        targetRadiusDp = 75f,
+        isBottomCard = true
+    )
+)
+
+// 4. TOUR PANTALLA AJUSTES
+val settingsScreenSteps = listOf(
+    ScreenTourStep(
+        id = 1,
+        icon = "⭐",
+        title = "Equipos y Torneos Favoritos",
+        description = "Marca tus clubes favoritos para recibir alertas prioritarias de goles, inicio y tarjetas.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.35f,
+        targetRadiusDp = 60f,
+        isBottomCard = true
+    ),
+    ScreenTourStep(
+        id = 2,
+        icon = "🔋",
+        title = "Batería Sin Restricciones",
+        description = "Pon la aplicación 'Sin Restricciones' para garantizar que las notificaciones de goles y eventos en vivo lleguen al instante.",
+        targetXPercent = 0.5f,
+        targetYPercent = 0.55f,
+        targetRadiusDp = 60f,
+        isBottomCard = false
+    )
+)
+
 /**
- * Overlay de Showcase nativo en Jetpack Compose con corte Spotlight y halo dorado pulsante.
+ * Overlay de Showcase Reutilizable por pantalla en Jetpack Compose.
  */
 @Composable
-fun AppShowcaseTour(
+fun ContextualShowcaseTour(
+    steps: List<ScreenTourStep>,
     onTourFinished: () -> Unit
 ) {
+    if (steps.isEmpty()) return
+
     var currentStepIndex by remember { mutableIntStateOf(0) }
-    val step = defaultTourSteps[currentStepIndex]
-    val totalSteps = defaultTourSteps.size
+    val step = steps[currentStepIndex]
+    val totalSteps = steps.size
 
     val density = LocalDensity.current
     val config = LocalConfiguration.current
     val screenWidthPx = with(density) { config.screenWidthDp.dp.toPx() }
     val screenHeightPx = with(density) { config.screenHeightDp.dp.toPx() }
 
-    // Animación de pulso continuo del halo dorado
     val infiniteTransition = rememberInfiniteTransition(label = "spotlight_pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
@@ -141,7 +212,6 @@ fun AppShowcaseTour(
         val targetCenterY = screenHeightPx * step.targetYPercent
         val targetRadiusPx = with(density) { step.targetRadiusDp.dp.toPx() }
 
-        // Capa Canvas con corte Spotlight usando Clear blend mode
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -149,10 +219,8 @@ fun AppShowcaseTour(
                     alpha = 0.99f
                 }
         ) {
-            // Fondo oscuro general
             drawRect(color = Color.Black.copy(alpha = 0.78f))
 
-            // Corte transparente sobre el elemento destacado
             drawCircle(
                 color = Color.Transparent,
                 radius = targetRadiusPx,
@@ -160,7 +228,6 @@ fun AppShowcaseTour(
                 blendMode = BlendMode.Clear
             )
 
-            // Halo pulsante exterior
             drawCircle(
                 color = Color(0xFFFFD700).copy(alpha = pulseAlpha),
                 radius = targetRadiusPx * pulseScale,
@@ -168,7 +235,6 @@ fun AppShowcaseTour(
                 style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx())
             )
 
-            // Borde dorado nítido del recorte
             drawCircle(
                 color = Color(0xFFFFD700),
                 radius = targetRadiusPx,
@@ -177,7 +243,6 @@ fun AppShowcaseTour(
             )
         }
 
-        // Tarjeta Explicativa Flotante
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -200,7 +265,6 @@ fun AppShowcaseTour(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Badge del paso
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -227,7 +291,7 @@ fun AppShowcaseTour(
                             }
                         ) {
                             Text(
-                                text = "Omitir Tour",
+                                text = "Omitir",
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
@@ -237,7 +301,6 @@ fun AppShowcaseTour(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Ícono y Título
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
@@ -254,7 +317,6 @@ fun AppShowcaseTour(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Descripción
                     Text(
                         text = step.description,
                         color = Color.White.copy(alpha = 0.85f),
@@ -266,7 +328,6 @@ fun AppShowcaseTour(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Indicadores de progreso (dots) + Botón Siguiente
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -301,7 +362,7 @@ fun AppShowcaseTour(
                             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
                         ) {
                             Text(
-                                text = if (currentStepIndex < totalSteps - 1) "Siguiente ➔" else "¡Comenzar! ⭐",
+                                text = if (currentStepIndex < totalSteps - 1) "Siguiente ➔" else "¡Entendido! ⭐",
                                 fontWeight = FontWeight.Black,
                                 fontSize = 13.sp
                             )

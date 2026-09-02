@@ -322,14 +322,27 @@ fun SettingsMenuScreen(
                     onClick = {
                         try {
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                                val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as? android.os.PowerManager
+                                val isIgnoring = powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
+                                if (!isIgnoring) {
+                                    val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                        data = android.net.Uri.parse("package:${context.packageName}")
+                                    }
+                                    context.startActivity(intent)
+                                } else {
+                                    android.widget.Toast.makeText(context, "✅ La app ya está configurada Sin Restricciones", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                                     data = android.net.Uri.parse("package:${context.packageName}")
                                 }
                                 context.startActivity(intent)
+                            } catch (e2: Exception) {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                context.startActivity(intent)
                             }
-                        } catch (e: Exception) {
-                            val intent = android.content.Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                            context.startActivity(intent)
                         }
                     }
                 )

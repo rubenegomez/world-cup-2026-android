@@ -560,7 +560,16 @@ fun MainScreen(
             }
 
             if (!showSplash && !showCelebration && !isWatchingAd && showTour) {
-                AppShowcaseTour(
+                val currentSteps = when (selectedScreen) {
+                    0 -> calendarScreenSteps
+                    1 -> prodeScreenSteps
+                    3 -> settingsScreenSteps
+                    4 -> dailyMatchesScreenSteps
+                    else -> calendarScreenSteps
+                }
+
+                ContextualShowcaseTour(
+                    steps = currentSteps,
                     onTourFinished = {
                         showTour = false
                         prefs.edit().putBoolean("has_completed_showcase_tour_v1", true).apply()
