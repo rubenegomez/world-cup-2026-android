@@ -58,6 +58,7 @@ fun MainScreen(
     var selectedTournamentForStandings by remember { mutableStateOf<Int?>(null) }
     
     var selectedMatchForVip by remember { mutableStateOf<Match?>(null) }
+    var showTour by remember { mutableStateOf(!prefs.getBoolean("has_completed_showcase_tour_v1", false)) }
     
     val adFreeUntil by viewModel.adFreeUntil
     val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
@@ -380,7 +381,7 @@ fun MainScreen(
                                     )
                                     1 -> ProdeScreen(worldCupViewModel = viewModel, initialJoinCode = initialJoinCode, onNavigateToSettings = { selectedScreen = 3 })
                                     2 -> AboutScreen()
-                                    3 -> SettingsContainer(viewModel)
+                                    3 -> SettingsContainer(viewModel, onReplayTour = { selectedScreen = 0; showTour = true })
                                     4 -> {
                                         if (selectedDate != null) {
                                             DailyMatchesScreen(
@@ -545,6 +546,7 @@ fun MainScreen(
                                 }
                             }
                         }
+                    }
 
                         val updateInfo by viewModel.appUpdateInfo
                         if (updateInfo != null) {
@@ -556,7 +558,15 @@ fun MainScreen(
                     }
                 }
             }
+
+            if (!showSplash && !showCelebration && !isWatchingAd && showTour) {
+                AppShowcaseTour(
+                    onTourFinished = {
+                        showTour = false
+                        prefs.edit().putBoolean("has_completed_showcase_tour_v1", true).apply()
+                    }
+                )
+            }
         }
     }
-}
 }

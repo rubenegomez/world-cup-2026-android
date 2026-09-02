@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +45,10 @@ import kotlinx.coroutines.launch
 import com.example.worldcup2026.data.api.AuthManager
 
 @Composable
-fun SettingsContainer(viewModel: WorldCupViewModel) {
+fun SettingsContainer(
+    viewModel: WorldCupViewModel,
+    onReplayTour: (() -> Unit)? = null
+) {
     var showTeamsList by remember { mutableStateOf(false) }
 
     Surface(
@@ -56,14 +60,22 @@ fun SettingsContainer(viewModel: WorldCupViewModel) {
             if (showTeamsList) {
                 TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
             } else {
-                SettingsMenuScreen(onShowTeamsList = { showTeamsList = true }, worldCupViewModel = viewModel)
+                SettingsMenuScreen(
+                    onShowTeamsList = { showTeamsList = true },
+                    worldCupViewModel = viewModel,
+                    onReplayTour = onReplayTour
+                )
             }
         }
     }
 }
 
 @Composable
-fun SettingsDialog(onDismiss: () -> Unit, viewModel: WorldCupViewModel) {
+fun SettingsDialog(
+    onDismiss: () -> Unit,
+    viewModel: WorldCupViewModel,
+    onReplayTour: (() -> Unit)? = null
+) {
     var showTeamsList by remember { mutableStateOf(false) }
 
     Dialog(
@@ -103,7 +115,14 @@ fun SettingsDialog(onDismiss: () -> Unit, viewModel: WorldCupViewModel) {
                 if (showTeamsList) {
                     TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
                 } else {
-                    SettingsMenuScreen(onShowTeamsList = { showTeamsList = true }, worldCupViewModel = viewModel)
+                    SettingsMenuScreen(
+                        onShowTeamsList = { showTeamsList = true },
+                        worldCupViewModel = viewModel,
+                        onReplayTour = {
+                            onDismiss()
+                            onReplayTour?.invoke()
+                        }
+                    )
                 }
             }
         }
@@ -114,7 +133,8 @@ fun SettingsDialog(onDismiss: () -> Unit, viewModel: WorldCupViewModel) {
 fun SettingsMenuScreen(
     onShowTeamsList: () -> Unit,
     viewModel: ProdeViewModel = viewModel(),
-    worldCupViewModel: WorldCupViewModel
+    worldCupViewModel: WorldCupViewModel,
+    onReplayTour: (() -> Unit)? = null
 ) {
     val isAuthenticated by viewModel.isAuthenticated.collectAsState()
     val context = LocalContext.current
@@ -426,6 +446,16 @@ fun SettingsMenuScreen(
                     title = "Equipos y Selecciones",
                     subtitle = "Gestiona tus favoritos y revisa la base de datos",
                     onClick = onShowTeamsList
+                )
+
+                SettingItem(
+                    icon = Icons.Default.Info,
+                    title = "Ver Tutorial de la App",
+                    subtitle = "Repetir el tour guiado por las funciones principales",
+                    onClick = {
+                        sharedPrefs.edit().putBoolean("has_completed_showcase_tour_v1", false).apply()
+                        onReplayTour?.invoke()
+                    }
                 )
             }
         }
