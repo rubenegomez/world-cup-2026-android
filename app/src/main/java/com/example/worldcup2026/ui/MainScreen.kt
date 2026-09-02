@@ -406,15 +406,25 @@ fun MainScreen(
                                             selectedScreen = 0
                                         }
                                     }
-                                     5 -> {
-                                         if (selectedTournamentForStandings != null) {
-                                             StandingsScreen(
-                                                 matches = state.matches,
-                                                 initialTournamentId = selectedTournamentForStandings
-                                             )
-                                         } else {
-                                         }
-                                     }
+                                      5 -> {
+                                          StandingsScreen(
+                                              matches = state.matches,
+                                              initialTournamentId = selectedTournamentForStandings ?: 5,
+                                              onNavigateToMatch = { match ->
+                                                  try {
+                                                      val datePart = match.date?.substringBefore(" ")
+                                                      if (!datePart.isNullOrBlank()) {
+                                                          selectedDate = java.time.LocalDate.parse(datePart)
+                                                          selectedScreen = 4
+                                                      } else {
+                                                          selectedScreen = 1
+                                                      }
+                                                  } catch (e: Exception) {
+                                                      selectedScreen = 1
+                                                  }
+                                              }
+                                          )
+                                      }
                                  }
 
                                   if (celebrationMatch != null) {

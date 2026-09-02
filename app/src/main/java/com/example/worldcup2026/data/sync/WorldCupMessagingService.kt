@@ -25,8 +25,18 @@ class WorldCupMessagingService : FirebaseMessagingService() {
 
         // Check if message contains a data payload.
         if (remoteMessage.data.isNotEmpty()) {
-            Log.d("FCM", "Message data payload: ")
+            Log.d("FCM", "Message data payload: ${remoteMessage.data}")
             
+            // Validar que la notificación esté destinada a esta aplicación y no a Fondos / El Loco del Pedal
+            val targetApp = remoteMessage.data["app"] ?: remoteMessage.data["platform"] ?: remoteMessage.data["target"]
+            val targetPkg = remoteMessage.data["package"] ?: remoteMessage.data["packageName"]
+            if (!targetPkg.isNullOrBlank() && !targetPkg.equals(packageName, ignoreCase = true)) {
+                return
+            }
+            if (!targetApp.isNullOrBlank() && (targetApp.contains("fondos", ignoreCase = true) || targetApp.contains("locodelpedal", ignoreCase = true) || targetApp.contains("wallpaper", ignoreCase = true))) {
+                return
+            }
+
             val matchId = remoteMessage.data["matchId"]
             val eventType = remoteMessage.data["eventType"] // "goal", "start", "end", "upcoming_30m"
             val homeTeam = remoteMessage.data["homeTeam"] ?: "Local"
@@ -39,6 +49,13 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             if (msgType == "app_update" || downloadUrl != null && remoteMessage.data.containsKey("versionCode")) {
                 val updateTitle = remoteMessage.data["title"] ?: remoteMessage.notification?.title ?: "🏟️ ¡Nueva Versión Disponible!"
                 val updateBody = remoteMessage.data["body"] ?: remoteMessage.notification?.body ?: "Toca aquí para actualizar la aplicación."
+                
+                // Descartar si el título o cuerpo hace referencia a fondos u otra app
+                if (updateTitle.contains("fondo", ignoreCase = true) || updateBody.contains("fondo", ignoreCase = true) || 
+                    (downloadUrl != null && downloadUrl.contains("Fondos", ignoreCase = true))) {
+                    return
+                }
+
                 sendUpdateNotification(updateTitle, updateBody, downloadUrl ?: "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk")
                 return
             }

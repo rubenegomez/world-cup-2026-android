@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -211,7 +212,11 @@ fun getCanonicalLigaTeam(name: String): Pair<String, String>? {
 fun getLigaZona(name: String): String? = getCanonicalLigaTeam(name)?.second ?: LIGA_ZONAS_MAP[name]
 
 @Composable
-fun StandingsScreen(matches: List<Match>, initialTournamentId: Int? = null) {
+fun StandingsScreen(
+    matches: List<Match>,
+    initialTournamentId: Int? = null,
+    onNavigateToMatch: (Match) -> Unit = {}
+) {
     var tournamentId by remember(initialTournamentId) {
         mutableStateOf(initialTournamentId ?: 5)
     }
@@ -463,7 +468,10 @@ val LIGA_ZONA_B_TEAMS = listOf(
         Box(modifier = Modifier.weight(1f)) {
             when (currentTabTitle) {
                 "FIXTURE" -> {
-                    TournamentFixtureView(filteredMatches)
+                    TournamentFixtureView(
+                        matches = filteredMatches,
+                        onMatchClick = onNavigateToMatch
+                    )
                 }
                 "GRUPOS", "ZONAS", "ZONA A", "ZONA B", "TABLA GENERAL", "TABLA ÚNICA" -> {
                     val filterGroup = when (currentTabTitle) {
@@ -1271,7 +1279,10 @@ private fun isClausuraMatch(dateStr: String?): Boolean {
 }
 
 @Composable
-fun TournamentFixtureView(matches: List<Match>) {
+fun TournamentFixtureView(
+    matches: List<Match>,
+    onMatchClick: (Match) -> Unit = {}
+) {
     if (matches.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
@@ -1295,7 +1306,7 @@ fun TournamentFixtureView(matches: List<Match>) {
 
     val matchdaysList = remember(matchdaysGrouped) { matchdaysGrouped.keys.toList() }
     
-    // Auto-detectar la fecha actual o próxima más relevante
+    // Auto-detectar la fecha actual o próxima más relevante según fecha real de calendario
     val defaultMatchday = remember(matches, matchdaysList) {
         val todayStr = java.time.LocalDate.now().toString()
         // 1. Partido en vivo
@@ -1305,22 +1316,27 @@ fun TournamentFixtureView(matches: List<Match>) {
         if (liveMatch?.matchday != null && liveMatch.matchday in matchdaysList) {
             return@remember liveMatch.matchday
         }
-        // 2. Primer partido hoy o a futuro no finalizado
-        val nextUpcoming = matches.filter {
-            !it.date.isNullOrBlank() && it.date >= todayStr && it.status.uppercase() !in listOf("FINISHED", "FT", "FINALIZADO")
+        // 2. Buscar por fecha: encontrar el primer matchday que tenga partidos con fecha >= hoy (ej: septiembre 2026 -> Fecha 8)
+        val upcomingMatch = matches.filter {
+            val d = it.date ?: ""
+            d.length >= 10 && d.substring(0, 10) >= todayStr
         }.minByOrNull { it.date ?: "9999" }
-        if (nextUpcoming?.matchday != null && nextUpcoming.matchday in matchdaysList) {
-            return@remember nextUpcoming.matchday
+        
+        if (upcomingMatch?.matchday != null && upcomingMatch.matchday in matchdaysList) {
+            return@remember upcomingMatch.matchday
         }
-        // 3. Primera fecha que contenga partidos pendientes / programados
-        for (md in matchdaysList) {
-            val mdMatches = matchdaysGrouped[md] ?: emptyList()
-            if (mdMatches.isNotEmpty() && mdMatches.any { it.status.uppercase() !in listOf("FINISHED", "FT", "FINALIZADO") }) {
-                return@remember md
-            }
+        
+        // 3. Si no hay partidos futuros, buscar la fecha más reciente jugada
+        val latestPastMatch = matches.filter {
+            val d = it.date ?: ""
+            d.length >= 10
+        }.maxByOrNull { it.date ?: "" }
+        
+        if (latestPastMatch?.matchday != null && latestPastMatch.matchday in matchdaysList) {
+            return@remember latestPastMatch.matchday
         }
-        // 4. Última fecha jugada o primera
-        matchdaysList.lastOrNull() ?: 1
+
+        matchdaysList.firstOrNull() ?: 1
     }
 
     var selectedMatchday by remember(matches, defaultMatchday) {
@@ -1431,7 +1447,7 @@ fun TournamentFixtureView(matches: List<Match>) {
                     text = when {
                         hasLiveInMatchday -> "🔴 FECHA $selectedMatchday · EN JUEGO"
                         allFinished -> "🏁 FECHA $selectedMatchday · FINALIZADA"
-                        selectedMatchday == defaultMatchday -> "⭐ FECHA $selectedMatchday · PRÓXIMA"
+                        selectedMatchday == defaultMatchday -> "⭐ FECHA $selectedMatchday · ACTUAL"
                         else -> "FECHA $selectedMatchday"
                     },
                     fontWeight = FontWeight.ExtraBold,
@@ -1471,19 +1487,30 @@ fun TournamentFixtureView(matches: List<Match>) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(matchesForSelectedMatchday) { match ->
-                FixtureMatchCard(match)
+                FixtureMatchCard(
+                    match = match,
+                    onClick = { onMatchClick(match) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun FixtureMatchCard(match: Match) {
+fun FixtureMatchCard(
+    match: Match,
+    onClick: () -> Unit = {}
+) {
     val isLive = match.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
     val isFinished = match.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO")
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                com.example.worldcup2026.data.util.SoundManager.playTic()
+                onClick()
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF161A28)),
         border = if (isLive) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE53935)) else null
@@ -1611,6 +1638,26 @@ fun FixtureMatchCard(match: Match) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            if (!isFinished) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFFFD700).copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "⚡ Toca acá para cargar pronóstico / votar en el Prode",
+                        color = Color(0xFFFFD700),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
