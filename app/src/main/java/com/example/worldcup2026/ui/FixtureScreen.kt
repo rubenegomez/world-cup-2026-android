@@ -1508,6 +1508,49 @@ fun MatchCard(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Botón Compartir Historia desde la Tarjeta
+            var showStoryModal by remember { mutableStateOf(false) }
+
+            if (showStoryModal) {
+                val defaultEventType = when {
+                    match.status.uppercase() == "FINISHED" -> StoryEventType.FINAL_PARTIDO
+                    isLive -> StoryEventType.INICIO_PARTIDO
+                    else -> StoryEventType.PREVIA
+                }
+                MatchStoryShareModal(
+                    storyData = MatchStoryData(
+                        match = match,
+                        eventType = defaultEventType,
+                        selectedTeam = match.homeTeam
+                    ),
+                    onDismiss = { showStoryModal = false }
+                )
+            }
+
+            OutlinedButton(
+                onClick = { showStoryModal = true },
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.6f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFD700)),
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "PUBLICAR EN HISTORIAS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 0.5.sp
+                )
+            }
         }
     }
 }

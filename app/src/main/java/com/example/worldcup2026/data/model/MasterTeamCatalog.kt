@@ -17,9 +17,10 @@ data class MasterTournament(
 
 object MasterTeamCatalog {
 
-    // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (16)
+    // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (17)
     val MASTER_TOURNAMENTS = listOf(
         MasterTournament(5, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional", isActive = true),
+        MasterTournament(6, "Copa Argentina", "🇦🇷 Copa Argentina", "Nacional", isActive = true),
         MasterTournament(17, "Torneo Apertura Liga Profesional", "🏆 Torneo Apertura Liga Profesional (Concluido)", "Nacional", isActive = false),
         MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true),
         MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true),

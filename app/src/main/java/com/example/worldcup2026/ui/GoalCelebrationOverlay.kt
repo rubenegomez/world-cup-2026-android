@@ -266,6 +266,36 @@ fun GoalCelebrationOverlay(
                                     }
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // Botón Compartir Historia
+                            var showStoryDialog by remember { mutableStateOf(false) }
+
+                            if (showStoryDialog) {
+                                MatchStoryShareModal(
+                                    storyData = MatchStoryData(
+                                        match = match,
+                                        eventType = StoryEventType.GOL,
+                                        selectedTeam = resolvedTeam,
+                                        scorerName = resolvedScorer,
+                                        minute = minute
+                                    ),
+                                    onDismiss = { showStoryDialog = false }
+                                )
+                            }
+
+                            Button(
+                                onClick = { showStoryDialog = true },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFFD700),
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                            ) {
+                                Text(text = "📲 Compartir Historia", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                            }
                         }
                     }
                 }
@@ -533,22 +563,51 @@ fun MatchFinishedOverlay(
                 visible = showDetails,
                 enter = fadeIn(animationSpec = tween(400)) + slideInVertically(initialOffsetY = { 40 })
             ) {
-                Surface(
-                    color = Color(0xFF1E293B).copy(alpha = 0.95f),
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
-                ) {
-                    Text(
-                        text = when {
-                            isHomeWinner -> "🏆 ¡VICTORIA DE ${match.homeTeam.name.uppercase()}!"
-                            isAwayWinner -> "🏆 ¡VICTORIA DE ${match.awayTeam.name.uppercase()}!"
-                            else -> "🤝 ¡EMPATE FINAL!"
-                        },
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Surface(
+                        color = Color(0xFF1E293B).copy(alpha = 0.95f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = when {
+                                isHomeWinner -> "🏆 ¡VICTORIA DE ${match.homeTeam.name.uppercase()}!"
+                                isAwayWinner -> "🏆 ¡VICTORIA DE ${match.awayTeam.name.uppercase()}!"
+                                else -> "🤝 ¡EMPATE FINAL!"
+                            },
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    var showStoryDialog by remember { mutableStateOf(false) }
+
+                    if (showStoryDialog) {
+                        MatchStoryShareModal(
+                            storyData = MatchStoryData(
+                                match = match,
+                                eventType = StoryEventType.FINAL_PARTIDO,
+                                selectedTeam = if (isAwayWinner) match.awayTeam else match.homeTeam
+                            ),
+                            onDismiss = { showStoryDialog = false }
+                        )
+                    }
+
+                    Button(
+                        onClick = { showStoryDialog = true },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFFD700),
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Text(text = "📲 Compartir Historia", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    }
                 }
             }
         }

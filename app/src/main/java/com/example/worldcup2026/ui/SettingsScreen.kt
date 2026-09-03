@@ -366,28 +366,34 @@ fun SettingsMenuScreen(
                 )
             }
         }
-        item {
-            SettingSection(title = "Pruebas y Simulación") {
-                SettingItem(
-                    icon = Icons.Default.PlayArrow,
-                    title = "⚽ Simular Gol en Vivo",
-                    subtitle = "Probar el nuevo festejo animado transparente y sonido",
-                    onClick = {
-                        val testIntent = Intent("com.example.worldcup2026.MATCH_EVENT").apply {
-                            setPackage(context.packageName)
-                            putExtra("match_id", 9999)
-                            putExtra("eventType", "goal")
-                            putExtra("homeTeam", "Boca Juniors")
-                            putExtra("awayTeam", "River Plate")
-                            putExtra("homeScore", "1")
-                            putExtra("awayScore", "0")
-                            putExtra("scorer", "Edinson Cavani")
-                            putExtra("minute", "78")
-                            putExtra("homeFlag", "https://a.espncdn.com/i/teamlogos/soccer/500/5.png")
+        // Sección de Pruebas y Simulación (Exclusiva para Desarrollo / Administrador)
+        val isAdminUser = user != null && (user.email?.contains("ruben", ignoreCase = true) == true || user.email?.contains("admin", ignoreCase = true) == true)
+        val isDevMode = com.example.worldcup2026.BuildConfig.DEBUG || isAdminUser
+
+        if (isDevMode) {
+            item {
+                SettingSection(title = "Pruebas y Simulación (Dev)") {
+                    SettingItem(
+                        icon = Icons.Default.PlayArrow,
+                        title = "⚽ Simular Gol en Vivo",
+                        subtitle = "Probar festejo animado transparente y sonido",
+                        onClick = {
+                            val testIntent = Intent("com.example.worldcup2026.MATCH_EVENT").apply {
+                                setPackage(context.packageName)
+                                putExtra("match_id", 9999)
+                                putExtra("eventType", "goal")
+                                putExtra("homeTeam", "Boca Juniors")
+                                putExtra("awayTeam", "River Plate")
+                                putExtra("homeScore", "1")
+                                putExtra("awayScore", "0")
+                                putExtra("scorer", "Edinson Cavani")
+                                putExtra("minute", "78")
+                                putExtra("homeFlag", "https://a.espncdn.com/i/teamlogos/soccer/500/5.png")
+                            }
+                            context.sendBroadcast(testIntent)
                         }
-                        context.sendBroadcast(testIntent)
-                    }
-                )
+                    )
+                }
             }
         }
         item {
@@ -481,12 +487,16 @@ fun SettingsMenuScreen(
 
                 SettingItem(
                     icon = Icons.Default.Star,
-                    title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Publicidad Habilitada",
-                    subtitle = if (isAdFree) "Toca para reactivar anuncios y probar banners/videos" else "Toca para ver video y obtener +2 horas sin anuncios",
+                    title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Obtener Modo Sin Anuncios",
+                    subtitle = if (isAdFree && isDevMode) "Toca para reactivar anuncios (Dev)" else if (isAdFree) "Disfrutando de la experiencia sin publicidad" else "Toca para ver un anuncio y obtener +2 horas sin anuncios",
                     onClick = {
                         if (isAdFree) {
-                            worldCupViewModel.resetAdFreeTime()
-                            android.widget.Toast.makeText(context, "Publicidad reactivada para pruebas", android.widget.Toast.LENGTH_SHORT).show()
+                            if (isDevMode) {
+                                worldCupViewModel.resetAdFreeTime()
+                                android.widget.Toast.makeText(context, "Publicidad reactivada para pruebas", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                android.widget.Toast.makeText(context, "¡Ya tienes $remainingMinutes minutos sin anuncios!", android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         } else {
                             if (activityContext != null) {
                                 AdManager.showRewardedAd(activityContext) {

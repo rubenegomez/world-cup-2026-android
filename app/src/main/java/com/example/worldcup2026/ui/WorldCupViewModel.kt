@@ -301,36 +301,42 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                         e.printStackTrace()
                     }
                 }
-                // Sincronización automática con el JSON remoto de GitHub en segundo plano
+
+                // Carga inicial inmediata de todos los partidos
+                val initialGlobal = repository.getAllMatchesGlobal()
+                if (initialGlobal.isNotEmpty()) {
+                    cachedGlobalMatches = initialGlobal
+                    val worldCupMatches = initialGlobal.filter { it.tournament_id == currentTournamentId.value }
+                    val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
+                    val allMatches = groupMatchesPlusKnockout(initialGlobal, finalMatches, currentTournamentId.value)
+                    _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                    checkRoundRewards(allMatches)
+                    com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
+                    startAutoSync(allMatches)
+                }
+
+                // Sincronización en segundo plano con actualización de estado
                 launch {
                     val success = repository.syncMatchesWithLiveJson(getApplication(), currentTournamentId.value)
                     _isServerConnected.value = success
-                    if (success) {
-                        val globalMatches = repository.getAllMatchesGlobal()
-                        cachedGlobalMatches = globalMatches
-                        val worldCupMatches = globalMatches.filter { it.tournament_id == currentTournamentId.value }
+                    val updatedGlobal = repository.getAllMatchesGlobal()
+                    if (updatedGlobal.isNotEmpty()) {
+                        cachedGlobalMatches = updatedGlobal
+                        val worldCupMatches = updatedGlobal.filter { it.tournament_id == currentTournamentId.value }
                         val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
-                        val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
+                        val allMatches = groupMatchesPlusKnockout(updatedGlobal, finalMatches, currentTournamentId.value)
                         _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
                         checkRoundRewards(allMatches)
                         com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
                         startAutoSync(allMatches)
                     }
                 }
-
-                val globalMatches = repository.getAllMatchesGlobal()
-                cachedGlobalMatches = globalMatches
-                val worldCupMatches = globalMatches.filter { it.tournament_id == currentTournamentId.value }
-                val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
-                val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
-                _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
-                checkRoundRewards(allMatches)
-                com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
-                startAutoSync(allMatches)
             } catch (e: Exception) {
                 e.printStackTrace()
                 _isServerConnected.value = false
-                _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
+                if (_uiState.value !is WorldCupUiState.Success) {
+                    _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
+                }
             }
         }
     }
@@ -824,6 +830,22 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 match = fallbackMatch
             }
             if (match != null) {
+                // Validación para evitar popups fantasmas de partidos de fechas pasadas:
+                // Solo celebrar si el partido es de hoy o dentro de las últimas 4 horas
+                try {
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                    val matchDate = match.date?.let { sdf.parse(it) }
+                    if (matchDate != null) {
+                        val diff = System.currentTimeMillis() - matchDate.time
+                        // Si el partido comenzó hace más de 5 horas o es de un día anterior, no mostrar popup invasivo
+                        if (diff > 5 * 3600 * 1000L || diff < -3600 * 1000L) {
+                            return@launch
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Si falla el parseo, continuar con precaución
+                }
+
                 // Si el fallbackMatch trae marcador más reciente que el local, priorizar el actualizado
                 if (fallbackMatch != null) {
                     val fbH = fallbackMatch.homeScore ?: 0
@@ -837,7 +859,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
                 val h = match.homeScore ?: 0
                 val a = match.awayScore ?: 0
-                val key = "${match.id}_${h}_${a}"
+                val key = "${match.id}_${h}_${a}_${match.status}"
                 val now = System.currentTimeMillis()
 
                 // Evitar doble festejo para el mismo partido y marcador dentro de 10 segundos

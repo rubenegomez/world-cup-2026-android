@@ -68,20 +68,27 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val matches = mutableListOf<Match>()
         
         try {
-            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
+            val remoteMatches = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
+            }
             if (remoteMatches.isNotEmpty()) {
                 val validIds = remoteMatches.map { it.id }
                 matchDao.deleteObsoleteMatches(validIds)
+                remoteMatches.forEach { match ->
+                    val saved = savedMatches.find { it.id == match.id }
+                    val tournamentId = match.tournament_id ?: saved?.tournamentId ?: 1
+                    addMatchWithPersistence(matches, savedMatches, match, tournamentId)
+                }
+                cachedMatches = matches
+                return matches
             }
-
-            remoteMatches.forEach { match ->
-                val saved = savedMatches.find { it.id == match.id }
-                val tournamentId = match.tournament_id ?: saved?.tournamentId ?: 1
-                addMatchWithPersistence(matches, savedMatches, match, tournamentId)
-            }
-            cachedMatches = matches
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+        
+        // Si no hay respuesta de red pero hay guardados en Room o en cache
+        if (cachedMatches?.isNotEmpty() == true) {
+            return cachedMatches!!
         }
         
         return matches
@@ -92,13 +99,22 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val matches = mutableListOf<Match>()
         
         try {
-            val remoteMatches = com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(tournamentId)
-            remoteMatches.forEach { match ->
-                addMatchWithPersistence(matches, savedMatches, match, tournamentId)
+            val remoteMatches = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(tournamentId)
             }
-            cachedMatches = matches
+            if (remoteMatches.isNotEmpty()) {
+                remoteMatches.forEach { match ->
+                    addMatchWithPersistence(matches, savedMatches, match, tournamentId)
+                }
+                cachedMatches = matches
+                return matches
+            }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+        
+        if (cachedMatches?.isNotEmpty() == true) {
+            return cachedMatches!!.filter { it.tournament_id == tournamentId }
         }
         
         return matches

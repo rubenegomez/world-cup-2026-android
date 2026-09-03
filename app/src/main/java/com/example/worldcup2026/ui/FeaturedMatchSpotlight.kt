@@ -52,13 +52,30 @@ object FeaturedMatchDetector {
     )
 
     fun findFeaturedMatch(matches: List<Match>): Pair<Match, String>? {
+        if (matches.isEmpty()) return null
         val now = LocalDateTime.now()
         val upcomingMatches = matches.filter {
             it.status.equals("Scheduled", ignoreCase = true) || it.status.equals("LIVE", ignoreCase = true)
         }.mapNotNull { match ->
             try {
-                val dt = LocalDateTime.parse(match.date?.replace(" ", "T"))
-                if (dt.isAfter(now.minusHours(2))) match to dt else null
+                val cleanDate = (match.date ?: "").trim()
+                val dt = if (cleanDate.contains("T")) {
+                    LocalDateTime.parse(cleanDate)
+                } else if (cleanDate.contains(" ")) {
+                    val parts = cleanDate.split(" ")
+                    val dateParts = parts[0].split("-")
+                    val timeParts = parts[1].split(":")
+                    LocalDateTime.of(
+                        dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(),
+                        timeParts[0].toInt(), timeParts[1].toInt()
+                    )
+                } else if (cleanDate.isNotBlank()) {
+                    val dateParts = cleanDate.split("-")
+                    LocalDateTime.of(dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(), 18, 0)
+                } else {
+                    null
+                }
+                if (dt != null && dt.isAfter(now.minusHours(4))) match to dt else null
             } catch (e: Exception) {
                 null
             }
@@ -91,13 +108,12 @@ object FeaturedMatchDetector {
         }
 
         if (upcomingMatches.isNotEmpty()) {
-            val (nextMatch, nextDt) = upcomingMatches.first()
-            if (Duration.between(now, nextDt).toDays() <= 7) {
-                return nextMatch to "⚽ PRÓXIMO ENCUENTRO"
-            }
+            val (nextMatch, _) = upcomingMatches.first()
+            return nextMatch to "⚽ PRÓXIMO ENCUENTRO"
         }
 
-        return null
+        val firstMatch = matches.firstOrNull { it.status != "Finished" } ?: matches.firstOrNull()
+        return if (firstMatch != null) firstMatch to "⚽ PARTIDO DE LA FECHA" else null
     }
 }
 
