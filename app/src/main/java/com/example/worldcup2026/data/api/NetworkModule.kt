@@ -12,6 +12,12 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 interface WorldCupApiService {
     @GET("api/teams")
@@ -102,7 +108,6 @@ data class LiveMatchDto(
     val clock: String?
 )
 
-
 class NullTeamInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -130,9 +135,32 @@ class NullTeamInterceptor : Interceptor {
 object NetworkModule {
     const val BASE_URL = "https://ellocodelpedal.duckdns.org/"
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(NullTeamInterceptor())
-        .build()
+    private val trustAllCerts = arrayOf<TrustManager>(
+        object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        }
+    )
+
+    private val sslContext = try {
+        SSLContext.getInstance("TLS").apply {
+            init(null, trustAllCerts, SecureRandom())
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    private val okHttpClient = OkHttpClient.Builder().apply {
+        addInterceptor(NullTeamInterceptor())
+        connectTimeout(15, TimeUnit.SECONDS)
+        readTimeout(15, TimeUnit.SECONDS)
+        writeTimeout(15, TimeUnit.SECONDS)
+        if (sslContext != null) {
+            sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+            hostnameVerifier { _, _ -> true }
+        }
+    }.build()
 
     val apiService: WorldCupApiService by lazy {
         Retrofit.Builder()
@@ -148,8 +176,10 @@ object NetworkModule {
     val prodeApiService: ProdeApiService by lazy {
         Retrofit.Builder()
             .baseUrl(PRODE_BASE_URL)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ProdeApiService::class.java)
     }
 }
+

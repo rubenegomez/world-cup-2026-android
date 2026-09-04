@@ -41,8 +41,10 @@ Este documento sirve para realizar el seguimiento del desarrollo de **world-cup-
 
 ## 🔮 Próxima Planificación (Roadmap)
 
-### 🚀 Lanzamiento Oficial (Viernes)
+### 🚀 Lanzamiento y Crecimiento
 * Generar paquete final firmado (AAB / APK) y completar la ficha técnica en la tienda Samsung.
+* **Botón / Link de Referir App**: Opción directa para compartir la app con amigos (WhatsApp, redes) con enlace a la tienda para armar torneos de prode.
+* **Banner de Publicidad Propia (Cross-promotion)**: Banner en la app para promocionar las otras apps del ecosistema (*Los Fondos del Loco*, *Bondi*, *TimeTracker Pro*).
 
 
 

@@ -313,6 +313,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     checkRoundRewards(allMatches)
                     com.example.worldcup2026.data.util.MatchReminderScheduler.scheduleRemindersForMatches(getApplication(), allMatches)
                     startAutoSync(allMatches)
+                } else {
+                    // Fallback para no bloquear la app en el splash si no hay internet o falla el primer inicio
+                    _uiState.value = WorldCupUiState.Success(emptyList(), null)
                 }
 
                 // Sincronización en segundo plano con actualización de estado
@@ -335,7 +338,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 e.printStackTrace()
                 _isServerConnected.value = false
                 if (_uiState.value !is WorldCupUiState.Success) {
-                    _uiState.value = WorldCupUiState.Error(e.message ?: "Unknown Error")
+                    _uiState.value = WorldCupUiState.Success(emptyList(), null)
                 }
             }
         }

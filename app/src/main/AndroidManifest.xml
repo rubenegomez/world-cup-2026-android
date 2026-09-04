@@ -17,6 +17,7 @@
         android:roundIcon="@drawable/app_icon_main"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.WorldCup2026">
 
         <meta-data
