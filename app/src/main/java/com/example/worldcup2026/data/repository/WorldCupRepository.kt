@@ -129,32 +129,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
             
-            var status = baseMatch.status
-            
-            try {
-                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-                val matchDate = sdf.parse(baseMatch.date)
-                if (matchDate != null) {
-                    val diff = System.currentTimeMillis() - matchDate.time
-                    // Si comenzó hace entre 0 y 2.5 horas y no está finalizado, marcar LIVE
-                    if (diff in 0..(2 * 3600 * 1000 + 30 * 60 * 1000)) {
-                        if (status != "Finished") {
-                            status = "LIVE"
-                        }
-                    } else if (diff > 2 * 3600 * 1000 + 30 * 60 * 1000) {
-                        // Si transcurrieron más de 2.5 horas desde el inicio y estaba LIVE, expira a Finished
-                        if (status == "LIVE" || saved.status == "LIVE") {
-                            status = "Finished"
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            if (baseMatch.status == "Finished") {
-                status = "Finished"
-            }
+            val status = baseMatch.status
 
             val homePossession = baseMatch.homePossession ?: saved.homePossession
             val awayPossession = baseMatch.awayPossession ?: saved.awayPossession
@@ -330,26 +305,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             
             matchesList.forEach { liveMatch ->
                 val saved = savedMatches.find { it.id == liveMatch.matchId }
-                
-                var effectiveStatus = liveMatch.status ?: "Scheduled"
-                
-                // FORZAR ESTADO "LIVE" SI YA PASO LA HORA DE INICIO
-                val matchInfoForStatus = getCachedMatch(liveMatch.matchId, saved?.tournamentId ?: tournamentId)
-                if (effectiveStatus == "Scheduled" && matchInfoForStatus?.date != null) {
-                    try {
-                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-                        val matchDate = sdf.parse(matchInfoForStatus.date)
-                        if (matchDate != null) {
-                            val currentTime = System.currentTimeMillis()
-                            val matchTimeMs = matchDate.time
-                            if (currentTime >= matchTimeMs) {
-                                effectiveStatus = "LIVE"
-                            }
-                        }
-                    } catch (e: Exception) {
-                        // Ignore parsing errors
-                    }
-                }
+                val effectiveStatus = liveMatch.status ?: "Scheduled"
 
                 // --- DETECCION DE INCIDENCIAS EN VIVO ---
                 // NOTA: Solo notificar si el partido está actualmente EN VIVO y ya teníamos datos locales (evita notificar partidos viejos al instalar la app)
