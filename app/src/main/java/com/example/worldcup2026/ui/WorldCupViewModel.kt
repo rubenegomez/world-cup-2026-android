@@ -271,14 +271,15 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
         // Defaults actualizados con las fechas activas reales por torneo:
         return when (tournamentId) {
-            5 -> 6   // Liga Profesional (Fecha 6)
-            7 -> 26  // Primera Nacional (Fecha 26)
-            8 -> 31  // Primera B Metropolitana (Fecha 31)
+            5 -> 8   // Liga Profesional (Fecha 8)
+            7 -> 28  // Primera Nacional (Fecha 28)
+            8 -> 32  // Primera B Metropolitana (Fecha 32)
             9 -> 25  // Primera C (Fecha 25)
+            15 -> 22 // Torneo Federal A (Fecha 22)
             13 -> 12 // Promocional Amateur (Fecha 12)
-            3 -> 7   // Copa Libertadores (Octavos de Final)
-            4 -> 7   // Copa Sudamericana (Octavos de Final)
-            6 -> 4   // Copa Argentina (Octavos)
+            3 -> 9   // Copa Libertadores (Cuartos de Final)
+            4 -> 9   // Copa Sudamericana (Cuartos de Final)
+            6 -> 3   // Copa Argentina (Octavos de Final)
             2 -> 7   // Eliminatorias Conmebol
             else -> 1
         }

@@ -60,14 +60,14 @@ val internacionales = listOf(
 )
 
 val nacionales = listOf(
-    TournamentItem(5, "Nivel 1: Liga Profesional", "Nacional", active = true),
+    TournamentItem(5, "Liga Profesional", "Nacional", active = true),
     TournamentItem(6, "Copa Argentina", "Nacional", active = true),
-    TournamentItem(7, "Nivel 2: Primera Nacional", "Nacional", active = true),
-    TournamentItem(8, "Nivel 3 Metro: Primera B Metropolitana", "Nacional", active = true),
-    TournamentItem(15, "Nivel 3 Interior: Torneo Federal A", "Nacional", active = true),
-    TournamentItem(9, "Nivel 4 Metro: Primera C", "Nacional", active = false),
-    TournamentItem(10, "Nivel 4 Metro: Primera C Metropolitana", "Nacional", active = false),
-    TournamentItem(16, "Nivel 4 Interior: Torneo Regional Federal Amateur", "Nacional", active = false),
+    TournamentItem(7, "Primera Nacional", "Nacional", active = true),
+    TournamentItem(8, "Primera B Metropolitana", "Nacional", active = true),
+    TournamentItem(15, "Torneo Federal A", "Nacional", active = true),
+    TournamentItem(9, "Primera C", "Nacional", active = false),
+    TournamentItem(10, "Primera C Metropolitana", "Nacional", active = false),
+    TournamentItem(16, "Torneo Regional Federal Amateur", "Nacional", active = false),
     TournamentItem(13, "Torneo Promocional Amateur", "Nacional", active = false),
     TournamentItem(20, "Amistosos AFA / Nacionales", "Nacional", active = false)
 )
