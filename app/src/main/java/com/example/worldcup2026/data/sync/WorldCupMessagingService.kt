@@ -124,7 +124,9 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             }
 
             if (eventAllowed && scopeAllowed) {
-                sendNotification(title, body, matchId, eventType)
+                if (!(eventType == "goal" && MainActivity.isAppInForeground)) {
+                    sendNotification(title, body, matchId, eventType)
+                }
                 
                 // Broadcast intent to show popup if app is in foreground
                 val intent = Intent("com.example.worldcup2026.MATCH_EVENT").apply {

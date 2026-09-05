@@ -94,6 +94,12 @@ object NotificationHelper {
     }
 
     fun showMatchIncidentNotification(context: Context, title: String, message: String, isGoal: Boolean = false) {
+        // Si la app está abierta en primer plano (foreground), evitamos la notificación de gol del sistema
+        // para no duplicar el sonido con el popup animado de festejo (GoalCelebrationOverlay)
+        if (isGoal && com.example.worldcup2026.MainActivity.isAppInForeground) {
+            return
+        }
+
         val channelId = if (isGoal) CHANNEL_GOALS_ID else CHANNEL_INCIDENTS_ID
         val soundRes = if (isGoal) R.raw.gooolll else R.raw.silbato
         

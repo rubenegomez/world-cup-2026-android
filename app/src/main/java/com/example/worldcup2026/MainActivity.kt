@@ -21,6 +21,22 @@ import com.example.worldcup2026.data.util.NotificationHelper
 
 class MainActivity : ComponentActivity() {
     
+    companion object {
+        @Volatile
+        var isAppInForeground: Boolean = false
+            private set
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isAppInForeground = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        isAppInForeground = false
+    }
+    
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->

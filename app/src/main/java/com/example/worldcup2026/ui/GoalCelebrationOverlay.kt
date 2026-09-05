@@ -63,7 +63,7 @@ fun GoalCelebrationOverlay(
     val context = LocalContext.current
     val scaleAnim = remember { Animatable(0.0f) }
     val alphaAnim = remember { Animatable(0.0f) }
-    var showDetails by remember { mutableStateOf(false) }
+    var showDetails by remember { mutableStateOf(true) }
 
     val resolvedTeam = scoringTeam ?: run {
         val h = match.homeScore ?: 0
@@ -108,8 +108,6 @@ fun GoalCelebrationOverlay(
             targetValue = 1.0f,
             animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
         )
-        delay(250)
-        showDetails = true
 
         delay(durationMillis)
         onDismiss()
