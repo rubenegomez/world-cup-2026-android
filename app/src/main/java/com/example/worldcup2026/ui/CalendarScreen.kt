@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -196,22 +197,40 @@ fun CalendarHeader(
                 }
             }
             
-            IconButton(
-                onClick = { 
-                    SoundManager.playTic()
-                    val now = LocalDate.now()
-                    onDateSelected(now)
-                    onNavigateToMatches(now)
-                },
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Today,
-                    contentDescription = "Ir a hoy",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(
+                    onClick = {
+                        SoundManager.playTic()
+                        onNavigateToStandings()
+                    },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color(0xFFFFC107).copy(alpha = 0.2f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Leaderboard,
+                        contentDescription = "Tablas de Posiciones y Torneos",
+                        tint = Color(0xFFFFC107)
+                    )
+                }
+
+                IconButton(
+                    onClick = { 
+                        SoundManager.playTic()
+                        val now = LocalDate.now()
+                        onDateSelected(now)
+                        onNavigateToMatches(now)
+                    },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Today,
+                        contentDescription = "Ir a hoy",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
 
