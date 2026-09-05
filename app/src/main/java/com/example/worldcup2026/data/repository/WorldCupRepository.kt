@@ -129,7 +129,13 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
             
-            val status = baseMatch.status
+            // Si localmente ya estaba LIVE o Finished y el endpoint general devuelve Scheduled (por delay de BD o caché), preservar el estado avanzado
+            val status = if (baseMatch.status.equals("Scheduled", ignoreCase = true) && 
+                (saved.status.equals("LIVE", ignoreCase = true) || saved.status.equals("HALFTIME", ignoreCase = true) || saved.status.equals("Finished", ignoreCase = true))) {
+                saved.status
+            } else {
+                baseMatch.status
+            }
 
             val homePossession = baseMatch.homePossession ?: saved.homePossession
             val awayPossession = baseMatch.awayPossession ?: saved.awayPossession

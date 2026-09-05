@@ -603,6 +603,22 @@ fun MatchCard(
     val statusUpper = match.status.uppercase()
     val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
     val hasFav = match.homeTeam.name in favoriteTeamNames || match.awayTeam.name in favoriteTeamNames
+
+    val isMatchStartedByTime = remember(match.date) {
+        try {
+            if (!match.date.isNullOrBlank()) {
+                val dt = if (match.date.contains("T")) {
+                    java.time.LocalDateTime.parse(match.date.take(19))
+                } else if (match.date.length >= 16) {
+                    java.time.LocalDateTime.parse(match.date.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                } else null
+                dt != null && dt.isBefore(java.time.LocalDateTime.now())
+            } else false
+        } catch (e: Exception) {
+            false
+        }
+    }
+    val matchHasStarted = statusUpper != "SCHEDULED" || isMatchStartedByTime
     
     val infiniteTransition = rememberInfiniteTransition()
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -768,7 +784,7 @@ fun MatchCard(
                 }
 
                 val isComodin = match.is_featured
-                val canToggleComodin = statusUpper == "SCHEDULED" && onToggleComodin != null
+                val canToggleComodin = !matchHasStarted && onToggleComodin != null
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -1160,8 +1176,6 @@ fun MatchCard(
                     .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
                     .padding(12.dp)
             ) {
-                val matchHasStarted = match.status.uppercase() != "SCHEDULED"
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1456,7 +1470,7 @@ fun MatchCard(
                  match.predictedAwayScore != null && 
                  match.predictedHomeScore == match.predictedAwayScore)
 
-            val showPredictionPenalties = match.status.uppercase() == "SCHEDULED" && 
+            val showPredictionPenalties = !matchHasStarted && 
                 isDrawPrediction && 
                 match.id >= 73
 
