@@ -986,7 +986,7 @@ fun MatchTimelineView(match: Match) {
             }
         } else if (match.scorers.isNotEmpty()) {
             match.scorers.forEach { sc ->
-                val ps = parseScorerString(sc, match.homeTeam.name)
+                val ps = parseScorerString(sc, match.homeTeam.name, match.awayTeam.name)
                 val min = sc.substringAfter("'").substringBefore("'").takeIf { it.length <= 4 } ?: ""
                 list.add(ParsedEvent("⚽", min, ps.team, ps.detail, ps.isHome))
             }

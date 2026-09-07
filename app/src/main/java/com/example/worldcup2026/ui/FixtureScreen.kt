@@ -1045,7 +1045,7 @@ fun MatchCard(
                 )
             }
  
-            if (match.status.uppercase() != "SCHEDULED" && match.scorers.isNotEmpty()) {
+            if (match.scorers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     modifier = Modifier
@@ -1054,7 +1054,7 @@ fun MatchCard(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     match.scorers.forEach { scorerStr ->
-                        val parsed = remember(scorerStr) { parseScorerString(scorerStr, match.homeTeam.name) }
+                        val parsed = remember(scorerStr) { parseScorerString(scorerStr, match.homeTeam.name, match.awayTeam.name) }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -1867,7 +1867,7 @@ data class ParsedScorer(
     val isHome: Boolean
 )
 
-fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
+fun parseScorerString(scorerStr: String, homeTeamName: String, awayTeamName: String = ""): ParsedScorer {
     try {
         var cleanStr = scorerStr.trim()
         if (cleanStr.startsWith("⚽")) {
@@ -1877,7 +1877,15 @@ fun parseScorerString(scorerStr: String, homeTeamName: String): ParsedScorer {
         if (colonIdx != -1) {
             val team = cleanStr.substring(0, colonIdx).trim()
             val detail = cleanStr.substring(colonIdx + 1).trim()
-            val isHome = team.lowercase() == homeTeamName.lowercase()
+            val teamNorm = team.lowercase()
+            val homeNorm = homeTeamName.lowercase()
+            val awayNorm = awayTeamName.lowercase()
+            
+            val isHome = if (awayNorm.isNotEmpty() && (awayNorm == teamNorm || awayNorm.contains(teamNorm) || teamNorm.contains(awayNorm))) {
+                false
+            } else {
+                homeNorm == teamNorm || homeNorm.contains(teamNorm) || teamNorm.contains(homeNorm)
+            }
             return ParsedScorer(team, detail, isHome)
         }
     } catch (e: Exception) {
