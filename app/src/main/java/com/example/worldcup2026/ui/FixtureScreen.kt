@@ -949,23 +949,10 @@ fun MatchCard(
                             )
                         }
                         statusUpper == "SCHEDULED" -> {
-                            val rawDate = match.date ?: ""
-                            val timePart = when {
-                                rawDate.contains("T") -> rawDate.substringAfter("T").take(5)
-                                rawDate.contains(" ") -> rawDate.substringAfter(" ").take(5)
-                                else -> ""
-                            }
-                            val formattedTime = if (timePart.contains(":") && timePart.length == 5) "$timePart hs" else timePart
-                            if (formattedTime.isNotEmpty()) {
-                                Text(
-                                    text = formattedTime,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
-                            }
+                            MatchCountdownBadge(
+                                parsedStartDate = parsedStartDate,
+                                rawDate = match.date ?: ""
+                            )
                         }
                     }
 
@@ -977,63 +964,11 @@ fun MatchCard(
                     )
 
                     if (isLiveLocal) {
-                        val clockLower = match.clock?.lowercase() ?: ""
-                        val isHalftime = statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" ||
-                                clockLower.contains("entretiempo") || clockLower.contains("halftime") || clockLower.contains("medio tiempo")
-                        val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
-                                clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
-
-                        val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") || clockLower.contains("pens") || statusUpper == "PENALES" || statusUpper.contains("PENAL") || (isLiveLocal && (match.homePenalties != null || match.awayPenalties != null))
-                        val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") || clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
-                                (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
-
-                        val clockClean = clockLower.replace("'", "").replace("+", " ").replace(":", " ")
-                        val clockMinParsed = clockClean.split(" ").firstOrNull()?.toIntOrNull()
-
-                        // Si el backend no envía el minuto exacto, estimar según la hora de inicio transcurrida
-                        val elapsedMinutesByTime = remember(parsedStartDate) {
-                            if (parsedStartDate != null) {
-                                java.time.Duration.between(parsedStartDate, java.time.LocalDateTime.now()).toMinutes().toInt()
-                            } else null
-                        }
-
-                        val clockMin = clockMinParsed ?: elapsedMinutesByTime
-
-                        val isFirstHalf = (clockMin != null && clockMin <= 47 && !isHalftime && !isWaterBreak) || clockLower.contains("1°") || clockLower.contains("1er") || clockLower.contains("primer") || clockLower.contains("1t")
-                        val isEstimatedHalftime = isHalftime || (clockMinParsed == null && clockMin != null && clockMin in 48..62)
-                        val isSecondHalf = (clockMin != null && clockMin > 62 && clockMin <= 110 && !isEstimatedHalftime && !isWaterBreak) || (clockMinParsed != null && clockMinParsed in 46..90 && !isHalftime && !isWaterBreak) || clockLower.contains("2°") || clockLower.contains("2do") || clockLower.contains("segundo") || clockLower.contains("2t")
-
-                        val labelText = when {
-                            isPenalties -> "PENALES"
-                            isExtraTime -> "ALARGUE"
-                            isEstimatedHalftime -> "ENTREETIEMPO"
-                            isWaterBreak -> "PAUSA HIDRATACIÓN"
-                            isSecondHalf -> "2º TIEMPO"
-                            isFirstHalf -> "1º TIEMPO"
-                            else -> "2º TIEMPO"
-                        }
-                        val labelColor = when {
-                            isPenalties -> Color(0xFFE91E63)
-                            isExtraTime -> Color(0xFF9C27B0)
-                            isEstimatedHalftime -> Color(0xFFFF9800)
-                            isWaterBreak -> Color(0xFF03A9F4)
-                            else -> Color(0xFF4CAF50)
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = labelColor.copy(alpha = 0.2f),
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            Text(
-                                text = labelText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = labelColor,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
+                        MatchLiveStatusBadge(
+                            statusUpper = statusUpper,
+                            clock = match.clock,
+                            parsedStartDate = parsedStartDate
+                        )
                     }
                 }
                 
@@ -2301,4 +2236,192 @@ fun FormCircle(result: String) {
         else -> Color(0xFFF44336)
     }
     Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(color))
+}
+
+@Composable
+fun MatchCountdownBadge(parsedStartDate: java.time.LocalDateTime?, rawDate: String) {
+    var currentTime by remember { mutableStateOf(java.time.LocalDateTime.now()) }
+    
+    LaunchedEffect(parsedStartDate) {
+        while (true) {
+            currentTime = java.time.LocalDateTime.now()
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
+
+    val timePart = when {
+        rawDate.contains("T") -> rawDate.substringAfter("T").take(5)
+        rawDate.contains(" ") -> rawDate.substringAfter(" ").take(5)
+        else -> ""
+    }
+    val formattedTime = if (timePart.contains(":") && timePart.length == 5) "$timePart hs" else timePart
+
+    if (parsedStartDate == null) {
+        if (formattedTime.isNotEmpty()) {
+            Text(
+                text = formattedTime,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+        return
+    }
+
+    val duration = java.time.Duration.between(currentTime, parsedStartDate)
+    val totalSeconds = duration.seconds
+
+    if (totalSeconds > 0) {
+        val days = duration.toDays()
+        val hours = duration.toHours() % 24
+        val minutes = (duration.toMinutes() % 60)
+        val seconds = (totalSeconds % 60)
+
+        val countdownText = when {
+            days > 0 -> "${days}d ${hours}h ${minutes}m"
+            hours > 0 -> String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
+            else -> String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(bottom = 4.dp)
+        ) {
+            if (formattedTime.isNotEmpty()) {
+                Text(
+                    text = formattedTime,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
+            }
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = Color(0xFFFFC107).copy(alpha = 0.15f),
+                modifier = Modifier.padding(top = 2.dp)
+            ) {
+                Text(
+                    text = "⏳ $countdownText",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFFFFC107),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+    } else {
+        if (formattedTime.isNotEmpty()) {
+            Text(
+                text = formattedTime,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun MatchLiveStatusBadge(
+    statusUpper: String,
+    clock: String?,
+    parsedStartDate: java.time.LocalDateTime?
+) {
+    var currentTime by remember { mutableStateOf(java.time.LocalDateTime.now()) }
+    
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime = java.time.LocalDateTime.now()
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
+
+    val clockLower = clock?.lowercase() ?: ""
+    val isHalftime = statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" ||
+            clockLower.contains("entretiempo") || clockLower.contains("halftime") || clockLower.contains("medio tiempo")
+    val isWaterBreak = statusUpper == "PAUSA" || statusUpper == "PAUSE" ||
+            clockLower.contains("hidratacion") || clockLower.contains("pausa") || clockLower.contains("water break")
+
+    val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") ||
+            clockLower.contains("pens") || statusUpper == "PENALES" || statusUpper.contains("PENAL")
+    val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") ||
+            clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet")
+
+    // Calcular segundos transcurridos desde el inicio
+    val elapsedSeconds = remember(parsedStartDate, currentTime) {
+        if (parsedStartDate != null) {
+            val d = java.time.Duration.between(parsedStartDate, currentTime).seconds
+            if (d > 0) d else 0L
+        } else null
+    }
+
+    // Cronómetro dinámico o minuto oficial
+    val (labelText, labelColor) = when {
+        isPenalties -> "PENALES" to Color(0xFFE91E63)
+        isExtraTime -> "ALARGUE" to Color(0xFF9C27B0)
+        isWaterBreak -> "PAUSA HIDRATACIÓN" to Color(0xFF03A9F4)
+        isHalftime -> "ENTREETIEMPO" to Color(0xFFFF9800)
+        else -> {
+            if (elapsedSeconds != null) {
+                when {
+                    elapsedSeconds < 45 * 60 -> {
+                        // 1er Tiempo: 00:00 a 45:00
+                        val m = elapsedSeconds / 60
+                        val s = elapsedSeconds % 60
+                        val timerStr = String.format(java.util.Locale.US, "1T %02d:%02d", m, s)
+                        timerStr to Color(0xFF4CAF50)
+                    }
+                    elapsedSeconds in (45 * 60)..(49 * 60) -> {
+                        // Adición 1T: 45+m
+                        val addMin = (elapsedSeconds - 45 * 60) / 60
+                        "1T 45'+$addMin" to Color(0xFF4CAF50)
+                    }
+                    elapsedSeconds in (49 * 60)..(64 * 60) -> {
+                        // Entretiempo estimado (15 min) con cuenta regresiva de descanso
+                        val remainingHalftime = (64 * 60) - elapsedSeconds
+                        val m = remainingHalftime / 60
+                        val s = remainingHalftime % 60
+                        val timerStr = String.format(java.util.Locale.US, "ET %02d:%02d", m, s)
+                        timerStr to Color(0xFFFF9800)
+                    }
+                    elapsedSeconds in (64 * 60)..(109 * 60) -> {
+                        // 2do Tiempo: 45:00 a 90:00
+                        val secondHalfSeconds = (45 * 60) + (elapsedSeconds - 64 * 60)
+                        val m = secondHalfSeconds / 60
+                        val s = secondHalfSeconds % 60
+                        val timerStr = String.format(java.util.Locale.US, "2T %02d:%02d", m, s)
+                        timerStr to Color(0xFF4CAF50)
+                    }
+                    else -> {
+                        // Adición 2T: 90+m
+                        val addMin = (elapsedSeconds - 109 * 60) / 60
+                        "2T 90'+$addMin" to Color(0xFF4CAF50)
+                    }
+                }
+            } else {
+                "2º TIEMPO" to Color(0xFF4CAF50)
+            }
+        }
+    }
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = labelColor.copy(alpha = 0.2f),
+        modifier = Modifier.padding(top = 4.dp)
+    ) {
+        Text(
+            text = labelText,
+            style = MaterialTheme.typography.labelSmall,
+            color = labelColor,
+            fontWeight = FontWeight.Black,
+            fontSize = 10.sp,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
 }
