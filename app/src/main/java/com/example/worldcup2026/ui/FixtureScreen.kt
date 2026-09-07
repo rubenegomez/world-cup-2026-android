@@ -1008,9 +1008,9 @@ fun MatchCard(
                             isExtraTime -> "ALARGUE"
                             isEstimatedHalftime -> "ENTREETIEMPO"
                             isWaterBreak -> "PAUSA HIDRATACIÓN"
-                            isSecondHalf -> if (clockMinParsed != null) "$clockMinParsed' (2ºT)" else "2º TIEMPO"
-                            isFirstHalf -> if (clockMinParsed != null) "$clockMinParsed' (1ºT)" else "1º TIEMPO"
-                            else -> "EN JUEGO"
+                            isSecondHalf -> "2º TIEMPO"
+                            isFirstHalf -> "1º TIEMPO"
+                            else -> "2º TIEMPO"
                         }
                         val labelColor = when {
                             isPenalties -> Color(0xFFE91E63)
