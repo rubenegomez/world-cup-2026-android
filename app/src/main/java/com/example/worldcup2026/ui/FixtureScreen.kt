@@ -988,23 +988,34 @@ fun MatchCard(
                                 (clockLower.replace("'", "").replace("+", " ").split(" ").firstOrNull()?.toIntOrNull()?.let { it in 91..120 } ?: false)
 
                         val clockClean = clockLower.replace("'", "").replace("+", " ").replace(":", " ")
-                        val clockMin = clockClean.split(" ").firstOrNull()?.toIntOrNull()
-                        val isFirstHalf = (clockMin != null && clockMin <= 45 && !isHalftime && !isWaterBreak) || clockLower.contains("1°") || clockLower.contains("1er") || clockLower.contains("primer") || clockLower.contains("1T")
-                        val isSecondHalf = (clockMin != null && clockMin in 46..90 && !isHalftime && !isWaterBreak) || clockLower.contains("2°") || clockLower.contains("2do") || clockLower.contains("segundo") || clockLower.contains("2T")
+                        val clockMinParsed = clockClean.split(" ").firstOrNull()?.toIntOrNull()
+
+                        // Si el backend no envía el minuto exacto, estimar según la hora de inicio transcurrida
+                        val elapsedMinutesByTime = remember(parsedStartDate) {
+                            if (parsedStartDate != null) {
+                                java.time.Duration.between(parsedStartDate, java.time.LocalDateTime.now()).toMinutes().toInt()
+                            } else null
+                        }
+
+                        val clockMin = clockMinParsed ?: elapsedMinutesByTime
+
+                        val isFirstHalf = (clockMin != null && clockMin <= 47 && !isHalftime && !isWaterBreak) || clockLower.contains("1°") || clockLower.contains("1er") || clockLower.contains("primer") || clockLower.contains("1t")
+                        val isEstimatedHalftime = isHalftime || (clockMinParsed == null && clockMin != null && clockMin in 48..62)
+                        val isSecondHalf = (clockMin != null && clockMin > 62 && clockMin <= 110 && !isEstimatedHalftime && !isWaterBreak) || (clockMinParsed != null && clockMinParsed in 46..90 && !isHalftime && !isWaterBreak) || clockLower.contains("2°") || clockLower.contains("2do") || clockLower.contains("segundo") || clockLower.contains("2t")
 
                         val labelText = when {
                             isPenalties -> "PENALES"
                             isExtraTime -> "ALARGUE"
-                            isHalftime -> "ENTREETIEMPO"
+                            isEstimatedHalftime -> "ENTREETIEMPO"
                             isWaterBreak -> "PAUSA HIDRATACIÓN"
-                            isSecondHalf -> "2º TIEMPO"
-                            isFirstHalf -> "1º TIEMPO"
+                            isSecondHalf -> if (clockMinParsed != null) "$clockMinParsed' (2ºT)" else "2º TIEMPO"
+                            isFirstHalf -> if (clockMinParsed != null) "$clockMinParsed' (1ºT)" else "1º TIEMPO"
                             else -> "EN JUEGO"
                         }
                         val labelColor = when {
                             isPenalties -> Color(0xFFE91E63)
                             isExtraTime -> Color(0xFF9C27B0)
-                            isHalftime -> Color(0xFFFF9800)
+                            isEstimatedHalftime -> Color(0xFFFF9800)
                             isWaterBreak -> Color(0xFF03A9F4)
                             else -> Color(0xFF4CAF50)
                         }
