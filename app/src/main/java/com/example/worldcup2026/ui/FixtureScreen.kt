@@ -772,13 +772,13 @@ fun MatchCard(
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
-                            dtStr <= "2026-08-24" -> "Fecha 20"
-                            dtStr in "2026-08-25".."2026-08-31" -> "Fecha 21"
-                            dtStr in "2026-09-01".."2026-09-08" -> "Fecha 22"
-                            dtStr in "2026-09-09".."2026-09-15" -> "Fecha 23"
-                            else -> "Fecha 22"
+                            dtStr <= "2026-08-24" -> "Fecha 5"
+                            dtStr in "2026-08-25".."2026-08-31" -> "Fecha 6"
+                            dtStr in "2026-09-01".."2026-09-08" -> "Fecha 7"
+                            dtStr in "2026-09-09".."2026-09-15" -> "Fecha 8"
+                            else -> "Fecha 7"
                         }
-                    } else "Fecha 22"
+                    } else "Fecha 7"
                 }
                 13 -> { // Promocional Amateur
                     val isZonaB = match.homeTeam.group.contains("B", ignoreCase = true) || match.awayTeam.group.contains("B", ignoreCase = true)

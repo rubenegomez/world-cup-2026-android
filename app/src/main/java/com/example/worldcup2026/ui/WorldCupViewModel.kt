@@ -275,7 +275,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             7 -> 28  // Primera Nacional (Fecha 28)
             8 -> 32  // Primera B Metropolitana (Fecha 32)
             9 -> 25  // Primera C (Fecha 25)
-            15 -> 22 // Torneo Federal A (Fecha 22)
+            15 -> 7  // Torneo Federal A (Fecha 7)
             13 -> 12 // Promocional Amateur (Fecha 12)
             3 -> 9   // Copa Libertadores (Cuartos de Final)
             4 -> 9   // Copa Sudamericana (Cuartos de Final)
