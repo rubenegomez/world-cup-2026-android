@@ -804,6 +804,7 @@ private fun isArgentineTeamName(name: String): Boolean {
 fun normalizeTeamName(name: String): String {
     val lower = name.lowercase().trim()
     return when {
+        lower.contains("godoy cruz") || lower.contains("tomba") -> "Godoy Cruz"
         lower.contains("dock sud") -> "Dock Sud"
         lower.contains("gimnasia") && lower.contains("jujuy") -> "Gimnasia y Esgrima (Jujuy)"
         lower.contains("gimnasia") && lower.contains("mendoza") -> "Gimnasia (Mendoza)"

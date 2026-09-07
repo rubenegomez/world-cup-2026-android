@@ -371,7 +371,7 @@ fun DayFilteredFixture(
             compareByDescending<Match> { it.status != "Scheduled" }
                 .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
         )
-        .distinctBy { "${it.homeTeam.name.lowercase().trim()}_vs_${it.awayTeam.name.lowercase().trim()}" }
+        .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
         .sortedWith(
             compareByDescending<Match> { it.homeTeam.name in favoriteTeamNames || it.awayTeam.name in favoriteTeamNames }
                 .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") }
