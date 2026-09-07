@@ -600,24 +600,43 @@ fun MatchCard(
     var showGameRules by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
 
-    val statusUpper = match.status.uppercase()
-    val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+    val rawStatusUpper = match.status.uppercase()
     val hasFav = match.homeTeam.name in favoriteTeamNames || match.awayTeam.name in favoriteTeamNames
 
-    val isMatchStartedByTime = remember(match.date) {
+    val parsedStartDate = remember(match.date) {
         try {
             if (!match.date.isNullOrBlank()) {
-                val dt = if (match.date.contains("T")) {
+                if (match.date.contains("T")) {
                     java.time.LocalDateTime.parse(match.date.take(19))
                 } else if (match.date.length >= 16) {
                     java.time.LocalDateTime.parse(match.date.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
                 } else null
-                dt != null && dt.isBefore(java.time.LocalDateTime.now())
-            } else false
+            } else null
         } catch (e: Exception) {
-            false
+            null
         }
     }
+
+    val isMatchStartedByTime = remember(parsedStartDate) {
+        parsedStartDate != null && parsedStartDate.isBefore(java.time.LocalDateTime.now())
+    }
+
+    val isMatchFinishedByTime = remember(parsedStartDate) {
+        parsedStartDate != null && parsedStartDate.plusMinutes(150).isBefore(java.time.LocalDateTime.now())
+    }
+
+    // Estado dinámico inteligente: Si está Scheduled pero ya empezó la hora o tiene marcador cargado, se muestra dinámicamente como LIVE o FINISHED
+    val statusUpper = remember(rawStatusUpper, isMatchStartedByTime, isMatchFinishedByTime, match.homeScore, match.awayScore) {
+        when {
+            rawStatusUpper in listOf("FINISHED", "POSTP", "POSTERGADO", "SUSPENDED", "SUSPENDIDO", "CANCELLED", "CANCELADO") -> rawStatusUpper
+            rawStatusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") -> rawStatusUpper
+            match.homeScore != null && match.awayScore != null && isMatchFinishedByTime -> "FINISHED"
+            isMatchStartedByTime || (match.homeScore != null && match.awayScore != null) -> "LIVE"
+            else -> rawStatusUpper
+        }
+    }
+
+    val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
     val matchHasStarted = statusUpper != "SCHEDULED" || isMatchStartedByTime
     
     val infiniteTransition = rememberInfiniteTransition()

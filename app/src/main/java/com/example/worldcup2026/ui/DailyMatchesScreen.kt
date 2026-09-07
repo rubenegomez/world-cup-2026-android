@@ -55,8 +55,18 @@ fun DailyMatchesScreen(
                 }
             }
             .filter { match ->
-                val statusUpper = match.status.uppercase()
-                val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+                val rawStatus = match.status.uppercase()
+                val isLiveRaw = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+                val isTimePassed = try {
+                    val rawDate = match.date ?: ""
+                    if (rawDate.length >= 16) {
+                        val dt = if (rawDate.contains("T")) java.time.LocalDateTime.parse(rawDate.take(19))
+                                 else java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                        dt.isBefore(java.time.LocalDateTime.now()) && rawStatus != "FINISHED" && !rawStatus.contains("POSTP") && !rawStatus.contains("SUSPEND")
+                    } else false
+                } catch (e: Exception) { false }
+                
+                val isLive = isLiveRaw || isTimePassed || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED")
                 val matchesLive = if (filterLiveOnly) isLive else true
                 val matchesSearch = if (searchQuery.isNotBlank()) {
                     match.homeTeam.name.contains(searchQuery, ignoreCase = true) ||
@@ -66,13 +76,13 @@ fun DailyMatchesScreen(
             }
             // Deduplicación inteligente por nombres de equipos: da prioridad al partido en vivo / jugado sobre el vacio
             .sortedWith(
-                compareByDescending<Match> { it.status != "Scheduled" }
+                compareByDescending<Match> { it.status != "Scheduled" || (it.homeScore != null && it.awayScore != null) }
                     .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
             )
             .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
             .sortedWith(
                 compareByDescending<Match> { it.homeTeam.name in favTeams || it.awayTeam.name in favTeams }
-                    .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") }
+                    .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") || (it.homeScore != null && it.awayScore != null && it.status.uppercase() != "FINISHED") }
                     .thenBy { it.status.uppercase() == "FINISHED" }
                     .thenBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
             )
