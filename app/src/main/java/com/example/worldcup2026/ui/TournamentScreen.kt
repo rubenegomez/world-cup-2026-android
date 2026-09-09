@@ -48,28 +48,27 @@ data class TournamentItem(
 )
 
 val internacionales = listOf(
-    TournamentItem(1, "Mundial de Fútbol 2030", "Internacional", active = false),
-    TournamentItem(2, "Eliminatorias Mundial 2030", "Internacional", active = false),
     TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = true),
     TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true),
-    TournamentItem(12, "Finalíssima", "Internacional", active = false),
-    TournamentItem(14, "Amistosos Internacionales CONMEBOL", "Internacional", active = false),
-    TournamentItem(17, "Mundial de Clubes", "Internacional", active = false),
-    TournamentItem(18, "Copa Intercontinental", "Internacional", active = false),
-    TournamentItem(19, "Amistosos Internacionales de Clubes", "Internacional", active = false)
+    TournamentItem(1, "Campeonato Mundial De Fútbol", "Internacional", active = false),
+    TournamentItem(12, "Finalísima", "Internacional", active = false),
+    TournamentItem(24, "Copa América", "Internacional", active = false),
+    TournamentItem(2, "Eliminatorias Sudamericanas", "Internacional", active = false),
+    TournamentItem(14, "Amistosos FIFA", "Internacional", active = false),
+    TournamentItem(22, "Copa Mundial De Clubes", "Internacional", active = false),
+    TournamentItem(23, "Copa Intercontinental", "Internacional", active = false),
+    TournamentItem(21, "Amistosos Conmebol", "Internacional", active = false)
 )
 
 val nacionales = listOf(
-    TournamentItem(5, "Liga Profesional", "Nacional", active = true),
+    TournamentItem(5, "Torneo Clausura Liga Profesional", "Nacional", active = true),
     TournamentItem(6, "Copa Argentina", "Nacional", active = true),
-    TournamentItem(7, "Primera Nacional", "Nacional", active = true),
-    TournamentItem(8, "Primera B Metropolitana", "Nacional", active = true),
+    TournamentItem(7, "Torneo Primera Nacional", "Nacional", active = true),
     TournamentItem(15, "Torneo Federal A", "Nacional", active = true),
-    TournamentItem(9, "Primera C", "Nacional", active = false),
-    TournamentItem(10, "Primera C Metropolitana", "Nacional", active = false),
-    TournamentItem(16, "Torneo Regional Federal Amateur", "Nacional", active = false),
-    TournamentItem(13, "Torneo Promocional Amateur", "Nacional", active = false),
-    TournamentItem(20, "Amistosos AFA / Nacionales", "Nacional", active = false)
+    TournamentItem(8, "Torneo Clausura B Metropolitana", "Nacional", active = true),
+    TournamentItem(17, "Torneo Apertura Liga Profesional", "Nacional", active = false),
+    TournamentItem(18, "Torneo Apertura B Metropolitana", "Nacional", active = false),
+    TournamentItem(19, "Amistosos AFA", "Nacional", active = false)
 )
 
 @Composable
