@@ -37,14 +37,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _isVip = mutableStateOf(false)
     val isVip: State<Boolean> = _isVip
 
-    private val _pendingClaimableRounds = mutableStateOf<List<Int>>(emptyList())
-    val pendingClaimableRounds: State<List<Int>> = _pendingClaimableRounds
+    private val _pendingClaimableRounds = mutableStateOf<List<String>>(emptyList())
+    val pendingClaimableRounds: State<List<String>> = _pendingClaimableRounds
 
     // Estado para registrar torneos en vivo (ID del torneo -> si tiene partidos en vivo)
     private val _liveTournaments = mutableStateOf<Map<Int, Boolean>>(emptyMap())
     val liveTournaments: State<Map<Int, Boolean>> = _liveTournaments
 
-    data class RewardDialogInfo(val round: Int, val points: Int, val hours: Int)
+    data class RewardDialogInfo(val round: String, val points: Int, val hours: Int)
     private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
     val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
     
@@ -402,6 +402,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             }
             
             repository.saveMatchScore(matchId, homeScore, awayScore, match.homePenalties, match.awayPenalties, newStatus)
+            syncAdminMatchToBackend(matchId, homeScore, awayScore, newStatus)
             
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) {
@@ -426,14 +427,16 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun updateMatchStatus(matchId: Int, status: String) {
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
+            val match = currentState.matches.find { it.id == matchId }
+            val home = if (status == "Finished") (match?.homeScore ?: 0) else match?.homeScore
+            val away = if (status == "Finished") (match?.awayScore ?: 0) else match?.awayScore
             
             AnalyticsManager.logMatchAction("status_updated", matchId, status)
             repository.saveMatchStatus(matchId, status)
+            syncAdminMatchToBackend(matchId, home, away, status)
             
             val updatedList = currentState.matches.map {
                 if (it.id == matchId) {
-                    val home = if (status == "Finished") (it.homeScore ?: 0) else it.homeScore
-                    val away = if (status == "Finished") (it.awayScore ?: 0) else it.awayScore
                     it.copy(status = status, homeScore = home, awayScore = away)
                 } else it
             }
@@ -442,6 +445,23 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             val allMatches = groupMatchesPlusKnockout(updatedList, finalKnockout, currentTournamentId.value)
             _uiState.value = currentState.copy(matches = allMatches, champion = getChampion(allMatches))
             checkRoundRewards(allMatches)
+        }
+    }
+
+    private fun syncAdminMatchToBackend(matchId: Int, homeScore: Int?, awayScore: Int?, status: String) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                com.example.worldcup2026.data.api.NetworkModule.apiService.updateMatchAdmin(
+                    com.example.worldcup2026.data.api.AdminMatchUpdateRequest(
+                        matchId = matchId,
+                        homeScore = homeScore,
+                        awayScore = awayScore,
+                        status = status
+                    )
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -521,14 +541,15 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private fun checkRoundRewards(matches: List<Match>) {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        val matchesByRound = matches.groupBy { getMatchRound(it.id) }
+        // Agrupar por día calendario (YYYY-MM-DD) para unificar todas las ligas jugadas en la fecha
+        val matchesByDay = matches.filter { !it.date.isNullOrBlank() }.groupBy { it.date!!.take(10) }
         val editor = prefs.edit()
         var hasChanges = false
         
-        matchesByRound.forEach { (round, roundMatches) ->
-            if (round <= 0) return@forEach
-            val keyReady = "round_ready_to_claim_$round"
-            val keyRewarded = "round_rewarded_$round"
+        matchesByDay.forEach { (dayKey, dayMatches) ->
+            if (dayKey.isBlank() || dayMatches.isEmpty()) return@forEach
+            val keyReady = "day_ready_to_claim_$dayKey"
+            val keyRewarded = "day_rewarded_$dayKey"
             
             // Ya fue reclamado
             if (prefs.getBoolean(keyRewarded, false)) return@forEach
@@ -536,15 +557,20 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             // Ya está listo para reclamar (pero no lo reclamó aún)
             if (prefs.getBoolean(keyReady, false)) return@forEach
 
-            val allFinished = roundMatches.all { it.status == "Finished" }
-            if (allFinished && roundMatches.isNotEmpty()) {
-                var roundPoints = 0
-                roundMatches.forEach { match ->
-                    roundPoints += calculatePointsForMatch(match)
+            val allFinished = dayMatches.all { it.status == "Finished" }
+            if (allFinished) {
+                var dayPoints = 0
+                dayMatches.forEach { match ->
+                    dayPoints += calculatePointsForMatch(match)
                 }
                 
+                // Guardar la clave en el registro de días con recompensas
+                val existingDayKeys = prefs.getStringSet("reward_day_keys", emptySet()) ?: emptySet()
+                val updatedKeys = existingDayKeys.toMutableSet().apply { add(dayKey) }
+                editor.putStringSet("reward_day_keys", updatedKeys)
+
                 editor.putBoolean(keyReady, true)
-                editor.putInt("round_points_$round", roundPoints)
+                editor.putInt("day_points_$dayKey", dayPoints)
                 hasChanges = true
             }
         }
@@ -557,30 +583,29 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private fun checkClaimableRounds() {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        val claimables = mutableListOf<Int>()
-        for (round in 1..8) {
-            if (prefs.getBoolean("round_ready_to_claim_$round", false) && !prefs.getBoolean("round_rewarded_$round", false)) {
-                claimables.add(round)
+        val dayKeys = prefs.getStringSet("reward_day_keys", emptySet()) ?: emptySet()
+        val claimables = mutableListOf<String>()
+        
+        for (dayKey in dayKeys) {
+            if (prefs.getBoolean("day_ready_to_claim_$dayKey", false) && !prefs.getBoolean("day_rewarded_$dayKey", false)) {
+                claimables.add(dayKey)
             }
         }
         _pendingClaimableRounds.value = claimables
     }
     
-    fun claimReward(round: Int) {
+    fun claimReward(dayKey: String) {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        val points = prefs.getInt("round_points_$round", 0)
-        val maxPossible = prefs.getInt("round_max_points_$round", 0)
+        val points = prefs.getInt("day_points_$dayKey", 0)
         
         val editor = prefs.edit()
         var adFreeTimeToAdd = 0L
-        if (maxPossible > 0 && points >= maxPossible) {
-            adFreeTimeToAdd = 7 * 24 * 60 * 60 * 1000L // 1 semana (7 días) sin publicidad por fecha perfecta
-        } else if (points > 0) {
+        if (points > 0) {
             adFreeTimeToAdd = points * 22 * 60 * 1000L // 22 minutos sin publicidad por cada punto obtenido
         }
         
-        editor.putBoolean("round_rewarded_$round", true)
-        editor.putBoolean("round_reward_shown_$round", false)
+        editor.putBoolean("day_rewarded_$dayKey", true)
+        editor.putBoolean("day_reward_shown_$dayKey", false)
         
         if (adFreeTimeToAdd > 0L) {
             val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
@@ -653,20 +678,22 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private fun checkPendingRewardDialog() {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        for (round in 1..8) {
-            val rewarded = prefs.getBoolean("round_rewarded_$round", false)
-            val shown = prefs.getBoolean("round_reward_shown_$round", true)
+        val dayKeys = prefs.getStringSet("reward_day_keys", emptySet()) ?: emptySet()
+        for (dayKey in dayKeys) {
+            val rewarded = prefs.getBoolean("day_rewarded_$dayKey", false)
+            val shown = prefs.getBoolean("day_reward_shown_$dayKey", true)
             if (rewarded && !shown) {
-                val points = prefs.getInt("round_points_$round", 0)
-                _pendingRewardDialog.value = RewardDialogInfo(round, points, points * 12)
+                val points = prefs.getInt("day_points_$dayKey", 0)
+                val hours = (points * 22) / 60
+                _pendingRewardDialog.value = RewardDialogInfo(dayKey, points, if (hours == 0 && points > 0) 1 else hours)
                 break
             }
         }
     }
 
-    fun dismissRewardDialog(round: Int) {
+    fun dismissRewardDialog(dayKey: String) {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("round_reward_shown_$round", true).apply()
+        prefs.edit().putBoolean("day_reward_shown_$dayKey", true).apply()
         _pendingRewardDialog.value = null
         checkPendingRewardDialog()
     }

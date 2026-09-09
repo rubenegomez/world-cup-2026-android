@@ -40,7 +40,17 @@ interface WorldCupApiService {
 
     @GET("api/tournaments/{id}/goleadores")
     suspend fun getGoleadores(@Path("id") tournamentId: Int): List<GoleadorDto>
+
+    @retrofit2.http.POST("api/admin/match/update")
+    suspend fun updateMatchAdmin(@retrofit2.http.Body req: AdminMatchUpdateRequest): retrofit2.Response<Unit>
 }
+
+data class AdminMatchUpdateRequest(
+    val matchId: Int,
+    val homeScore: Int?,
+    val awayScore: Int?,
+    val status: String
+)
 
 data class AnnualStandingDto(
     val pos: Int,

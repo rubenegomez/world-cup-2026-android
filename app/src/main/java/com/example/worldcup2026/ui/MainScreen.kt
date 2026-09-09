@@ -525,17 +525,46 @@ fun MainScreen(
                                             }
                                         },
                                         confirmButton = {
-                                            Button(
-                                                onClick = { viewModel.dismissRewardDialog(reward.round) },
-                                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                                modifier = Modifier.fillMaxWidth()
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
-                                                Text(
-                                                    text = if (reward.points > 0) "¡EXCELENTE!" else "ENTENDIDO",
-                                                    color = androidx.compose.ui.graphics.Color.White,
-                                                    fontWeight = FontWeight.Bold
-                                                )
+                                                if (reward.points > 0) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            val sendIntent = Intent().apply {
+                                                                action = Intent.ACTION_SEND
+                                                                putExtra(
+                                                                    Intent.EXTRA_TEXT,
+                                                                    "🏆 ¡Sumé ${reward.points} PUNTOS en la Jornada de Arena Prode y gané ${reward.hours}hs sin publicidad! ⚽🔥\nDescargá la app y jugá el prode: https://ellocodelpedal.duckdns.org/join"
+                                                                )
+                                                                type = "text/plain"
+                                                            }
+                                                            val shareIntent = Intent.createChooser(sendIntent, "Compartir en redes sociales")
+                                                            context.startActivity(shareIntent)
+                                                        },
+                                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFD700)),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Icon(Icons.Default.Share, contentDescription = "Compartir", modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("COMPARTIR EN REDES", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                                    }
+                                                }
+                                                Button(
+                                                    onClick = { viewModel.dismissRewardDialog(reward.round) },
+                                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text(
+                                                        text = if (reward.points > 0) "¡EXCELENTE!" else "ENTENDIDO",
+                                                        color = androidx.compose.ui.graphics.Color.White,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
                                             }
                                         }
                                     )

@@ -867,35 +867,73 @@ fun MatchCard(
                 val isComodin = match.is_featured
                 val canToggleComodin = !matchHasStarted && onToggleComodin != null
 
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isComodin) Color(0xFFFFD700) else Color.White.copy(alpha = 0.06f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp, 
-                        if (isComodin) Color(0xFFFFD700) else Color(0xFFFFD700).copy(alpha = 0.35f)
-                    ),
-                    modifier = Modifier.clickable(enabled = canToggleComodin) {
-                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                        onToggleComodin?.invoke(match.id)
-                    }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    var showAdminDialog by remember { mutableStateOf(false) }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White.copy(alpha = 0.06f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                        modifier = Modifier.clickable {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            showAdminDialog = true
+                        }
                     ) {
-                        Icon(
-                            Icons.Default.Star, 
-                            contentDescription = "Comodín", 
-                            tint = if (isComodin) Color.Black else Color(0xFFFFD700),
-                            modifier = Modifier.size(11.dp)
+                        Box(modifier = Modifier.padding(4.dp)) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Ajustar Partido",
+                                tint = Color.White.copy(alpha = 0.6f),
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
+
+                    if (showAdminDialog) {
+                        AdminMatchDialog(
+                            match = match,
+                            onDismiss = { showAdminDialog = false },
+                            onSave = { hScore, aScore, newStatus ->
+                                showAdminDialog = false
+                                onScoreChange(match.id, hScore, aScore)
+                                onStatusChange(match.id, newStatus)
+                            }
                         )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = if (isComodin) "COMODÍN x2" else "x2", 
-                            color = if (isComodin) Color.Black else Color(0xFFFFD700), 
-                            fontWeight = FontWeight.Black, 
-                            fontSize = 9.sp
-                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isComodin) Color(0xFFFFD700) else Color.White.copy(alpha = 0.06f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, 
+                            if (isComodin) Color(0xFFFFD700) else Color(0xFFFFD700).copy(alpha = 0.35f)
+                        ),
+                        modifier = Modifier.clickable(enabled = canToggleComodin) {
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            onToggleComodin?.invoke(match.id)
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Star, 
+                                contentDescription = "Comodín", 
+                                tint = if (isComodin) Color.Black else Color(0xFFFFD700), 
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = if (isComodin) "COMODÍN x2" else "x2", 
+                                color = if (isComodin) Color.Black else Color(0xFFFFD700), 
+                                fontWeight = FontWeight.Black, 
+                                fontSize = 9.sp
+                            )
+                        }
                     }
                 }
             }
@@ -1455,7 +1493,7 @@ fun MatchCard(
                                 else Color.White.copy(alpha = 0.05f),
                                 RoundedCornerShape(12.dp)
                             )
-                            .padding(10.dp),
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Row(
@@ -1473,18 +1511,20 @@ fun MatchCard(
                                 text = "Tu Pronóstico: $displayWinner (${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0})",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.9f)
+                                color = Color.White.copy(alpha = 0.9f),
+                                modifier = Modifier.weight(1f, fill = false).padding(end = 4.dp),
+                                maxLines = 1
                             )
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = if (pointsData > 0) Color(0xFF4CAF50) else Color.Gray.copy(alpha = 0.3f)
                             ) {
                                 Text(
-                                    text = if (isLive) "⚡ EN VIVO: +$pointsData PTS" else if (pointsData > 0) "🏆 ¡+$pointsData PTS SUMADOS!" else "❌ 0 PTS",
-                                    fontSize = 11.sp,
+                                    text = if (isLive) "⚡ EN VIVO: +$pointsData PTS" else if (pointsData > 0) "🏆 ¡+$pointsData PTS!" else "❌ 0 PTS",
+                                    fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                 )
                             }
                         }
@@ -2399,9 +2439,13 @@ fun MatchLiveStatusBadge(
                         timerStr to Color(0xFF4CAF50)
                     }
                     else -> {
-                        // Adición 2T: 90+m
+                        // Adición 2T: 90+m hasta un máximo de 15 minutos
                         val addMin = (elapsedSeconds - 109 * 60) / 60
-                        "2T 90'+$addMin" to Color(0xFF4CAF50)
+                        if (addMin <= 15) {
+                            "2T 90'+$addMin" to Color(0xFF4CAF50)
+                        } else {
+                            "2T CUMPLIDO" to Color(0xFFFF9800)
+                        }
                     }
                 }
             } else {
@@ -2424,4 +2468,135 @@ fun MatchLiveStatusBadge(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         )
     }
+}
+
+@Composable
+fun AdminMatchDialog(
+    match: Match,
+    onDismiss: () -> Unit,
+    onSave: (Int?, Int?, String) -> Unit
+) {
+    var homeScoreStr by remember { mutableStateOf(match.homeScore?.toString() ?: "0") }
+    var awayScoreStr by remember { mutableStateOf(match.awayScore?.toString() ?: "0") }
+    var selectedStatus by remember { mutableStateOf(if (match.status.equals("Scheduled", ignoreCase = true)) "Finished" else match.status) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "⚙️ Panel de Control",
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    fontSize = 18.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${match.homeTeam.name} vs ${match.awayTeam.name}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFFFD700),
+                    textAlign = TextAlign.Center
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Selector de marcador
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(match.homeTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f), maxLines = 1)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {
+                                val current = homeScoreStr.toIntOrNull() ?: 0
+                                if (current > 0) homeScoreStr = (current - 1).toString()
+                            }, modifier = Modifier.size(32.dp)) {
+                                Text("-", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Text(homeScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
+                            IconButton(onClick = {
+                                val current = homeScoreStr.toIntOrNull() ?: 0
+                                homeScoreStr = (current + 1).toString()
+                            }, modifier = Modifier.size(32.dp)) {
+                                Text("+", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Text("VS", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color.White.copy(alpha = 0.3f))
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(match.awayTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f), maxLines = 1)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {
+                                val current = awayScoreStr.toIntOrNull() ?: 0
+                                if (current > 0) awayScoreStr = (current - 1).toString()
+                            }, modifier = Modifier.size(32.dp)) {
+                                Text("-", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Text(awayScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
+                            IconButton(onClick = {
+                                val current = awayScoreStr.toIntOrNull() ?: 0
+                                awayScoreStr = (current + 1).toString()
+                            }, modifier = Modifier.size(32.dp)) {
+                                Text("+", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                // Selector de estado
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("Estado del partido:", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("Finished" to "Finalizado", "LIVE" to "En Vivo", "Postponed" to "Postergado").forEach { (stKey, stLabel) ->
+                            val isSel = selectedStatus.equals(stKey, ignoreCase = true)
+                            FilterChip(
+                                selected = isSel,
+                                onClick = { selectedStatus = stKey },
+                                label = { Text(stLabel, fontSize = 10.sp, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = if (stKey == "Finished") Color(0xFF4CAF50) else Color(0xFFFF9800),
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val h = homeScoreStr.toIntOrNull()
+                    val a = awayScoreStr.toIntOrNull()
+                    onSave(h, a, selectedStatus)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCELAR", color = Color.White.copy(alpha = 0.7f))
+            }
+        }
+    )
 }
