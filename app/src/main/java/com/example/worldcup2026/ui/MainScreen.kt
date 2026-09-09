@@ -585,6 +585,63 @@ fun MainScreen(
                                 onDismiss = { viewModel.dismissUpdateDialog() }
                             )
                         }
+
+                        val isAdBlockerActive by viewModel.isAdBlockerDetected
+                        if (isAdBlockerActive) {
+                            AlertDialog(
+                                onDismissRequest = { /* No descartable hasta desactivar o reintentar */ },
+                                containerColor = androidx.compose.ui.graphics.Color(0xFF1E1E1E),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "Bloqueador detectado",
+                                        tint = androidx.compose.ui.graphics.Color(0xFFFF5252),
+                                        modifier = Modifier.size(44.dp)
+                                    )
+                                },
+                                title = {
+                                    Text(
+                                        text = "🚫 Bloqueador Detectado",
+                                        fontWeight = FontWeight.Black,
+                                        color = androidx.compose.ui.graphics.Color.White,
+                                        fontSize = 19.sp,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Hemos detectado un bloqueador de anuncios (AdBlock, DNS privado o VPN) activo.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.85f),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Text(
+                                            text = "Para continuar disfrutando de las estadísticas en vivo, el Prode y todas las funciones gratuitas, por favor desactiva tu bloqueador de anuncios.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = androidx.compose.ui.graphics.Color(0xFFFFD700),
+                                            fontWeight = FontWeight.Bold,
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = { viewModel.checkAdBlocker() },
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("REINTENTAR / YA LO DESACTIVÉ", fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

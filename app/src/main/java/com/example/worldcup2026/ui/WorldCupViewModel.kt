@@ -47,6 +47,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     data class RewardDialogInfo(val round: String, val points: Int, val hours: Int)
     private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
     val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
+
+    private val _isAdBlockerDetected = mutableStateOf(false)
+    val isAdBlockerDetected: State<Boolean> = _isAdBlockerDetected
     
     private val _celebrationMatch = mutableStateOf<Match?>(null)
     val celebrationMatch: State<Match?> = _celebrationMatch
@@ -94,6 +97,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         startLiveTournamentsChecker()
         checkForUpdates()
         restoreUserPredictionsSession()
+        checkAdBlocker()
+    }
+
+    fun checkAdBlocker() {
+        viewModelScope.launch {
+            val isBlocked = AdBlockerDetector.isAdBlockerActive(getApplication())
+            _isAdBlockerDetected.value = isBlocked
+        }
     }
 
     private fun restoreUserPredictionsSession() {
@@ -548,14 +559,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         
         matchesByDay.forEach { (dayKey, dayMatches) ->
             if (dayKey.isBlank() || dayMatches.isEmpty()) return@forEach
-            val keyReady = "day_ready_to_claim_$dayKey"
             val keyRewarded = "day_rewarded_$dayKey"
             
-            // Ya fue reclamado
+            // Ya fue procesado y acreditado automáticamente
             if (prefs.getBoolean(keyRewarded, false)) return@forEach
-            
-            // Ya está listo para reclamar (pero no lo reclamó aún)
-            if (prefs.getBoolean(keyReady, false)) return@forEach
 
             val allFinished = dayMatches.all { it.status == "Finished" }
             if (allFinished) {
@@ -564,12 +571,21 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     dayPoints += calculatePointsForMatch(match)
                 }
                 
+                // Acreditación AUTOMÁTICA INMEDIATA del tiempo ganado (22 min por punto)
+                val adFreeTimeToAdd = if (dayPoints > 0) dayPoints * 22 * 60 * 1000L else 0L
+                if (adFreeTimeToAdd > 0L) {
+                    val currentAdFreeUntil = prefs.getLong("ad_free_until", System.currentTimeMillis())
+                    val baseTime = if (currentAdFreeUntil > System.currentTimeMillis()) currentAdFreeUntil else System.currentTimeMillis()
+                    editor.putLong("ad_free_until", baseTime + adFreeTimeToAdd)
+                }
+                
                 // Guardar la clave en el registro de días con recompensas
                 val existingDayKeys = prefs.getStringSet("reward_day_keys", emptySet()) ?: emptySet()
                 val updatedKeys = existingDayKeys.toMutableSet().apply { add(dayKey) }
                 editor.putStringSet("reward_day_keys", updatedKeys)
 
-                editor.putBoolean(keyReady, true)
+                editor.putBoolean(keyRewarded, true)
+                editor.putBoolean("day_reward_shown_$dayKey", false)
                 editor.putInt("day_points_$dayKey", dayPoints)
                 hasChanges = true
             }
@@ -577,21 +593,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         
         if (hasChanges) {
             editor.apply()
-            checkClaimableRounds()
+            _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
+            _pendingClaimableRounds.value = emptyList()
+            checkPendingRewardDialog()
         }
     }
 
     private fun checkClaimableRounds() {
-        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        val dayKeys = prefs.getStringSet("reward_day_keys", emptySet()) ?: emptySet()
-        val claimables = mutableListOf<String>()
-        
-        for (dayKey in dayKeys) {
-            if (prefs.getBoolean("day_ready_to_claim_$dayKey", false) && !prefs.getBoolean("day_rewarded_$dayKey", false)) {
-                claimables.add(dayKey)
-            }
-        }
-        _pendingClaimableRounds.value = claimables
+        _pendingClaimableRounds.value = emptyList()
     }
     
     fun claimReward(dayKey: String) {

@@ -87,9 +87,24 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
             val success = prodeRepository.authenticateWithFirebase(idToken)
             if (success) {
                 _isAuthenticated.value = true
-                _currentUser.value = prodeRepository.currentUser
+                val user = prodeRepository.currentUser
+                _currentUser.value = user
                 prodeRepository.fetchMyLeagues()
                 loadGlobalRanking()
+                
+                // Restaurar favoritos desde la nube al perfil del usuario
+                if (user != null) {
+                    val prefs = getApplication<android.app.Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+                    val cloudTournaments = user.favoriteTournaments
+                    val cloudTeams = user.favoriteTeams
+                    if (!cloudTournaments.isNullOrEmpty()) {
+                        prefs.edit().putStringSet("favorite_tournament_ids", cloudTournaments.map { it.toString() }.toSet()).apply()
+                    }
+                    if (!cloudTeams.isNullOrEmpty()) {
+                        prefs.edit().putStringSet("favorite_team_names", cloudTeams.toSet()).apply()
+                    }
+                }
+
                 // Descargar y restaurar predicciones guardadas en el servidor
                 launch {
                     try {
