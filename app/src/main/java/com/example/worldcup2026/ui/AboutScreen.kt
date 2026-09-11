@@ -3,6 +3,8 @@ package com.example.worldcup2026.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -105,6 +107,12 @@ fun AboutScreen() {
                     AuthorItem("Arquitectura e IA", "Antigravity 2.0")
                 }
             }
+        }
+
+        // Ecosistema de Apps
+        item {
+            AboutSectionHeader("ECOSISTEMA DE APLICACIONES", Icons.Default.Star)
+            CrossPromotionBanner()
         }
 
         // Recursos y Datos
@@ -267,3 +275,202 @@ fun LegalButton(label: String, url: String, context: android.content.Context) {
 }
 
 data class LibraryInfo(val name: String, val author: String, val license: String)
+
+data class PromotedApp(
+    val title: String,
+    val category: String,
+    val description: String,
+    val icon: ImageVector,
+    val iconTint: Color,
+    val gradientColors: List<Color>,
+    val targetUrl: String,
+    val badgeText: String
+)
+
+private val PROMOTED_APPS = listOf(
+    PromotedApp(
+        title = "TimeTracker Pro",
+        category = "Guardias & Turnos",
+        description = "Control de horas netas trabajadas, guardias, honorarios y facturación en PDF.",
+        icon = Icons.Default.Info,
+        iconTint = Color(0xFF00E676),
+        gradientColors = listOf(Color(0xFF0D2818), Color(0xFF04120A)),
+        targetUrl = "https://ellocodelpedal.duckdns.org/timetracker.html",
+        badgeText = "PRODUCTIVIDAD"
+    ),
+    PromotedApp(
+        title = "Bondi Maps",
+        category = "Transporte & Colectivos",
+        description = "Recorridos, paradas cercanas y mapas interactivos para moverte en la ciudad.",
+        icon = Icons.Default.Build,
+        iconTint = Color(0xFF00B0FF),
+        gradientColors = listOf(Color(0xFF0A2540), Color(0xFF061528)),
+        targetUrl = "https://ellocodelpedal.duckdns.org/bondi.html",
+        badgeText = "TRANSPORTE"
+    ),
+    PromotedApp(
+        title = "Los Fondos del Loco",
+        category = "Wallpapers Ultra HD",
+        description = "Fondos de pantalla exclusivos de ciclismo y la comunidad de El Loco del Pedal.",
+        icon = Icons.Default.Star,
+        iconTint = Color(0xFFFF6D00),
+        gradientColors = listOf(Color(0xFF2C1608), Color(0xFF1A0A02)),
+        targetUrl = "https://ellocodelpedal.duckdns.org/fondos.html",
+        badgeText = "FONDOS"
+    )
+)
+
+@Composable
+fun CrossPromotionBanner(modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Apps de El Loco del Pedal",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "ESTUDIO",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                PROMOTED_APPS.forEach { app ->
+                    PromotedAppCard(
+                        app = app,
+                        onOpen = {
+                            try {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(app.targetUrl)).apply {
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PromotedAppCard(app: PromotedApp, onOpen: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .width(220.dp)
+            .height(160.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, app.iconTint.copy(alpha = 0.35f))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(app.gradientColors))
+                .padding(14.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = app.icon,
+                            contentDescription = null,
+                            tint = app.iconTint,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Surface(
+                            color = app.iconTint.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = app.badgeText,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = app.iconTint,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = app.title,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = app.category,
+                        fontSize = 11.sp,
+                        color = app.iconTint.copy(alpha = 0.9f)
+                    )
+                }
+
+                Button(
+                    onClick = onOpen,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(34.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = app.iconTint),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "Ver / Descargar",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+    }
+}

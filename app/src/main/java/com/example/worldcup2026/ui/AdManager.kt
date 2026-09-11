@@ -5,11 +5,19 @@ import android.content.Context
 import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
@@ -161,8 +169,11 @@ object AdManager {
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
     val showAdmobFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val showHouseBannerFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
 
-    if (!showAdmobFallback.value) {
+    if (showHouseBannerFallback.value) {
+        HouseBannerFallback(modifier = modifier)
+    } else if (!showAdmobFallback.value) {
         UnityBannerView(
             modifier = modifier,
             onBannerFailed = {
@@ -178,9 +189,86 @@ fun AdmobBanner(modifier: Modifier = Modifier) {
                 AdView(ctx).apply {
                     setAdSize(AdSize.BANNER)
                     adUnitId = AdManager.BANNER_AD_UNIT_ID
+                    adListener = object : com.google.android.gms.ads.AdListener() {
+                        override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
+                            showHouseBannerFallback.value = true
+                        }
+                    }
                     loadAd(AdRequest.Builder().build())
                 }
             }
         )
     }
 }
+
+@Composable
+fun HouseBannerFallback(modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val houseApps = remember {
+        listOf(
+            Triple("TimeTracker Pro", "Control de horas y guardias", "https://ellocodelpedal.duckdns.org/timetracker.html"),
+            Triple("Bondi Maps", "Colectivos y mapas interactivos", "https://ellocodelpedal.duckdns.org/bondi.html"),
+            Triple("Los Fondos del Loco", "Wallpapers Ultra HD exclusivos", "https://ellocodelpedal.duckdns.org/fondos.html")
+        )
+    }
+    val currentApp = remember { houseApps.random() }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp)
+            .clickable {
+                try {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(currentApp.third)).apply {
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            },
+        color = Color(0xFF131F2E),
+        border = BorderStroke(0.5.dp, Color(0xFF00E676).copy(alpha = 0.5f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("⭐", fontSize = 16.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = currentApp.first,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                        color = Color(0xFF00E676)
+                    )
+                    Text(
+                        text = currentApp.second,
+                        fontSize = 10.sp,
+                        color = Color.White.copy(alpha = 0.8f),
+                        maxLines = 1
+                    )
+                }
+            }
+
+            Surface(
+                color = Color(0xFF00E676),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = "DESCARGAR",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 9.sp,
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+    }
+}
+

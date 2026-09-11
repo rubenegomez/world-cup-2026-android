@@ -2564,14 +2564,18 @@ fun AdminMatchDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        listOf("Finished" to "Finalizado", "LIVE" to "En Vivo", "Postponed" to "Postergado").forEach { (stKey, stLabel) ->
+                        listOf("Scheduled" to "Programado", "Finished" to "Finalizado", "LIVE" to "En Vivo", "Postponed" to "Postergado").forEach { (stKey, stLabel) ->
                             val isSel = selectedStatus.equals(stKey, ignoreCase = true)
                             FilterChip(
                                 selected = isSel,
                                 onClick = { selectedStatus = stKey },
                                 label = { Text(stLabel, fontSize = 10.sp, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal) },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = if (stKey == "Finished") Color(0xFF4CAF50) else Color(0xFFFF9800),
+                                    selectedContainerColor = when (stKey) {
+                                        "Scheduled" -> Color(0xFF2196F3)
+                                        "Finished" -> Color(0xFF4CAF50)
+                                        else -> Color(0xFFFF9800)
+                                    },
                                     selectedLabelColor = Color.White
                                 )
                             )

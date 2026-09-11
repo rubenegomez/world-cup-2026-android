@@ -966,6 +966,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                             val finalMatches = KnockoutCalculator.calculateKnockoutMatches(worldCupMatches, currentTournamentId.value)
                             val allMatches = groupMatchesPlusKnockout(globalMatches, finalMatches, currentTournamentId.value)
                             _uiState.value = WorldCupUiState.Success(allMatches, getChampion(allMatches))
+                            checkRoundRewards(allMatches)
                             
                             for (newM in allMatches) {
                                 val oldM = oldList.find { it.id == newM.id } ?: continue
