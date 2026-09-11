@@ -2560,25 +2560,45 @@ fun AdminMatchDialog(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text("Estado del partido:", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        listOf("Scheduled" to "Programado", "Finished" to "Finalizado", "LIVE" to "En Vivo", "Postponed" to "Postergado").forEach { (stKey, stLabel) ->
-                            val isSel = selectedStatus.equals(stKey, ignoreCase = true)
-                            FilterChip(
-                                selected = isSel,
-                                onClick = { selectedStatus = stKey },
-                                label = { Text(stLabel, fontSize = 10.sp, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = when (stKey) {
-                                        "Scheduled" -> Color(0xFF2196F3)
-                                        "Finished" -> Color(0xFF4CAF50)
-                                        else -> Color(0xFFFF9800)
+                    
+                    val statusOptions = listOf(
+                        listOf("Scheduled" to "Programado", "LIVE" to "En Vivo"),
+                        listOf("Finished" to "Finalizado", "Postponed" to "Postergado")
+                    )
+                    
+                    statusOptions.forEachIndexed { idx, rowItems ->
+                        if (idx > 0) Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            rowItems.forEach { (stKey, stLabel) ->
+                                val isSel = selectedStatus.equals(stKey, ignoreCase = true)
+                                FilterChip(
+                                    modifier = Modifier.weight(1f),
+                                    selected = isSel,
+                                    onClick = { selectedStatus = stKey },
+                                    label = {
+                                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                            Text(
+                                                stLabel,
+                                                fontSize = 11.sp,
+                                                fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                                                maxLines = 1
+                                            )
+                                        }
                                     },
-                                    selectedLabelColor = Color.White
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = when (stKey) {
+                                            "Scheduled" -> Color(0xFF2196F3)
+                                            "Finished" -> Color(0xFF4CAF50)
+                                            "LIVE" -> Color(0xFFE91E63)
+                                            else -> Color(0xFFFF9800)
+                                        },
+                                        selectedLabelColor = Color.White
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }
