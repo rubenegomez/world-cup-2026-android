@@ -902,8 +902,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 val key = "${match.id}_${h}_${a}_${match.status}"
                 val now = System.currentTimeMillis()
 
-                // Evitar doble festejo para el mismo partido y marcador dentro de 10 segundos
-                if (lastCelebratedMatchKey == key && (now - lastCelebratedTimestamp) < 10000L) {
+                // Evitar doble festejo si ya hay un festejo mostrándose o si fue celebrado dentro de los últimos 30 segundos
+                if (_celebrationMatch.value != null || (lastCelebratedMatchKey == key && (now - lastCelebratedTimestamp) < 30000L)) {
                     return@launch
                 }
 

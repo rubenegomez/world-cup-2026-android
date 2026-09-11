@@ -163,9 +163,15 @@ object NetworkModule {
 
     private val okHttpClient = OkHttpClient.Builder().apply {
         addInterceptor(NullTeamInterceptor())
-        connectTimeout(15, TimeUnit.SECONDS)
-        readTimeout(15, TimeUnit.SECONDS)
-        writeTimeout(15, TimeUnit.SECONDS)
+        connectTimeout(20, TimeUnit.SECONDS)
+        readTimeout(20, TimeUnit.SECONDS)
+        writeTimeout(20, TimeUnit.SECONDS)
+        retryOnConnectionFailure(true)
+        connectionSpecs(listOf(
+            okhttp3.ConnectionSpec.MODERN_TLS,
+            okhttp3.ConnectionSpec.COMPATIBLE_TLS,
+            okhttp3.ConnectionSpec.CLEARTEXT
+        ))
         if (sslContext != null) {
             sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
             hostnameVerifier { _, _ -> true }
