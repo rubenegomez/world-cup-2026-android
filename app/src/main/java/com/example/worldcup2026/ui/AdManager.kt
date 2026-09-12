@@ -5,6 +5,7 @@ import android.content.Context
 import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -69,6 +70,51 @@ object AdManager {
         )
     }
 
+    // House Ads de Videos propios alojados en el Servidor
+    data class HouseVideoAd(
+        val appName: String,
+        val appTagline: String,
+        val videoUrl: String,
+        val targetUrl: String,
+        val accentColor: Long = 0xFF00E676
+    )
+
+    val houseVideoAds = listOf(
+        HouseVideoAd(
+            appName = "Bondi Maps",
+            appTagline = "¡Encontrá paradas, recorridos y horarios de colectivos en tiempo real!",
+            videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/bondi_ad.mp4",
+            targetUrl = "https://ellocodelpedal.duckdns.org/bondi.html",
+            accentColor = 0xFF00E676
+        ),
+        HouseVideoAd(
+            appName = "TimeTracker Pro",
+            appTagline = "¡Gestioná tus horas de trabajo, guardias y cobros con precisión!",
+            videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/timetracker_ad.mp4",
+            targetUrl = "https://ellocodelpedal.duckdns.org/timetracker.html",
+            accentColor = 0xFFFFC107
+        )
+    )
+
+    private var houseAdIndex = 0
+    val currentHouseVideoAd = androidx.compose.runtime.mutableStateOf<HouseVideoAd?>(null)
+    private var onHouseAdFinishedCallback: (() -> Unit)? = null
+
+    fun showHouseVideoAd(onFinished: () -> Unit) {
+        val ad = houseVideoAds[houseAdIndex % houseVideoAds.size]
+        houseAdIndex++
+        onHouseAdFinishedCallback = onFinished
+        currentHouseVideoAd.value = ad
+    }
+
+    fun dismissHouseVideoAd() {
+        currentHouseVideoAd.value = null
+        onHouseAdFinishedCallback?.invoke()
+        onHouseAdFinishedCallback = null
+    }
+
+    private var interstitialCounter = 0
+
     fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
         val activity = context as? Activity
         if (activity != null) {
@@ -87,7 +133,8 @@ object AdManager {
                             }
                             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                                 mRewardedAd = null
-                                onRewardGranted()
+                                // Respaldo #3: Video House Ad propio
+                                showHouseVideoAd(onRewardGranted)
                             }
                         }
                         ad.show(activity) { _ ->
@@ -95,9 +142,8 @@ object AdManager {
                             Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "Cargando video anuncio...", Toast.LENGTH_SHORT).show()
-                        loadRewardedAd(context)
-                        onRewardGranted()
+                        // Si no cargó AdMob ni Unity, mostrar Video House Ad propio de Bondi o TimeTracker
+                        showHouseVideoAd(onRewardGranted)
                     }
                 }
             )
@@ -133,6 +179,14 @@ object AdManager {
 
     fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
         val activity = context as? Activity
+        interstitialCounter++
+
+        // Intercalar 1 de cada 3 veces con Video House Ad propio (Bondi Maps / TimeTracker Pro)
+        if (interstitialCounter % 3 == 0) {
+            showHouseVideoAd(onComplete)
+            return
+        }
+
         if (activity != null) {
             // Prioridad #1: Unity Ads
             UnityAdsManager.showInterstitialAd(
@@ -151,12 +205,12 @@ object AdManager {
 
                             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                                 mInterstitialAd = null
-                                onComplete()
+                                showHouseVideoAd(onComplete)
                             }
                         }
                         ad.show(activity)
                     } else {
-                        onComplete()
+                        showHouseVideoAd(onComplete)
                     }
                 }
             )
@@ -170,6 +224,15 @@ object AdManager {
 fun AdmobBanner(modifier: Modifier = Modifier) {
     val showAdmobFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val showHouseBannerFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+
+    // Rotar o reintentar periódicamente
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(45000L) // cada 45 segundos intentar refrescar
+        if (showHouseBannerFallback.value) {
+            showHouseBannerFallback.value = false
+            showAdmobFallback.value = false
+        }
+    }
 
     if (showHouseBannerFallback.value) {
         HouseBannerFallback(modifier = modifier)
@@ -211,7 +274,17 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
             Triple("Los Fondos del Loco", "Wallpapers Ultra HD exclusivos", "https://ellocodelpedal.duckdns.org/fondos.html")
         )
     }
-    val currentApp = remember { houseApps.random() }
+    var appIndex by remember { mutableIntStateOf(0) }
+
+    // Rotar banner propio cada 12 segundos
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(12000L)
+            appIndex = (appIndex + 1) % houseApps.size
+        }
+    }
+
+    val currentApp = houseApps[appIndex]
 
     Surface(
         modifier = modifier
@@ -267,6 +340,157 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
                     color = Color.Black,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun HouseVideoAdPlayerOverlay(
+    houseAd: AdManager.HouseVideoAd,
+    onDismiss: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var countdown by remember { mutableIntStateOf(5) }
+    var canSkip by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        while (countdown > 0) {
+            kotlinx.coroutines.delay(1000L)
+            countdown--
+        }
+        canSkip = true
+    }
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = { if (canSkip) onDismiss() },
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = canSkip,
+            dismissOnClickOutside = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            // Reproductor nativo VideoView
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    android.widget.VideoView(ctx).apply {
+                        setVideoURI(android.net.Uri.parse(houseAd.videoUrl))
+                        setOnPreparedListener { mp ->
+                            mp.isLooping = true
+                            start()
+                        }
+                        setOnErrorListener { _, _, _ ->
+                            onDismiss()
+                            true
+                        }
+                    }
+                }
+            )
+
+            // Header con Cuenta Regresiva / Botón de Cerrar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp)
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color.Black.copy(alpha = 0.65f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "ANUNCIO DESTACADO",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(houseAd.accentColor),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+
+                Surface(
+                    color = Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.clickable {
+                        if (canSkip) onDismiss()
+                    }
+                ) {
+                    Text(
+                        text = if (canSkip) "✕ Omitir" else "Omitir en ${countdown}s",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (canSkip) Color.White else Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    )
+                }
+            }
+
+            // Barra inferior con botón de Descargar / Instalar
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+                color = Color(0xFF131F2E).copy(alpha = 0.95f),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(houseAd.accentColor).copy(alpha = 0.6f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = houseAd.appName,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 16.sp,
+                            color = Color(houseAd.accentColor)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = houseAd.appTagline,
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 2
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    androidx.compose.material3.Button(
+                        onClick = {
+                            try {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(houseAd.targetUrl)).apply {
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = Color(houseAd.accentColor)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "INSTALAR",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp,
+                            color = Color.Black
+                        )
+                    }
+                }
             }
         }
     }

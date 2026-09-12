@@ -454,6 +454,14 @@ fun MainScreen(
                                      )
                                  }
 
+                                 val houseVideoAd = AdManager.currentHouseVideoAd.value
+                                 if (houseVideoAd != null) {
+                                     HouseVideoAdPlayerOverlay(
+                                         houseAd = houseVideoAd,
+                                         onDismiss = { AdManager.dismissHouseVideoAd() }
+                                     )
+                                 }
+
                                 if (pendingReward != null) {
                                     val reward = pendingReward!!
                                     
