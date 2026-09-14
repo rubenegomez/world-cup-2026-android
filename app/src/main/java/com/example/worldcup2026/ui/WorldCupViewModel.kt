@@ -252,6 +252,23 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private var cachedGlobalMatches: List<Match> = emptyList()
 
+    fun getMaxMatchdayForTournament(tournamentId: Int): Int {
+        return when (tournamentId) {
+            5 -> 16  // Liga Profesional (16 fechas regulares)
+            7 -> 38  // Primera Nacional (38 fechas)
+            8 -> 42  // Primera B Metropolitana (42 fechas)
+            9 -> 38  // Primera C (38 fechas)
+            15 -> 18 // Torneo Federal A (18 fechas)
+            13 -> 14 // Promocional Amateur (14 fechas)
+            3 -> 13  // Copa Libertadores (13 fases/fechas)
+            4 -> 13  // Copa Sudamericana (13 fases/fechas)
+            6 -> 6   // Copa Argentina (6 fases)
+            2 -> 18  // Eliminatorias Conmebol (18 fechas)
+            1 -> 7   // Mundial (7 fases)
+            else -> 20
+        }
+    }
+
     fun getCurrentMatchdayForTournament(tournamentId: Int): Int {
         val matches = if (cachedGlobalMatches.isNotEmpty()) {
             cachedGlobalMatches
@@ -267,22 +284,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
             .sortedBy { it.date }
         
         val firstUpcoming = upcoming.firstOrNull()
+        val maxMatchday = getMaxMatchdayForTournament(tournamentId)
         if (firstUpcoming != null && firstUpcoming.matchday != null && firstUpcoming.matchday > 0) {
-            return firstUpcoming.matchday
-        }
-
-        // Estimación dinámica a partir de partidos finalizados si matchday no viene explícito
-        if (tournamentId == 5) {
-            val finishedCount = tournamentMatches.count { it.status == "Finished" }
-            val estimatedMatchday = (finishedCount / 15) + 1
-            if (estimatedMatchday in 1..30) {
-                return estimatedMatchday
-            }
+            return firstUpcoming.matchday.coerceIn(1, maxMatchday)
         }
 
         // Defaults actualizados con las fechas activas reales por torneo:
         return when (tournamentId) {
-            5 -> 8   // Liga Profesional (Fecha 8)
+            5 -> 10  // Liga Profesional (Fecha 10)
             7 -> 28  // Primera Nacional (Fecha 28)
             8 -> 32  // Primera B Metropolitana (Fecha 32)
             9 -> 25  // Primera C (Fecha 25)

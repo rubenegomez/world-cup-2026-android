@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -32,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import com.example.worldcup2026.data.api.AuthManager
 import com.example.worldcup2026.data.local.LeagueEntity
 import com.example.worldcup2026.data.model.Match
+import com.example.worldcup2026.data.util.ShareCardGenerator
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -447,10 +449,13 @@ fun MisLigasTab(
     var leagueCodeInput by remember { mutableStateOf("") }
     var customPrizeInput by remember { mutableStateOf("") }
     var selectedTournamentId by remember { mutableStateOf<Int?>(favTournament) }
-    var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") }
+    var selectedTournamentIds by remember { mutableStateOf<Set<Int>>(setOf(favTournament)) }
+    var selectedMode by remember { mutableStateOf("FULL_TOURNAMENT") } // FULL_TOURNAMENT, SINGLE_MATCHDAY, RANGE_MATCHDAYS, MULTI_TOURNAMENT, DAY_MATCHES
     var startMatchday by remember { mutableIntStateOf(1) }
     var endMatchday by remember { mutableIntStateOf(5) }
     var minActiveMatchday by remember { mutableIntStateOf(1) }
+    var selectedDayFilter by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+    var tournamentMatchdaysMap by remember { mutableStateOf<Map<Int, Pair<Int, Int>>>(emptyMap()) }
     var leaguePointsMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
     val currentUser by viewModel.currentUser.collectAsState()
@@ -505,6 +510,7 @@ fun MisLigasTab(
         4 to "🌎 Copa Sudamericana",
         8 to "⚽ Primera B",
         9 to "⚽ Primera C",
+        15 to "⚽ Federal A",
         13 to "⚽ Promocional Amateur",
         2 to "🌍 Eliminatorias",
         12 to "🏆 Finalíssima",
@@ -514,8 +520,9 @@ fun MisLigasTab(
 
     LaunchedEffect(selectedTournamentId, showCreateDialog) {
         minActiveMatchday = worldCupViewModel?.getCurrentMatchdayForTournament(selectedTournamentId ?: 5) ?: 1
+        val maxForT = worldCupViewModel?.getMaxMatchdayForTournament(selectedTournamentId ?: 5) ?: 20
         startMatchday = minActiveMatchday
-        endMatchday = minActiveMatchday + 4
+        endMatchday = (minActiveMatchday + 4).coerceAtMost(maxForT)
     }
 
     LazyColumn(
@@ -580,10 +587,12 @@ fun MisLigasTab(
         } else {
             items(leagues) { league ->
                 val myPts = leaguePointsMap[league.id] ?: 0
-                val tName = tournamentOptions.find { it.first == league.tournamentId }?.second ?: "🏆 Liga General"
+                val tName = if (league.mode == "MULTI_TOURNAMENT") "🌐 Multitorneo" else if (league.mode == "DAY_MATCHES") "📅 Partidos del Día" else (tournamentOptions.find { it.first == league.tournamentId }?.second ?: "🏆 Liga General")
                 val modeDesc = when (league.mode) {
                     "SINGLE_MATCHDAY" -> "📅 Fecha ${league.startMatchday ?: 1}"
                     "RANGE_MATCHDAYS" -> "📅 Fechas ${league.startMatchday ?: 1} a ${league.endMatchday ?: 5}"
+                    "MULTI_TOURNAMENT" -> "🌐 Multitorneo Simultáneo"
+                    "DAY_MATCHES" -> "📅 Partidos de la Jornada"
                     else -> "📅 Torneo Completo"
                 }
                 val isFinished = league.status?.uppercase() == "FINISHED"
@@ -642,8 +651,19 @@ fun MisLigasTab(
                             }
                         }
                         
-                        IconButton(onClick = { leagueToDelete = league }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Eliminar Liga", tint = Color.Red.copy(alpha = 0.7f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = {
+                                ShareCardGenerator.shareLeagueInvite(
+                                    context = context,
+                                    league = league,
+                                    tournamentDesc = "$tName • $modeDesc"
+                                )
+                            }) {
+                                Icon(Icons.Default.Share, contentDescription = "Compartir Liga", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { leagueToDelete = league }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Eliminar Liga", tint = Color.Red.copy(alpha = 0.7f))
+                            }
                         }
                     }
                 }
@@ -660,7 +680,7 @@ fun MisLigasTab(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 450.dp)
+                        .heightIn(max = 480.dp)
                         .verticalScroll(scrollState),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -676,16 +696,151 @@ fun MisLigasTab(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text("Seleccionar Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Modalidad del Prode:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        tournamentOptions.chunked(2).forEach { rowTournaments ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                rowTournaments.forEach { (tId, tName) ->
-                                    FilterChip(
-                                        selected = selectedTournamentId == tId,
-                                        onClick = { selectedTournamentId = tId },
-                                        label = { Text(tName, fontSize = 10.sp) }
-                                    )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilterChip(
+                                selected = selectedMode == "FULL_TOURNAMENT",
+                                onClick = { selectedMode = "FULL_TOURNAMENT" },
+                                label = { Text("Torneo Completo", fontSize = 10.sp) }
+                            )
+                            FilterChip(
+                                selected = selectedMode == "SINGLE_MATCHDAY",
+                                onClick = { selectedMode = "SINGLE_MATCHDAY" },
+                                label = { Text("Fecha Única", fontSize = 10.sp) }
+                            )
+                            FilterChip(
+                                selected = selectedMode == "RANGE_MATCHDAYS",
+                                onClick = { selectedMode = "RANGE_MATCHDAYS" },
+                                label = { Text("Rango Fechas", fontSize = 10.sp) }
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            FilterChip(
+                                selected = selectedMode == "MULTI_TOURNAMENT",
+                                onClick = { selectedMode = "MULTI_TOURNAMENT" },
+                                label = { Text("🌐 Multitorneo (Varios)", fontSize = 10.sp) }
+                            )
+                            FilterChip(
+                                selected = selectedMode == "DAY_MATCHES",
+                                onClick = { selectedMode = "DAY_MATCHES" },
+                                label = { Text("📅 Por Día / Fecha", fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    if (selectedMode != "MULTI_TOURNAMENT" && selectedMode != "DAY_MATCHES") {
+                        Text("Seleccionar Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            tournamentOptions.chunked(2).forEach { rowTournaments ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    rowTournaments.forEach { (tId, tName) ->
+                                        FilterChip(
+                                            selected = selectedTournamentId == tId,
+                                            onClick = { selectedTournamentId = tId },
+                                            label = { Text(tName, fontSize = 10.sp) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else if (selectedMode == "MULTI_TOURNAMENT") {
+                        Text("Elegir Torneos a incluir:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            tournamentOptions.chunked(2).forEach { rowTournaments ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    rowTournaments.forEach { (tId, tName) ->
+                                        val isSelected = selectedTournamentIds.contains(tId)
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = {
+                                                val mutable = selectedTournamentIds.toMutableSet()
+                                                if (isSelected && mutable.size > 1) {
+                                                    mutable.remove(tId)
+                                                } else {
+                                                    mutable.add(tId)
+                                                }
+                                                selectedTournamentIds = mutable
+                                            },
+                                            label = { Text(tName, fontSize = 10.sp) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Text("⚙️ Configuración de fechas por torneo:", color = Color(0xFFFFC107), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        selectedTournamentIds.forEach { tId ->
+                            val tName = tournamentOptions.find { it.first == tId }?.second ?: "Torneo $tId"
+                            val curMatchday = worldCupViewModel?.getCurrentMatchdayForTournament(tId) ?: 1
+                            val maxMatchday = worldCupViewModel?.getMaxMatchdayForTournament(tId) ?: 20
+                            val currentConfig = tournamentMatchdaysMap[tId] ?: Pair(curMatchday, curMatchday)
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.06f)),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(tName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Fecha seleccionada:", color = Color.Gray, fontSize = 11.sp)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(
+                                                modifier = Modifier.size(28.dp),
+                                                onClick = {
+                                                    val nextVal = (currentConfig.first - 1).coerceAtLeast(1)
+                                                    tournamentMatchdaysMap = tournamentMatchdaysMap.toMutableMap().apply {
+                                                        put(tId, Pair(nextVal, nextVal))
+                                                    }
+                                                }
+                                            ) {
+                                                Text("◀", color = if (currentConfig.first > 1) Color.White else Color.Gray, fontSize = 12.sp)
+                                            }
+                                            Text("Fecha ${currentConfig.first}", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            IconButton(
+                                                modifier = Modifier.size(28.dp),
+                                                onClick = {
+                                                    val nextVal = (currentConfig.first + 1).coerceAtMost(maxMatchday)
+                                                    tournamentMatchdaysMap = tournamentMatchdaysMap.toMutableMap().apply {
+                                                        put(tId, Pair(nextVal, nextVal))
+                                                    }
+                                                }
+                                            ) {
+                                                Text("▶", color = if (currentConfig.first < maxMatchday) Color.White else Color.Gray, fontSize = 12.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if (selectedMode == "DAY_MATCHES") {
+                        Text("📅 Elegir Día del Calendario:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Entran automáticamente TODOS los partidos jugados en esta fecha sin importar el torneo.", color = Color.Gray, fontSize = 11.sp)
+                        
+                        val today = java.time.LocalDate.now()
+                        val daysList = (-1..5).map { today.plusDays(it.toLong()).toString() }
+                        
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            daysList.chunked(3).forEach { rowDays ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    rowDays.forEach { dayStr ->
+                                        val isToday = dayStr == today.toString()
+                                        FilterChip(
+                                            selected = selectedDayFilter == dayStr,
+                                            onClick = { selectedDayFilter = dayStr },
+                                            label = { 
+                                                Text(
+                                                    text = if (isToday) "Hoy ($dayStr)" else dayStr,
+                                                    fontSize = 10.sp
+                                                ) 
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -703,72 +858,56 @@ fun MisLigasTab(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFFFC107).copy(alpha = 0.15f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.5f))
-                    ) {
-                        Text(
-                            text = "📍 Jornada actual o próxima: Fecha $minActiveMatchday",
-                            color = Color(0xFFFFC107),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
-
-                    Text("Modalidad de Duración:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        FilterChip(
-                            selected = selectedMode == "FULL_TOURNAMENT",
-                            onClick = { selectedMode = "FULL_TOURNAMENT" },
-                            label = { Text("Torneo Completo", fontSize = 10.sp) }
-                        )
-                        FilterChip(
-                            selected = selectedMode == "SINGLE_MATCHDAY",
-                            onClick = { selectedMode = "SINGLE_MATCHDAY" },
-                            label = { Text("Fecha Única", fontSize = 10.sp) }
-                        )
-                        FilterChip(
-                            selected = selectedMode == "RANGE_MATCHDAYS",
-                            onClick = { selectedMode = "RANGE_MATCHDAYS" },
-                            label = { Text("Rango Fechas", fontSize = 10.sp) }
-                        )
-                    }
-
-                    if (selectedMode == "SINGLE_MATCHDAY") {
-                        Text("Elegir Fecha del Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            IconButton(onClick = { if (startMatchday > minActiveMatchday) startMatchday-- }) {
-                                Text("◀", color = if (startMatchday > minActiveMatchday) Color.White else Color.Gray, fontSize = 16.sp)
-                            }
-                            Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            IconButton(onClick = { if (startMatchday < 38) startMatchday++ }) {
-                                Text("▶", color = Color.White, fontSize = 16.sp)
-                            }
+                    if (selectedMode == "SINGLE_MATCHDAY" || selectedMode == "RANGE_MATCHDAYS" || selectedMode == "FULL_TOURNAMENT") {
+                        val maxForCurrent = worldCupViewModel?.getMaxMatchdayForTournament(selectedTournamentId ?: 5) ?: 20
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFFFC107).copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.5f))
+                        ) {
+                            Text(
+                                text = "📍 Jornada actual o próxima: Fecha $minActiveMatchday (Tope Fecha $maxForCurrent)",
+                                color = Color(0xFFFFC107),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
                         }
-                    } else if (selectedMode == "RANGE_MATCHDAYS") {
-                        Text("Rango de Fechas:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+
+                        if (selectedMode == "SINGLE_MATCHDAY") {
+                            Text("Elegir Fecha del Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Desde:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
-                                IconButton(onClick = { if (startMatchday > minActiveMatchday) startMatchday-- }) {
-                                    Text("◀", color = if (startMatchday > minActiveMatchday) Color.White else Color.Gray, fontSize = 16.sp)
+                                IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
+                                    Text("◀", color = if (startMatchday > 1) Color.White else Color.Gray, fontSize = 16.sp)
                                 }
-                                Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                IconButton(onClick = { if (startMatchday < endMatchday) startMatchday++ }) {
-                                    Text("▶", color = Color.White, fontSize = 16.sp)
+                                Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                IconButton(onClick = { if (startMatchday < maxForCurrent) startMatchday++ }) {
+                                    Text("▶", color = if (startMatchday < maxForCurrent) Color.White else Color.Gray, fontSize = 16.sp)
                                 }
                             }
-
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("Hasta:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
-                                IconButton(onClick = { if (endMatchday > startMatchday) endMatchday-- }) {
-                                    Text("◀", color = if (endMatchday > startMatchday) Color.White else Color.Gray, fontSize = 16.sp)
+                        } else if (selectedMode == "RANGE_MATCHDAYS") {
+                            Text("Rango de Fechas:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Desde:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
+                                    IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
+                                        Text("◀", color = if (startMatchday > 1) Color.White else Color.Gray, fontSize = 16.sp)
+                                    }
+                                    Text("Fecha $startMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    IconButton(onClick = { if (startMatchday < endMatchday) startMatchday++ }) {
+                                        Text("▶", color = Color.White, fontSize = 16.sp)
+                                    }
                                 }
-                                Text("Fecha $endMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                IconButton(onClick = { if (endMatchday < 38) endMatchday++ }) {
-                                    Text("▶", color = Color.White, fontSize = 16.sp)
+
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Hasta:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
+                                    IconButton(onClick = { if (endMatchday > startMatchday) endMatchday-- }) {
+                                        Text("◀", color = if (endMatchday > startMatchday) Color.White else Color.Gray, fontSize = 16.sp)
+                                    }
+                                    Text("Fecha $endMatchday", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    IconButton(onClick = { if (endMatchday < maxForCurrent) endMatchday++ }) {
+                                        Text("▶", color = if (endMatchday < maxForCurrent) Color.White else Color.Gray, fontSize = 16.sp)
+                                    }
                                 }
                             }
                         }
@@ -778,13 +917,28 @@ fun MisLigasTab(
             confirmButton = {
                 Button(onClick = {
                     if (leagueNameInput.isNotBlank()) {
-                        val finalStart = if (selectedMode == "FULL_TOURNAMENT") 1 else startMatchday
-                        val finalEnd = if (selectedMode == "FULL_TOURNAMENT") null else if (selectedMode == "SINGLE_MATCHDAY") startMatchday else endMatchday
+                        val finalStart = when (selectedMode) {
+                            "FULL_TOURNAMENT" -> 1
+                            "SINGLE_MATCHDAY" -> startMatchday
+                            "RANGE_MATCHDAYS" -> startMatchday
+                            else -> null
+                        }
+                        val finalEnd = when (selectedMode) {
+                            "FULL_TOURNAMENT" -> null
+                            "SINGLE_MATCHDAY" -> startMatchday
+                            "RANGE_MATCHDAYS" -> endMatchday
+                            else -> null
+                        }
+                        val finalTourneyId = when (selectedMode) {
+                            "MULTI_TOURNAMENT" -> 0
+                            "DAY_MATCHES" -> 0
+                            else -> selectedTournamentId
+                        }
 
                         viewModel.createLeague(
                             name = leagueNameInput,
                             mode = selectedMode,
-                            tournamentId = selectedTournamentId,
+                            tournamentId = finalTourneyId,
                             startMatchday = finalStart,
                             endMatchday = finalEnd,
                             customPrize = customPrizeInput.ifBlank { null }

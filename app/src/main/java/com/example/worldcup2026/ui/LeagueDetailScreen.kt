@@ -252,23 +252,17 @@ fun LeagueDetailScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Button(
                             onClick = {
-                                val directUrl = "https://ellocodelpedal.duckdns.org/join?code=${league.code}"
-                                val inviteMsg = "🏆 *¡Unite a mi Liga Privada '${league.name}' en Arena Prode!*\n\n" +
-                                        "👉 Tocá este enlace para unirte automáticamente:\n$directUrl\n\n" +
-                                        "🔑 O ingresá el código de liga: *${league.code}*"
-                                val sendIntent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, inviteMsg)
-                                    type = "text/plain"
-                                }
-                                val shareIntent = Intent.createChooser(sendIntent, null)
-                                context.startActivity(shareIntent)
+                                com.example.worldcup2026.data.util.ShareCardGenerator.shareLeagueInvite(
+                                    context = context,
+                                    league = activeLeague,
+                                    tournamentDesc = modeDesc
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Compartir por WhatsApp", fontSize = 13.sp)
+                            Text("Compartir Tarjeta Visual 🎨", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
