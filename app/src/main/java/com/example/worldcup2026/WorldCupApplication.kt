@@ -19,16 +19,21 @@ class WorldCupApplication : Application() {
         
         // Actualizar proveedores de seguridad TLS para compatibilidad con Android 7-9 (J7 Neo / A5 Pro)
         try {
-            com.google.android.gms.security.ProviderInstaller.installIfNeededAsync(this, object : com.google.android.gms.security.ProviderInstaller.ProviderInstallListener {
-                override fun onProviderInstalled() {
-                    android.util.Log.d("WorldCupApp", "TLS Security Provider instalado con éxito")
-                }
-                override fun onProviderInstallFailed(errorCode: Int, recoveryIntent: android.content.Intent?) {
-                    android.util.Log.w("WorldCupApp", "No se pudo actualizar TLS Security Provider: $errorCode")
-                }
-            })
+            com.google.android.gms.security.ProviderInstaller.installIfNeeded(this)
+            android.util.Log.d("WorldCupApp", "TLS Security Provider instalado sincrónicamente con éxito")
         } catch (e: Throwable) {
-            e.printStackTrace()
+            try {
+                com.google.android.gms.security.ProviderInstaller.installIfNeededAsync(this, object : com.google.android.gms.security.ProviderInstaller.ProviderInstallListener {
+                    override fun onProviderInstalled() {
+                        android.util.Log.d("WorldCupApp", "TLS Security Provider instalado con éxito")
+                    }
+                    override fun onProviderInstallFailed(errorCode: Int, recoveryIntent: android.content.Intent?) {
+                        android.util.Log.w("WorldCupApp", "No se pudo actualizar TLS Security Provider: $errorCode")
+                    }
+                })
+            } catch (e2: Throwable) {
+                e2.printStackTrace()
+            }
         }
 
         // Inicializar canales de notificaciones

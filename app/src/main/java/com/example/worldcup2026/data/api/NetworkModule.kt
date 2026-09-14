@@ -18,6 +18,14 @@ import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
+import javax.net.ssl.SSLSocket
+import javax.net.ssl.SSLSocketFactory
+import java.net.InetAddress
+import java.net.Socket
+import java.lang.reflect.Type
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import com.google.gson.JsonDeserializationContext
 
 interface WorldCupApiService {
     @GET("api/teams")
@@ -118,27 +126,46 @@ data class LiveMatchDto(
     val clock: String?
 )
 
-class NullTeamInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
-        val response = chain.proceed(request)
-        if (request.url.encodedPath.contains("api/matches")) {
-            val bodyString = response.body?.string()
-            if (bodyString != null) {
-                // Reemplazamos los objetos nulos por el equipo TBD (ID 180 para que concuerde) usando Regex para ignorar espacios
-                val homeRegex = "\"homeTeam\"\\s*:\\s*null".toRegex()
-                val awayRegex = "\"awayTeam\"\\s*:\\s*null".toRegex()
-                
-                val fixedBody = bodyString
-                    .replace(homeRegex, "\"homeTeam\":{\"id\":180,\"name\":\"Por definirse\",\"flagUrl\":\"\",\"group\":\"TBD\",\"players\":[]}")
-                    .replace(awayRegex, "\"awayTeam\":{\"id\":180,\"name\":\"Por definirse\",\"flagUrl\":\"\",\"group\":\"TBD\",\"players\":[]}")
-                
-                return response.newBuilder()
-                    .body(fixedBody.toResponseBody(response.body?.contentType()))
-                    .build()
+class TeamDeserializer : JsonDeserializer<Team> {
+    override fun deserialize(json: JsonElement?, typeOfT: Type?, context: JsonDeserializationContext?): Team {
+        if (json == null || json.isJsonNull || !json.isJsonObject) {
+            return Team(180, "Por definirse", "", "TBD", null, emptyList())
+        }
+        val obj = json.asJsonObject
+        val id = if (obj.has("id") && !obj.get("id").isJsonNull) obj.get("id").asInt else 180
+        val name = if (obj.has("name") && !obj.get("name").isJsonNull) obj.get("name").asString else "Por definirse"
+        val flagUrl = if (obj.has("flagUrl") && !obj.get("flagUrl").isJsonNull) obj.get("flagUrl").asString else ""
+        val group = if (obj.has("group") && !obj.get("group").isJsonNull) obj.get("group").asString else "TBD"
+        val tournamentId = if (obj.has("tournament_id") && !obj.get("tournament_id").isJsonNull) obj.get("tournament_id").asInt else null
+        return Team(id, name, flagUrl, group, tournamentId, emptyList())
+    }
+}
+
+class Tls12SocketFactory(private val delegate: SSLSocketFactory) : SSLSocketFactory() {
+    override fun getDefaultCipherSuites(): Array<String> = delegate.defaultCipherSuites
+    override fun getSupportedCipherSuites(): Array<String> = delegate.supportedCipherSuites
+    override fun createSocket(s: Socket, host: String, port: Int, autoClose: Boolean): Socket =
+        patch(delegate.createSocket(s, host, port, autoClose))
+    override fun createSocket(host: String, port: Int): Socket =
+        patch(delegate.createSocket(host, port))
+    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket =
+        patch(delegate.createSocket(host, port, localHost, localPort))
+    override fun createSocket(host: InetAddress, port: Int): Socket =
+        patch(delegate.createSocket(host, port))
+    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket =
+        patch(delegate.createSocket(address, port, localAddress, localPort))
+
+    private fun patch(socket: Socket): Socket {
+        if (socket is SSLSocket) {
+            val supported = socket.supportedProtocols.toSet()
+            val enabled = mutableListOf<String>()
+            if (supported.contains("TLSv1.3")) enabled.add("TLSv1.3")
+            if (supported.contains("TLSv1.2")) enabled.add("TLSv1.2")
+            if (enabled.isNotEmpty()) {
+                socket.enabledProtocols = enabled.toTypedArray()
             }
         }
-        return response
+        return socket
     }
 }
 
@@ -161,11 +188,14 @@ object NetworkModule {
         null
     }
 
+    private val customGson = com.google.gson.GsonBuilder()
+        .registerTypeAdapter(Team::class.java, TeamDeserializer())
+        .create()
+
     private val okHttpClient = OkHttpClient.Builder().apply {
-        addInterceptor(NullTeamInterceptor())
-        connectTimeout(20, TimeUnit.SECONDS)
-        readTimeout(20, TimeUnit.SECONDS)
-        writeTimeout(20, TimeUnit.SECONDS)
+        connectTimeout(25, TimeUnit.SECONDS)
+        readTimeout(25, TimeUnit.SECONDS)
+        writeTimeout(25, TimeUnit.SECONDS)
         retryOnConnectionFailure(true)
         connectionSpecs(listOf(
             okhttp3.ConnectionSpec.MODERN_TLS,
@@ -173,7 +203,7 @@ object NetworkModule {
             okhttp3.ConnectionSpec.CLEARTEXT
         ))
         if (sslContext != null) {
-            sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as X509TrustManager)
+            sslSocketFactory(Tls12SocketFactory(sslContext.socketFactory), trustAllCerts[0] as X509TrustManager)
             hostnameVerifier { _, _ -> true }
         }
     }.build()
@@ -182,7 +212,7 @@ object NetworkModule {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(customGson))
             .build()
             .create(WorldCupApiService::class.java)
     }
@@ -193,7 +223,7 @@ object NetworkModule {
         Retrofit.Builder()
             .baseUrl(PRODE_BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(customGson))
             .build()
             .create(ProdeApiService::class.java)
     }

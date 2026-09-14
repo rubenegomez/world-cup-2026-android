@@ -478,34 +478,32 @@ fun SettingsMenuScreen(
                 )
             }
         }
-        item {
-            SettingSection(title = "Publicidad y Anuncios") {
-                val adFreeUntil by worldCupViewModel.adFreeUntil
-                val isAdFree = adFreeUntil > System.currentTimeMillis()
-                val remainingMinutes = if (isAdFree) ((adFreeUntil - System.currentTimeMillis()) / 60000) + 1 else 0
-                val activityContext = context as? Activity
+        if (isAdminUser) {
+            item {
+                SettingSection(title = "Publicidad y Anuncios (Admin)") {
+                    val adFreeUntil by worldCupViewModel.adFreeUntil
+                    val isAdFree = adFreeUntil > System.currentTimeMillis()
+                    val remainingMinutes = if (isAdFree) ((adFreeUntil - System.currentTimeMillis()) / 60000) + 1 else 0
+                    val activityContext = context as? Activity
 
-                SettingItem(
-                    icon = Icons.Default.Star,
-                    title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Obtener Modo Sin Anuncios",
-                    subtitle = if (isAdFree && isDevMode) "Toca para reactivar anuncios (Dev)" else if (isAdFree) "Disfrutando de la experiencia sin publicidad" else "Toca para ver un anuncio y obtener +2 horas sin anuncios",
-                    onClick = {
-                        if (isAdFree) {
-                            if (isDevMode) {
+                    SettingItem(
+                        icon = Icons.Default.Star,
+                        title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Obtener Modo Sin Anuncios",
+                        subtitle = if (isAdFree) "Toca para reactivar anuncios (Dev)" else "Toca para ver un anuncio y obtener +2 horas sin anuncios",
+                        onClick = {
+                            if (isAdFree) {
                                 worldCupViewModel.resetAdFreeTime()
                                 android.widget.Toast.makeText(context, "Publicidad reactivada para pruebas", android.widget.Toast.LENGTH_SHORT).show()
                             } else {
-                                android.widget.Toast.makeText(context, "¡Ya tienes $remainingMinutes minutos sin anuncios!", android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            if (activityContext != null) {
-                                AdManager.showRewardedAd(activityContext) {
-                                    worldCupViewModel.addAdFreeTime(2 * 60 * 60 * 1000L)
+                                if (activityContext != null) {
+                                    AdManager.showRewardedAd(activityContext) {
+                                        worldCupViewModel.addAdFreeTime(2 * 60 * 60 * 1000L)
+                                    }
                                 }
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
