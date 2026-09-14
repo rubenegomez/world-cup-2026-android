@@ -71,12 +71,12 @@ fun MainScreen(
             override fun onReceive(c: Context?, intent: Intent?) {
                 if (intent?.action == "com.example.worldcup2026.MATCH_EVENT") {
                     val matchId = intent.getIntExtra("match_id", -1)
-                    val homeTeamStr = intent.getStringExtra("homeTeam") ?: "Lanús"
-                    val awayTeamStr = intent.getStringExtra("awayTeam") ?: "San Lorenzo"
+                    val homeTeamStr = intent.getStringExtra("homeTeam") ?: ""
+                    val awayTeamStr = intent.getStringExtra("awayTeam") ?: ""
                     val homeScoreVal = intent.getStringExtra("homeScore")?.toIntOrNull() ?: 1
                     val awayScoreVal = intent.getStringExtra("awayScore")?.toIntOrNull() ?: 0
                     val eventTypeStr = intent.getStringExtra("eventType") ?: "goal"
-                    val scorerStr = intent.getStringExtra("scorer") ?: "Edinson Cavani"
+                    val scorerStr = intent.getStringExtra("scorer") ?: ""
                     val homeFlagStr = intent.getStringExtra("homeFlag")?.takeIf { it.isNotBlank() }
                         ?: com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(homeTeamStr) ?: ""
                     val awayFlagStr = intent.getStringExtra("awayFlag")?.takeIf { it.isNotBlank() }
