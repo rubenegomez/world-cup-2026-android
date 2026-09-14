@@ -96,8 +96,8 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             // 1. Filtrado por tipo de evento (estrictamente los tipos configurados)
             val eventAllowed = when (eventType) {
                 "goal" -> prefs.getBoolean("notif_goals", true)
-                "start" -> prefs.getBoolean("notif_start", true)
-                "end" -> prefs.getBoolean("notif_end", true)
+                "start", "second_half" -> prefs.getBoolean("notif_start", true)
+                "end", "halftime" -> prefs.getBoolean("notif_end", true)
                 "yellow_card", "yellow" -> prefs.getBoolean("notif_yellow", true)
                 "red_card", "red" -> prefs.getBoolean("notif_red", true)
                 "sub", "substitution" -> prefs.getBoolean("notif_subs", true)

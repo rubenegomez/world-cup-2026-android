@@ -329,108 +329,27 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                     val oldAway = saved.awayScore ?: 0
                     val newAway = liveMatch.awayScore ?: 0
 
-                    // 1. Detección de Goles
+                    // 1. Detección de Goles (Festejo Inmediato)
                     if (newHome > oldHome || newAway > oldAway) {
                         val scoringTeam = if (newHome > oldHome) homeTeamName else awayTeamName
-                        val latestScorer = liveMatch.scorers?.lastOrNull()?.trim()
-                        val goalMsg = if (!latestScorer.isNullOrBlank()) {
-                            "¡Gol de $latestScorer! $homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})"
-                        } else {
-                            "$homeTeamName $newHome - $newAway $awayTeamName (Min ${liveMatch.clock ?: ""})"
+                        val latestScorer = liveMatch.scorers?.lastOrNull()?.trim() ?: ""
+                        
+                        // Si la app está en primer plano, disparar el broadcast de festejo inmediatamente
+                        val intent = android.content.Intent("com.example.worldcup2026.MATCH_EVENT").apply {
+                            setPackage(context.packageName)
+                            putExtra("match_id", liveMatch.matchId)
+                            putExtra("eventType", "goal")
+                            putExtra("homeTeam", homeTeamName)
+                            putExtra("awayTeam", awayTeamName)
+                            putExtra("homeScore", newHome.toString())
+                            putExtra("awayScore", newAway.toString())
+                            putExtra("scorer", latestScorer)
                         }
-
-                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
-                            context = context,
-                            title = "⚽ ¡GOOOOOL de $scoringTeam! ⚽",
-                            message = goalMsg,
-                            isGoal = true
-                        )
+                        context.sendBroadcast(intent)
                     }
 
-                    // 1b. Detección de Goles Anulados (VAR)
-                    if (newHome < oldHome || newAway < oldAway) {
-                        val annulledTeam = if (newHome < oldHome) homeTeamName else awayTeamName
-                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
-                            context = context,
-                            title = "❌ ¡GOL ANULADO (VAR)! ❌",
-                            message = "El VAR anuló el gol de $annulledTeam. El marcador vuelve a: $homeTeamName $newHome - $newAway $awayTeamName.",
-                            isGoal = false
-                        )
-                    }
-
-                    // 2. Detección de Tarjetas Rojas
-                    val (oldHomeRed, oldAwayRed) = parseRedCardsFromVipStats(saved.vipStats)
-                    val newHomeRed = liveMatch.homeRedCards ?: 0
-                    val newAwayRed = liveMatch.awayRedCards ?: 0
-
-                    if (newHomeRed > oldHomeRed || newAwayRed > oldAwayRed) {
-                        val penalizedTeam = if (newHomeRed > oldHomeRed) homeTeamName else awayTeamName
-                        val lastEvent = liveMatch.events?.findLast { it.contains("Roja", ignoreCase = true) || it.contains("Expulsi", ignoreCase = true) }
-                        val playerName = lastEvent?.substringBefore("(")?.substringBefore(" -")?.trim()
-
-                        val redMsg = if (!playerName.isNullOrBlank()) {
-                            "¡Expulsión de $playerName ($penalizedTeam)! (Min ${liveMatch.clock ?: ""})"
-                        } else {
-                            "Un jugador de $penalizedTeam ha sido expulsado. (Min ${liveMatch.clock ?: ""})"
-                        }
-
-                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
-                            context = context,
-                            title = "🟥 ¡Tarjeta Roja para $penalizedTeam! 🟥",
-                            message = redMsg,
-                            isGoal = false
-                        )
-                    }
-
-                    // 2b. Detección de Tarjetas Amarillas
-                    val (oldHomeYellow, oldAwayYellow) = parseYellowCardsFromVipStats(saved.vipStats)
-                    val newHomeYellow = liveMatch.homeYellowCards ?: 0
-                    val newAwayYellow = liveMatch.awayYellowCards ?: 0
-
-                    if (newHomeYellow > oldHomeYellow || newAwayYellow > oldAwayYellow) {
-                        val penalizedTeam = if (newHomeYellow > oldHomeYellow) homeTeamName else awayTeamName
-                        val lastEvent = liveMatch.events?.findLast { it.contains("Amarilla", ignoreCase = true) || it.contains("Tarjeta", ignoreCase = true) }
-                        val playerName = lastEvent?.substringBefore("(")?.substringBefore(" -")?.trim()
-
-                        val yellowMsg = if (!playerName.isNullOrBlank()) {
-                            "Amonestación para $playerName ($penalizedTeam). (Min ${liveMatch.clock ?: ""})"
-                        } else {
-                            "Amonestación para un jugador de $penalizedTeam. (Min ${liveMatch.clock ?: ""})"
-                        }
-
-                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
-                            context = context,
-                            title = "🟨 Tarjeta Amarilla ($penalizedTeam) 🟨",
-                            message = yellowMsg,
-                            isGoal = false
-                        )
-                    }
-
-                    // 2c. Detección de Goles en la Tanda de Penales
-                    val oldHomePens = saved.homePenalties ?: 0
-                    val newHomePens = liveMatch.homePenalties ?: 0
-                    val oldAwayPens = saved.awayPenalties ?: 0
-                    val newAwayPens = liveMatch.awayPenalties ?: 0
-
-                    if (newHomePens > oldHomePens || newAwayPens > oldAwayPens) {
-                        val scoringTeam = if (newHomePens > oldHomePens) homeTeamName else awayTeamName
-                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
-                            context = context,
-                            title = "🥅 ¡Gol en Penales de $scoringTeam! ⚽",
-                            message = "Gol de $scoringTeam. Tanda actual: $homeTeamName $newHomePens - $newAwayPens $awayTeamName",
-                            isGoal = false
-                        )
-                    }
-
-                    // 3. Detección de fin de partido
-                    if (saved.status != "Finished" && effectiveStatus == "Finished") {
-                        com.example.worldcup2026.data.util.NotificationHelper.showMatchIncidentNotification(
-                            context = context,
-                            title = "🏁 ¡Final del Partido! 🏁",
-                            message = "$homeTeamName $newHome - $newAway $awayTeamName. ¡Encuentro finalizado!",
-                            isGoal = false
-                        )
-                    }
+                    // 1b. Detección de Goles Anulados / Fin de partido
+                    // Las notificaciones de bandeja las despacha el Backend (FCM) exclusivamente
                 }
                 // ----------------------------------------
                 

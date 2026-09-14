@@ -92,7 +92,7 @@ fun MainScreen(
                         date = java.time.LocalDate.now().toString(),
                         status = if (eventTypeStr == "end") "Finished" else "LIVE",
                         stadium = "",
-                        scorers = listOf("$scorerStr $minuteStr'")
+                        scorers = if (scorerStr.isNotBlank()) listOf(scorerStr) else emptyList()
                     )
                     
                     if (eventTypeStr == "goal") {
