@@ -23,48 +23,49 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 fun openDownloadUrlInChromeOrFallback(context: Context, urlStr: String) {
-    val uri = Uri.parse(urlStr)
+    val cleanUrl = if (urlStr.contains("?")) "$urlStr&t=${System.currentTimeMillis()}" else "$urlStr?t=${System.currentTimeMillis()}"
+    val uri = Uri.parse(cleanUrl)
     
-    // 1. Forzar apertura en Google Chrome obligatoriamente si está instalado
-    val chromeIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-        setPackage("com.android.chrome")
+    // 1. Intentar abrir con navegador externo genérico (evita caché interna y abre diálogo de descarga)
+    val genericIntent = Intent(Intent.ACTION_VIEW, uri).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     
     try {
-        context.startActivity(chromeIntent)
-        Toast.makeText(context, "🌐 Abriendo descarga en Google Chrome...", Toast.LENGTH_SHORT).show()
+        context.startActivity(genericIntent)
+        Toast.makeText(context, "🌐 Abriendo enlace de descarga...", Toast.LENGTH_SHORT).show()
         return
     } catch (e: Exception) {
-        // Chrome no está instalado o deshabilitado
+        // Fallback si falla el intent genérico
     }
 
-    // 2. Si Chrome no está, intentar usar el Gestor de Descargas nativo (DownloadManager)
+    // 2. Si falló, intentar con Chrome específico si está instalado
+    try {
+        val chromeIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+            setPackage("com.android.chrome")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(chromeIntent)
+        return
+    } catch (e: Exception) {
+        // Chrome no disponible
+    }
+
+    // 3. Fallback usando DownloadManager nativo
     try {
         val request = DownloadManager.Request(uri).apply {
             setTitle("Arena Prode APK")
-            setDescription("Descargando actualización...")
+            setDescription("Descargando última versión...")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ArenaProde.apk")
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ArenaProde_${System.currentTimeMillis()}.apk")
             setAllowedOverMetered(true)
             setAllowedOverRoaming(true)
         }
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         downloadManager.enqueue(request)
         Toast.makeText(context, "📥 Descargando en la barra de notificaciones...", Toast.LENGTH_LONG).show()
-        return
-    } catch (e: Exception) {
-        // Error en DownloadManager
-    }
-
-    // 3. Fallback genérico a cualquier navegador web predeterminado
-    try {
-        val genericIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(genericIntent)
     } catch (ex: Exception) {
-        Toast.makeText(context, "Error al abrir el navegador: ${ex.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Error al iniciar la descarga: ${ex.message}", Toast.LENGTH_SHORT).show()
     }
 }
 

@@ -77,20 +77,21 @@ fun MainScreen(
                     val awayScoreVal = intent.getStringExtra("awayScore")?.toIntOrNull() ?: 0
                     val eventTypeStr = intent.getStringExtra("eventType") ?: "goal"
                     val scorerStr = intent.getStringExtra("scorer") ?: "Edinson Cavani"
-                    val minuteStr = intent.getStringExtra("minute") ?: "78"
-                    val homeFlagStr = intent.getStringExtra("homeFlag") ?: "https://a.espncdn.com/i/teamlogos/soccer/500/5.png"
-                    val awayFlagStr = intent.getStringExtra("awayFlag") ?: "https://a.espncdn.com/i/teamlogos/soccer/500/16.png"
+                    val homeFlagStr = intent.getStringExtra("homeFlag")?.takeIf { it.isNotBlank() }
+                        ?: com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(homeTeamStr) ?: ""
+                    val awayFlagStr = intent.getStringExtra("awayFlag")?.takeIf { it.isNotBlank() }
+                        ?: com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(awayTeamStr) ?: ""
                     
                     val fallbackMatch = com.example.worldcup2026.data.model.Match(
                         id = if (matchId != -1) matchId else 9999,
                         tournament_id = 5,
-                        homeTeam = com.example.worldcup2026.data.model.Team(id = 991, name = homeTeamStr, flagUrl = homeFlagStr, group = "Zona A"),
-                        awayTeam = com.example.worldcup2026.data.model.Team(id = 992, name = awayTeamStr, flagUrl = awayFlagStr, group = "Zona A"),
+                        homeTeam = com.example.worldcup2026.data.model.Team(id = 991, name = homeTeamStr, flagUrl = homeFlagStr, group = "Fase Regular"),
+                        awayTeam = com.example.worldcup2026.data.model.Team(id = 992, name = awayTeamStr, flagUrl = awayFlagStr, group = "Fase Regular"),
                         homeScore = homeScoreVal,
                         awayScore = awayScoreVal,
-                        date = "2026-09-01",
+                        date = java.time.LocalDate.now().toString(),
                         status = if (eventTypeStr == "end") "Finished" else "LIVE",
-                        stadium = "Estadio Alberto J. Armando (La Bombonera)",
+                        stadium = "",
                         scorers = listOf("$scorerStr $minuteStr'")
                     )
                     

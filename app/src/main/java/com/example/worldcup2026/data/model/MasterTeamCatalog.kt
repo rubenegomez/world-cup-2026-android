@@ -298,4 +298,21 @@ object MasterTeamCatalog {
         MasterTeam("Monagas", "https://a.espncdn.com/i/teamlogos/soccer/500/2257.png", 4, "Venezuela"),
         MasterTeam("Universidad Central de Venezuela (UCV)", "https://a.espncdn.com/i/teamlogos/soccer/500/20361.png", 3, "Venezuela")
     )
+
+    private val ALL_MASTER_TEAMS by lazy {
+        CONMEBOL_SELECTIONS + LIGA_PROFESIONAL + PRIMERA_NACIONAL + PRIMERA_B_METRO + TORNEO_FEDERAL_A + INTERNATIONAL_CLUBS
+    }
+
+    fun findTeamLogo(teamName: String?): String? {
+        if (teamName.isNullOrBlank()) return null
+        val clean = teamName.trim()
+        val exact = ALL_MASTER_TEAMS.find { it.name.equals(clean, ignoreCase = true) }
+        if (exact != null && exact.flagUrl.isNotBlank()) return exact.flagUrl
+
+        val partial = ALL_MASTER_TEAMS.find { 
+            clean.contains(it.name, ignoreCase = true) || it.name.contains(clean, ignoreCase = true)
+        }
+        return partial?.flagUrl?.takeIf { it.isNotBlank() }
+    }
 }
+
