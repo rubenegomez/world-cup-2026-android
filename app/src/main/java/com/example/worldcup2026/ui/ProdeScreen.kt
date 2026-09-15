@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
@@ -934,6 +935,8 @@ fun MisLigasTab(
                             "DAY_MATCHES" -> 0
                             else -> selectedTournamentId
                         }
+                        val finalStartDate = if (selectedMode == "DAY_MATCHES") selectedDayFilter else null
+                        val finalEndDate = if (selectedMode == "DAY_MATCHES") selectedDayFilter else null
 
                         viewModel.createLeague(
                             name = leagueNameInput,
@@ -941,6 +944,8 @@ fun MisLigasTab(
                             tournamentId = finalTourneyId,
                             startMatchday = finalStart,
                             endMatchday = finalEnd,
+                            startDate = finalStartDate,
+                            endDate = finalEndDate,
                             customPrize = customPrizeInput.ifBlank { null }
                         )
                         leagueNameInput = ""
@@ -1015,6 +1020,118 @@ fun MisLigasTab(
             dismissButton = {
                 TextButton(onClick = { showJoinDialog = false }) {
                     Text("Cancelar", color = Color.Gray)
+                }
+            },
+            containerColor = Color(0xFF1E1E1E)
+        )
+    }
+
+    // Modal Informativo de Resumen de Liga Creada o Unida
+    val leagueSummary by viewModel.leagueSummaryDialog.collectAsState()
+    if (leagueSummary != null) {
+        val summary = leagueSummary!!
+        val context = LocalContext.current
+        val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissLeagueSummary() },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("🏆", fontSize = 22.sp)
+                    Text("Detalles de la Liga", color = Color(0xFFFFD700), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = summary.name,
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 19.sp
+                    )
+
+                    // Código de Invitación con Botón Copiar
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF2C2C2C),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFC107).copy(alpha = 0.6f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("CÓDIGO DE INVITACIÓN", color = Color.Gray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(summary.code, color = Color(0xFFFFC107), fontWeight = FontWeight.Black, fontSize = 20.sp, letterSpacing = 2.sp)
+                            }
+                            IconButton(onClick = {
+                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(summary.code))
+                                android.widget.Toast.makeText(context, "Código ${summary.code} copiado", android.widget.Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copiar Código",
+                                    tint = Color(0xFFFFC107)
+                                )
+                            }
+                        }
+                    }
+
+                    // Modalidad / Alcance
+                    val modeText = when (summary.mode) {
+                        "SINGLE_MATCHDAY" -> "Fecha única (Jornada ${summary.start_matchday ?: 1})"
+                        "RANGE_MATCHDAYS" -> "Rango (Fechas ${summary.start_matchday ?: 1} a ${summary.end_matchday ?: summary.start_matchday ?: 1})"
+                        "DAY_MATCHES" -> "Día calendario (${summary.start_date ?: "Hoy"})"
+                        "MULTI_TOURNAMENT" -> "Multitorneo (Todos los torneos)"
+                        else -> "Torneo Completo"
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("📌", fontSize = 13.sp)
+                            Text("Modalidad: $modeText", color = Color.White, fontSize = 13.sp)
+                        }
+
+                        if (!summary.start_date.isNullOrBlank() || !summary.end_date.isNullOrBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("📅", fontSize = 13.sp)
+                                val dateSpan = if (summary.start_date == summary.end_date) summary.start_date ?: ""
+                                               else "${summary.start_date ?: ""} al ${summary.end_date ?: ""}"
+                                Text("Fechas: $dateSpan", color = Color.White, fontSize = 13.sp)
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("⚽", fontSize = 13.sp)
+                            Text("Partidos comprendidos: ${summary.matches_count ?: 0} partidos", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("🌟", fontSize = 13.sp)
+                            Text("Máximo puntaje en juego: ${summary.max_points ?: 0} Pts", color = Color(0xFFFFD700), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        if (!summary.custom_prize.isNullOrBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("🎁", fontSize = 13.sp)
+                                Text("Premio: ${summary.custom_prize}", color = Color(0xFF4CAF50), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.dismissLeagueSummary() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+                ) {
+                    Text("¡A Jugar! 🚀", color = Color.Black, fontWeight = FontWeight.Bold)
                 }
             },
             containerColor = Color(0xFF1E1E1E)

@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.worldcup2026.data.api.CreateLeagueRequest
 import com.example.worldcup2026.data.api.FirebaseTokenRequest
 import com.example.worldcup2026.data.api.JoinLeagueRequest
+import com.example.worldcup2026.data.api.LeagueDto
 import com.example.worldcup2026.data.api.NetworkModule
 import com.example.worldcup2026.data.api.SubmitPredictionRequest
 import com.example.worldcup2026.data.api.UserDto
@@ -59,7 +60,11 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     startMatchday = it.start_matchday,
                     endMatchday = it.end_matchday,
                     customPrize = it.custom_prize,
-                    status = it.status ?: "ACTIVE"
+                    status = it.status ?: "ACTIVE",
+                    startDate = it.start_date,
+                    endDate = it.end_date,
+                    matchesCount = it.matches_count ?: 0,
+                    maxPoints = it.max_points ?: 0
                 )
             }
             leagueDao.insertAll(entities)
@@ -76,9 +81,11 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         tournamentId: Int? = 5,
         startMatchday: Int? = 1,
         endMatchday: Int? = 5,
+        startDate: String? = null,
+        endDate: String? = null,
         customPrize: String? = null
-    ): Boolean {
-        val token = authToken ?: return false
+    ): LeagueDto? {
+        val token = authToken ?: return null
         return try {
             val dto = api.createLeague(
                 token,
@@ -88,6 +95,8 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     tournament_id = tournamentId,
                     start_matchday = startMatchday,
                     end_matchday = endMatchday,
+                    start_date = startDate,
+                    end_date = endDate,
                     custom_prize = customPrize
                 )
             )
@@ -102,18 +111,22 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     startMatchday = dto.start_matchday ?: startMatchday,
                     endMatchday = dto.end_matchday ?: endMatchday,
                     customPrize = dto.custom_prize ?: customPrize,
-                    status = dto.status ?: "ACTIVE"
+                    status = dto.status ?: "ACTIVE",
+                    startDate = dto.start_date ?: startDate,
+                    endDate = dto.end_date ?: endDate,
+                    matchesCount = dto.matches_count ?: 0,
+                    maxPoints = dto.max_points ?: 0
                 )
             )
-            true
+            dto
         } catch (e: Exception) {
             Log.e("ProdeRepo", "Error creating league", e)
-            false
+            null
         }
     }
 
-    suspend fun joinLeague(code: String): Boolean {
-        val token = authToken ?: return false
+    suspend fun joinLeague(code: String): LeagueDto? {
+        val token = authToken ?: return null
         return try {
             val dto = api.joinLeague(token, JoinLeagueRequest(code))
             leagueDao.insertLeague(
@@ -127,13 +140,17 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     startMatchday = dto.start_matchday,
                     endMatchday = dto.end_matchday,
                     customPrize = dto.custom_prize,
-                    status = dto.status ?: "ACTIVE"
+                    status = dto.status ?: "ACTIVE",
+                    startDate = dto.start_date,
+                    endDate = dto.end_date,
+                    matchesCount = dto.matches_count ?: 0,
+                    maxPoints = dto.max_points ?: 0
                 )
             )
-            true
+            dto
         } catch (e: Exception) {
             Log.e("ProdeRepo", "Error joining league", e)
-            false
+            null
         }
     }
 

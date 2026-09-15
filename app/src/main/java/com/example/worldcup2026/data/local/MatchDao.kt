@@ -20,8 +20,11 @@ interface MatchDao {
     @Query("SELECT * FROM matches WHERE id = :matchId")
     suspend fun getMatchById(matchId: Int): MatchEntity?
 
-    @Query("DELETE FROM matches WHERE id NOT IN (:validIds)")
-    suspend fun deleteObsoleteMatches(validIds: List<Int>)
+    @Query("SELECT id FROM matches")
+    suspend fun getAllMatchIds(): List<Int>
+
+    @Query("DELETE FROM matches WHERE id IN (:ids)")
+    suspend fun deleteMatchesByIds(ids: List<Int>)
 
     @Query("DELETE FROM matches")
     suspend fun clearAllMatches()

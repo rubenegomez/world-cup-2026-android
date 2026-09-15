@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [MatchEntity::class, LeagueEntity::class], version = 10, exportSchema = false)
+@Database(entities = [MatchEntity::class, LeagueEntity::class], version = 11, exportSchema = false)
 abstract class WorldCupDatabase : RoomDatabase() {
     abstract fun matchDao(): MatchDao
     abstract fun leagueDao(): LeagueDao
@@ -61,6 +61,15 @@ abstract class WorldCupDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE leagues ADD COLUMN startDate TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE leagues ADD COLUMN endDate TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE leagues ADD COLUMN matchesCount INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE leagues ADD COLUMN maxPoints INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getDatabase(context: Context): WorldCupDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -68,7 +77,7 @@ abstract class WorldCupDatabase : RoomDatabase() {
                     WorldCupDatabase::class.java,
                     "world_cup_database"
                 )
-                .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

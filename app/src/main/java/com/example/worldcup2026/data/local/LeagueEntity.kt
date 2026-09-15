@@ -15,5 +15,9 @@ data class LeagueEntity(
     @ColumnInfo(name = "startMatchday") val startMatchday: Int? = null,
     @ColumnInfo(name = "endMatchday") val endMatchday: Int? = null,
     @ColumnInfo(name = "customPrize") val customPrize: String? = null,
-    @ColumnInfo(name = "status") val status: String? = "ACTIVE"
+    @ColumnInfo(name = "status") val status: String? = "ACTIVE",
+    @ColumnInfo(name = "startDate") val startDate: String? = null,
+    @ColumnInfo(name = "endDate") val endDate: String? = null,
+    @ColumnInfo(name = "matchesCount", defaultValue = "0") val matchesCount: Int = 0,
+    @ColumnInfo(name = "maxPoints", defaultValue = "0") val maxPoints: Int = 0
 )

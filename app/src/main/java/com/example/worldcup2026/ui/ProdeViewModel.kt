@@ -135,10 +135,21 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun signOut() {
+    private val _leagueSummaryDialog = MutableStateFlow<com.example.worldcup2026.data.api.LeagueDto?>(null)
+    val leagueSummaryDialog = _leagueSummaryDialog.asStateFlow()
+
+    fun dismissLeagueSummary() {
+        _leagueSummaryDialog.value = null
+    }
+
+    fun logout() {
         prodeRepository.logout()
         _isAuthenticated.value = false
         _currentUser.value = null
+    }
+
+    fun signOut() {
+        logout()
     }
 
     fun createLeague(
@@ -147,16 +158,27 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         tournamentId: Int? = 5,
         startMatchday: Int? = 1,
         endMatchday: Int? = 5,
-        customPrize: String? = null
+        startDate: String? = null,
+        endDate: String? = null,
+        customPrize: String? = null,
+        onSuccess: ((com.example.worldcup2026.data.api.LeagueDto) -> Unit)? = null
     ) {
         viewModelScope.launch {
-            prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, customPrize)
+            val dto = prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, startDate, endDate, customPrize)
+            if (dto != null) {
+                _leagueSummaryDialog.value = dto
+                onSuccess?.invoke(dto)
+            }
         }
     }
 
-    fun joinLeague(code: String) {
+    fun joinLeague(code: String, onSuccess: ((com.example.worldcup2026.data.api.LeagueDto) -> Unit)? = null) {
         viewModelScope.launch {
-            prodeRepository.joinLeague(code)
+            val dto = prodeRepository.joinLeague(code)
+            if (dto != null) {
+                _leagueSummaryDialog.value = dto
+                onSuccess?.invoke(dto)
+            }
         }
     }
 

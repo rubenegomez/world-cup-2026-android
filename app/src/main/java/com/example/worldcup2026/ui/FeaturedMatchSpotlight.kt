@@ -58,19 +58,13 @@ object FeaturedMatchDetector {
             it.status.equals("Scheduled", ignoreCase = true) || it.status.equals("LIVE", ignoreCase = true)
         }.mapNotNull { match ->
             try {
-                val cleanDate = (match.date ?: "").trim()
-                val dt = if (cleanDate.contains("T")) {
-                    LocalDateTime.parse(cleanDate)
-                } else if (cleanDate.contains(" ")) {
-                    val parts = cleanDate.split(" ")
-                    val dateParts = parts[0].split("-")
-                    val timeParts = parts[1].split(":")
-                    LocalDateTime.of(
-                        dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(),
-                        timeParts[0].toInt(), timeParts[1].toInt()
-                    )
-                } else if (cleanDate.isNotBlank()) {
-                    val dateParts = cleanDate.split("-")
+                val cleanDate = (match.date ?: "").trim().replace("Z", "").replace(" ", "T")
+                val dt = if (cleanDate.length >= 19) {
+                    LocalDateTime.parse(cleanDate.take(19))
+                } else if (cleanDate.length >= 16) {
+                    LocalDateTime.parse(cleanDate.take(16))
+                } else if (cleanDate.length >= 10) {
+                    val dateParts = cleanDate.take(10).split("-")
                     LocalDateTime.of(dateParts[0].toInt(), dateParts[1].toInt(), dateParts[2].toInt(), 18, 0)
                 } else {
                     null

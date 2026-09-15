@@ -33,6 +33,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     private val _adFreeUntil = mutableStateOf(0L)
     val adFreeUntil: State<Long> = _adFreeUntil
+
+    private val _claimedAdFreePoints = mutableStateOf(0)
+    val claimedAdFreePoints: State<Int> = _claimedAdFreePoints
     
     private val _isVip = mutableStateOf(false)
     val isVip: State<Boolean> = _isVip
@@ -70,6 +73,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         repository = WorldCupRepository(database.matchDao())
         val prefs = application.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
+        _claimedAdFreePoints.value = prefs.getInt("claimed_ad_free_points", 0)
         _isVip.value = prefs.getBoolean("is_vip_status", false)
         
         val favTournamentsSaved = prefs.getStringSet("favorite_tournament_ids", null)
@@ -639,7 +643,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
     fun claimPointsForAdFree(totalUserPoints: Int) {
         val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-        val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
+        val alreadyClaimed = _claimedAdFreePoints.value
         val availablePointsToClaim = (totalUserPoints - alreadyClaimed).coerceAtLeast(0)
         if (availablePointsToClaim > 0) {
             val adFreeTimeToAdd = availablePointsToClaim * 12 * 60 * 60 * 1000L
@@ -654,6 +658,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 .putLong("ad_free_until", newUntil)
                 .apply()
                 
+            _claimedAdFreePoints.value = newClaimed
             _adFreeUntil.value = newUntil
         }
     }
@@ -681,9 +686,10 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 .putInt("claimed_ad_free_points", totalUserPoints)
                 .putBoolean("is_claimed_initialized", true)
                 .apply()
+            _claimedAdFreePoints.value = totalUserPoints
             return 0
         }
-        val alreadyClaimed = prefs.getInt("claimed_ad_free_points", 0)
+        val alreadyClaimed = _claimedAdFreePoints.value
         return (totalUserPoints - alreadyClaimed).coerceAtLeast(0)
     }
     

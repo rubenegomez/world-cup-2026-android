@@ -38,6 +38,8 @@ data class CreateLeagueRequest(
     val tournament_id: Int? = null,
     val start_matchday: Int? = null,
     val end_matchday: Int? = null,
+    val start_date: String? = null,
+    val end_date: String? = null,
     val custom_prize: String? = null
 )
 data class JoinLeagueRequest(val code: String)
@@ -51,8 +53,12 @@ data class LeagueDto(
     val tournament_id: Int? = null,
     val start_matchday: Int? = null,
     val end_matchday: Int? = null,
+    val start_date: String? = null,
+    val end_date: String? = null,
     val custom_prize: String? = null,
-    val status: String? = "ACTIVE"
+    val status: String? = "ACTIVE",
+    val matches_count: Int? = 0,
+    val max_points: Int? = 0
 )
 
 data class StandingDto(

@@ -72,8 +72,18 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 com.example.worldcup2026.data.api.NetworkModule.apiService.getMatches(null)
             }
             if (remoteMatches.isNotEmpty()) {
-                val validIds = remoteMatches.map { it.id }
-                matchDao.deleteObsoleteMatches(validIds)
+                val validIds = remoteMatches.map { it.id }.toSet()
+                try {
+                    val existingIds = matchDao.getAllMatchIds()
+                    val toDelete = existingIds.filter { it !in validIds }
+                    if (toDelete.isNotEmpty()) {
+                        toDelete.chunked(500).forEach { chunk ->
+                            matchDao.deleteMatchesByIds(chunk)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
                 remoteMatches.forEach { match ->
                     val saved = savedMatches.find { it.id == match.id }
                     val tournamentId = match.tournament_id ?: saved?.tournamentId ?: 1
