@@ -161,10 +161,11 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         startDate: String? = null,
         endDate: String? = null,
         customPrize: String? = null,
+        tournamentConfigs: String? = null,
         onSuccess: ((com.example.worldcup2026.data.api.LeagueDto) -> Unit)? = null
     ) {
         viewModelScope.launch {
-            val dto = prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, startDate, endDate, customPrize)
+            val dto = prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, startDate, endDate, customPrize, tournamentConfigs)
             if (dto != null) {
                 _leagueSummaryDialog.value = dto
                 onSuccess?.invoke(dto)

@@ -937,6 +937,13 @@ fun MisLigasTab(
                         }
                         val finalStartDate = if (selectedMode == "DAY_MATCHES") selectedDayFilter else null
                         val finalEndDate = if (selectedMode == "DAY_MATCHES") selectedDayFilter else null
+                        val finalConfigs = if (selectedMode == "MULTI_TOURNAMENT") {
+                            val mapToSerialize = selectedTournamentIds.associate { tId ->
+                                val md = tournamentMatchdaysMap[tId]?.first ?: (worldCupViewModel?.getCurrentMatchdayForTournament(tId) ?: 1)
+                                tId.toString() to md
+                            }
+                            org.json.JSONObject(mapToSerialize as Map<*, *>).toString()
+                        } else null
 
                         viewModel.createLeague(
                             name = leagueNameInput,
@@ -946,7 +953,8 @@ fun MisLigasTab(
                             endMatchday = finalEnd,
                             startDate = finalStartDate,
                             endDate = finalEndDate,
-                            customPrize = customPrizeInput.ifBlank { null }
+                            customPrize = customPrizeInput.ifBlank { null },
+                            tournamentConfigs = finalConfigs
                         )
                         leagueNameInput = ""
                         customPrizeInput = ""

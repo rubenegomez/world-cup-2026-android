@@ -83,7 +83,8 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         endMatchday: Int? = 5,
         startDate: String? = null,
         endDate: String? = null,
-        customPrize: String? = null
+        customPrize: String? = null,
+        tournamentConfigs: String? = null
     ): LeagueDto? {
         val token = authToken ?: return null
         return try {
@@ -97,7 +98,8 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     end_matchday = endMatchday,
                     start_date = startDate,
                     end_date = endDate,
-                    custom_prize = customPrize
+                    custom_prize = customPrize,
+                    tournament_configs = tournamentConfigs
                 )
             )
             leagueDao.insertLeague(
