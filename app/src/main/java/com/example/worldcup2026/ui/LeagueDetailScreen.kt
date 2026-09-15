@@ -153,9 +153,11 @@ fun LeagueDetailScreen(
         val modeDesc = when (activeLeague.mode) {
             "SINGLE_MATCHDAY" -> "Fecha ${activeLeague.startMatchday ?: 1}"
             "RANGE_MATCHDAYS" -> "Fechas ${activeLeague.startMatchday ?: 1} a ${activeLeague.endMatchday ?: 5}"
+            "MULTI_TOURNAMENT" -> "Multitorneo"
+            "DAY_MATCHES" -> "Partidos del Día"
             else -> "Torneo Completo"
         }
-        val isFinished = activeLeague.status?.uppercase() == "FINISHED" || (standings.isNotEmpty() && !isLoading && (activeLeague.mode != "FULL_TOURNAMENT"))
+        val isFinished = activeLeague.status?.uppercase() == "FINISHED"
 
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
