@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -393,6 +394,66 @@ fun SettingsMenuScreen(
                             context.sendBroadcast(testIntent)
                         }
                     )
+                }
+            }
+        }
+        item {
+            SettingSection(title = "Actualizaciones y Versión") {
+                val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
+                var autoUpdateEnabled by remember { 
+                    mutableStateOf(sharedPrefs.getBoolean("auto_update_enabled", true)) 
+                }
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text(
+                                    text = "Actualizaciones Automáticas",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (autoUpdateEnabled) "Descargar e instalar novedades automáticamente al abrir la app" else "Avisar y preguntar antes de actualizar",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = autoUpdateEnabled,
+                            onCheckedChange = { isChecked ->
+                                autoUpdateEnabled = isChecked
+                                sharedPrefs.edit().putBoolean("auto_update_enabled", isChecked).apply()
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color(0xFFFFD700),
+                                checkedTrackColor = Color(0xFFFFD700).copy(alpha = 0.5f)
+                            )
+                        )
+                    }
                 }
             }
         }

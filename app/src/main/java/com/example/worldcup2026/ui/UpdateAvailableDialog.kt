@@ -70,6 +70,89 @@ fun openDownloadUrlInChromeOrFallback(context: Context, urlStr: String) {
 }
 
 @Composable
+fun ChangelogDialog(
+    versionName: String,
+    versionCode: Int,
+    releaseNotes: String,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2230)),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD700))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "🎉", fontSize = 44.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "¡NOVEDADES DE LA VERSIÓN!",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    color = Color(0xFFFFD700),
+                    textAlign = TextAlign.Center
+                )
+
+                Text(
+                    text = "Versión $versionName (Build $versionCode)",
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Surface(
+                    color = Color.White.copy(alpha = 0.06f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = "Qué hay de nuevo:",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color(0xFFFFD700)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = releaseNotes.ifBlank { "Mejoras de rendimiento, estabilidad y actualización de torneos." },
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.9f),
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
+                ) {
+                    Text(
+                        text = "¡GENIAL, A JUGAR!",
+                        fontWeight = FontWeight.Black,
+                        color = Color.Black,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun UpdateAvailableDialog(
     updateInfo: WorldCupViewModel.AppUpdateInfo,
     onDismiss: () -> Unit
@@ -149,7 +232,7 @@ fun UpdateAvailableDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700))
                 ) {
                     Text(
-                        text = "⚡ ACTUALIZAR AHORA (CHROME)",
+                        text = "⚡ ACTUALIZAR AHORA",
                         fontWeight = FontWeight.Black,
                         color = Color.Black,
                         fontSize = 14.sp

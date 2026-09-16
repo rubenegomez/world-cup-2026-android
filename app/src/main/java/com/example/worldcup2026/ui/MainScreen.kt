@@ -587,6 +587,16 @@ fun MainScreen(
                         }
                     }
 
+                        val changelogInfo by viewModel.changelogInfo
+                        if (changelogInfo != null) {
+                            ChangelogDialog(
+                                versionName = changelogInfo!!.versionName,
+                                versionCode = changelogInfo!!.versionCode,
+                                releaseNotes = changelogInfo!!.releaseNotes,
+                                onDismiss = { viewModel.dismissChangelogDialog() }
+                            )
+                        }
+
                         val updateInfo by viewModel.appUpdateInfo
                         if (updateInfo != null) {
                             UpdateAvailableDialog(

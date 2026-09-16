@@ -181,6 +181,36 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         _appUpdateInfo.value = null
     }
 
+    data class ChangelogInfo(
+        val versionName: String,
+        val versionCode: Int,
+        val releaseNotes: String
+    )
+
+    private val _changelogInfo = mutableStateOf<ChangelogInfo?>(null)
+    val changelogInfo: State<ChangelogInfo?> = _changelogInfo
+
+    fun dismissChangelogDialog() {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putInt("last_seen_version_code", com.example.worldcup2026.BuildConfig.VERSION_CODE).apply()
+        _changelogInfo.value = null
+    }
+
+    private fun checkFirstTimeSeenVersion(releaseNotes: String?) {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val lastSeen = prefs.getInt("last_seen_version_code", 0)
+        val currentCode = com.example.worldcup2026.BuildConfig.VERSION_CODE
+        if (currentCode > lastSeen && lastSeen > 0) {
+            _changelogInfo.value = ChangelogInfo(
+                versionName = com.example.worldcup2026.BuildConfig.VERSION_NAME,
+                versionCode = currentCode,
+                releaseNotes = releaseNotes ?: "¡Bienvenido a la nueva versión de Arena Prode y Torneos! Disfruta de las últimas mejoras y optimizaciones."
+            )
+        } else if (lastSeen == 0) {
+            prefs.edit().putInt("last_seen_version_code", currentCode).apply()
+        }
+    }
+
     fun checkForUpdates() {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
@@ -192,16 +222,34 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                     val json = conn.inputStream.bufferedReader().use { it.readText() }
                     val obj = org.json.JSONObject(json)
                     val serverVersionCode = obj.optInt("versionCode", 0)
+                    val notes = obj.optString("releaseNotes", "Nuevas mejoras y correcciones disponibles.")
+                    
+                    checkFirstTimeSeenVersion(notes)
+
                     if (serverVersionCode > com.example.worldcup2026.BuildConfig.VERSION_CODE) {
                         val rawUrl = obj.optString("downloadUrl", "")
                         val fullUrl = if (rawUrl.startsWith("http")) rawUrl else "https://ellocodelpedal.duckdns.org$rawUrl"
-                        _appUpdateInfo.value = AppUpdateInfo(
+                        val update = AppUpdateInfo(
                             versionCode = serverVersionCode,
                             versionName = obj.optString("versionName", ""),
                             downloadUrl = fullUrl,
-                            releaseNotes = obj.optString("releaseNotes", "Nuevas mejoras y correcciones disponibles."),
+                            releaseNotes = notes,
                             isMandatory = obj.optBoolean("isMandatory", false)
                         )
+                        
+                        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+                        val isAutoUpdate = prefs.getBoolean("auto_update_enabled", true)
+                        
+                        _appUpdateInfo.value = update
+                        
+                        // Si está en automático, dispara la descarga
+                        if (isAutoUpdate) {
+                            try {
+                                openDownloadUrlInChromeOrFallback(getApplication(), fullUrl)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
