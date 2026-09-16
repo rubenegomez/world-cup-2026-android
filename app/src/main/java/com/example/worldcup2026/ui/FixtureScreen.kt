@@ -681,7 +681,7 @@ fun MatchCard(
                         when {
                             dtStr <= "2026-05-31" -> "32avos"
                             dtStr <= "2026-07-31" -> "16avos"
-                            dtStr <= "2026-09-15" -> "Octavos"
+                            dtStr <= "2026-09-07" -> "Octavos"
                             dtStr <= "2026-10-15" -> "Cuartos"
                             dtStr <= "2026-11-15" -> "Semifinal"
                             else -> "Final"
