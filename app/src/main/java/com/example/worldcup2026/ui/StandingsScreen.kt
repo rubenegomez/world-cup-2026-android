@@ -1290,6 +1290,13 @@ fun assignInferredMatchdays(matches: List<Match>): List<Match> {
     val tournamentId = matches.firstOrNull()?.tournament_id ?: 5
     val sorted = matches.sortedWith(compareBy({ it.date ?: "" }, { it.id }))
 
+    // Si los partidos ya traen su jornada/matchday asignada desde el backend, respetarla
+    if (sorted.any { it.matchday != null && it.matchday > 0 }) {
+        return sorted.map { m ->
+            m.copy(matchday = m.matchday ?: 1)
+        }
+    }
+
     // Cantidad exacta de partidos por fecha según estructura de cada torneo:
     val matchesPerRound = when (tournamentId) {
         5 -> 15     // Liga Profesional (30 equipos = 15 partidos por fecha)
