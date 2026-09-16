@@ -160,57 +160,84 @@ fun CalendarHeader(
     val monthName = selectedDate.month.getDisplayName(TextStyle.FULL, Locale("es", "ES")).replaceFirstChar { it.uppercase() }
     val year = selectedDate.year
 
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = {
-                    SoundManager.playTic()
-                    val newDate = when (viewMode) {
-                        CalendarViewMode.MONTH -> selectedDate.minusMonths(1)
-                        CalendarViewMode.WEEK -> selectedDate.minusWeeks(1)
-                        CalendarViewMode.DAY -> selectedDate.minusDays(1)
-                    }
-                    onDateSelected(newDate)
-                }) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Anterior", tint = MaterialTheme.colorScheme.onBackground)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                IconButton(
+                    onClick = {
+                        SoundManager.playTic()
+                        val newDate = when (viewMode) {
+                            CalendarViewMode.MONTH -> selectedDate.minusMonths(1)
+                            CalendarViewMode.WEEK -> selectedDate.minusWeeks(1)
+                            CalendarViewMode.DAY -> selectedDate.minusDays(1)
+                        }
+                        onDateSelected(newDate)
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ChevronLeft,
+                        contentDescription = "Anterior",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
                 Text(
                     text = "$monthName $year",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = 2.dp)
                 )
-                IconButton(onClick = {
-                    SoundManager.playTic()
-                    val newDate = when (viewMode) {
-                        CalendarViewMode.MONTH -> selectedDate.plusMonths(1)
-                        CalendarViewMode.WEEK -> selectedDate.plusWeeks(1)
-                        CalendarViewMode.DAY -> selectedDate.plusDays(1)
-                    }
-                    onDateSelected(newDate)
-                }) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Siguiente", tint = MaterialTheme.colorScheme.onBackground)
+                IconButton(
+                    onClick = {
+                        SoundManager.playTic()
+                        val newDate = when (viewMode) {
+                            CalendarViewMode.MONTH -> selectedDate.plusMonths(1)
+                            CalendarViewMode.WEEK -> selectedDate.plusWeeks(1)
+                            CalendarViewMode.DAY -> selectedDate.plusDays(1)
+                        }
+                        onDateSelected(newDate)
+                    },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "Siguiente",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
             
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 IconButton(
                     onClick = {
                         SoundManager.playTic()
                         onNavigateToStandings()
                     },
                     modifier = Modifier
+                        .size(34.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFFFC107).copy(alpha = 0.2f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Leaderboard,
                         contentDescription = "Tablas de Posiciones y Torneos",
-                        tint = Color(0xFFFFC107)
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
 
@@ -222,13 +249,15 @@ fun CalendarHeader(
                         onNavigateToMatches(now)
                     },
                     modifier = Modifier
+                        .size(34.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Today,
                         contentDescription = "Ir a hoy",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

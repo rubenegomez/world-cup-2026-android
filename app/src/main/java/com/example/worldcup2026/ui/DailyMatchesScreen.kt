@@ -42,7 +42,7 @@ fun DailyMatchesScreen(
         listOf(0 to "🏆 Todos") + (internacionales + nacionales).map { it.id to it.name }
     }
 
-    val matchesForSelectedDate = remember(matches, date, searchQuery, filterLiveOnly, selectedTournamentIds, favTournaments, favTeams) {
+    val matchesForSelectedDate = remember(matches, date, filterLiveOnly, selectedTournamentIds, favTournaments, favTeams) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
             .filter { it.date?.startsWith(dateStr) == true }
@@ -67,12 +67,7 @@ fun DailyMatchesScreen(
                 } catch (e: Exception) { false }
                 
                 val isLive = isLiveRaw || isTimePassed || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED")
-                val matchesLive = if (filterLiveOnly) isLive else true
-                val matchesSearch = if (searchQuery.isNotBlank()) {
-                    match.homeTeam.name.contains(searchQuery, ignoreCase = true) ||
-                    match.awayTeam.name.contains(searchQuery, ignoreCase = true)
-                } else true
-                matchesLive && matchesSearch
+                if (filterLiveOnly) isLive else true
             }
             // Deduplicación inteligente por nombres de equipos: da prioridad al partido en vivo / jugado sobre el vacio
             .sortedWith(
@@ -89,53 +84,7 @@ fun DailyMatchesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Barra de Búsqueda y Filtro "🔴 En Vivo"
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Buscar equipo...", fontSize = 12.sp, color = Color.White.copy(alpha = 0.5f)) },
-                modifier = Modifier.weight(1f).height(46.dp),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(18.dp)) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
-            )
-
-            FilterChip(
-                selected = filterLiveOnly,
-                onClick = { filterLiveOnly = !filterLiveOnly },
-                label = { Text("🔴 En Vivo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (filterLiveOnly) Color.White else Color.White.copy(alpha = 0.7f)) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = Color(0xFFE53935),
-                    containerColor = Color.White.copy(alpha = 0.1f)
-                ),
-                border = null,
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-
-        // Filtro Por Torneo: Renglón 1 (Torneos Activos en Juego) y Renglón 2 (Próximos y Otros)
+        // Filtro Por Torneo: Renglón 1 (Torneos Activos en Juego + En Vivo) y Renglón 2 (Próximos y Otros)
         val activeTournamentsList = remember {
             listOf(0 to "🔥 Todos los Activos") + com.example.worldcup2026.data.model.MasterTeamCatalog.ACTIVE_TOURNAMENTS.map { it.id to it.displayName }
         }
@@ -143,13 +92,39 @@ fun DailyMatchesScreen(
             com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS.filter { !it.isActive }.map { it.id to it.displayName }
         }
 
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-            // Renglón 1: Torneos en Juego (Activos)
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 6.dp)) {
+            // Renglón 1: Filtro En Vivo + Torneos en Juego (Activos)
             LazyRow(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                item {
+                    FilterChip(
+                        selected = filterLiveOnly,
+                        onClick = { 
+                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                            filterLiveOnly = !filterLiveOnly 
+                        },
+                        label = { 
+                            Text(
+                                "🔴 En Vivo", 
+                                fontSize = 10.sp, 
+                                fontWeight = FontWeight.Bold, 
+                                color = if (filterLiveOnly) Color.White else Color.White.copy(alpha = 0.85f)
+                            ) 
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFE53935),
+                            containerColor = Color(0xFFE53935).copy(alpha = 0.15f)
+                        ),
+                        border = if (!filterLiveOnly) androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFE53935).copy(alpha = 0.5f)) else null,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(28.dp)
+                    )
+                }
+
                 items(activeTournamentsList) { (tId, tName) ->
                     val isSelected = (tId == 0 && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())) || 
                                      (tId != 0 && selectedTournamentIds.contains(tId))
