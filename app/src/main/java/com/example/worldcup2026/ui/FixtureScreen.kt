@@ -650,6 +650,26 @@ fun MatchCard(
         label = "pulseAlpha"
     )
 
+    // Cálculo de ganador/clasificado para torneos con eliminación directa (mata-mata)
+    val isKnockout = match.tournament_id in listOf(1, 3, 4, 6, 12, 16, 24) || (match.tournament_id == 5 && (match.matchday ?: 0) >= 15)
+    val isFinished = match.status.uppercase() == "FINISHED"
+    val homePen = match.homePenalties
+    val awayPen = match.awayPenalties
+    val homeSc = match.homeScore
+    val awaySc = match.awayScore
+
+    val isHomeQualified = isFinished && isKnockout && when {
+        homePen != null && awayPen != null && homePen != awayPen -> homePen > awayPen
+        homeSc != null && awaySc != null && homeSc != awaySc -> homeSc > awaySc
+        else -> false
+    }
+
+    val isAwayQualified = isFinished && isKnockout && when {
+        homePen != null && awayPen != null && homePen != awayPen -> awayPen > homePen
+        homeSc != null && awaySc != null && homeSc != awaySc -> awaySc > homeSc
+        else -> false
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
@@ -945,26 +965,6 @@ fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Cálculo de ganador/clasificado para mata-mata
-                val isKnockout = match.tournament_id in listOf(1, 3, 4, 6, 12, 16, 24) || (match.tournament_id == 5 && (match.matchday ?: 0) >= 15)
-                val isFinished = match.status.uppercase() == "FINISHED"
-                val homePen = match.homePenalties
-                val awayPen = match.awayPenalties
-                val homeSc = match.homeScore
-                val awaySc = match.awayScore
-
-                val isHomeQualified = isFinished && isKnockout && when {
-                    homePen != null && awayPen != null && homePen != awayPen -> homePen > awayPen
-                    homeSc != null && awaySc != null && homeSc != awaySc -> homeSc > awaySc
-                    else -> false
-                }
-
-                val isAwayQualified = isFinished && isKnockout && when {
-                    homePen != null && awayPen != null && homePen != awayPen -> awayPen > homePen
-                    homeSc != null && awaySc != null && homeSc != awaySc -> awaySc > homeSc
-                    else -> false
-                }
-
                 val hasPenalties = homePen != null || awayPen != null
 
                 TeamMatchInfo(
