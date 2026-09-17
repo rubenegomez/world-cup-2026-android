@@ -945,11 +945,34 @@ fun MatchCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
+                // Cálculo de ganador/clasificado para mata-mata
+                val isKnockout = match.tournament_id in listOf(1, 3, 4, 6, 12, 16, 24) || (match.tournament_id == 5 && (match.matchday ?: 0) >= 15)
+                val isFinished = match.status.uppercase() == "FINISHED"
+                val homePen = match.homePenalties
+                val awayPen = match.awayPenalties
+                val homeSc = match.homeScore
+                val awaySc = match.awayScore
+
+                val isHomeQualified = isFinished && isKnockout && when {
+                    homePen != null && awayPen != null && homePen != awayPen -> homePen > awayPen
+                    homeSc != null && awaySc != null && homeSc != awaySc -> homeSc > awaySc
+                    else -> false
+                }
+
+                val isAwayQualified = isFinished && isKnockout && when {
+                    homePen != null && awayPen != null && homePen != awayPen -> awayPen > homePen
+                    homeSc != null && awaySc != null && homeSc != awaySc -> awaySc > homeSc
+                    else -> false
+                }
+
+                val hasPenalties = homePen != null || awayPen != null
+
                 TeamMatchInfo(
                     team = match.homeTeam,
                     score = match.homeScore,
-                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.homePenalties else null,
-                    isFavorite = match.homeTeam.name in favoriteTeamNames
+                    penalties = if (hasPenalties) match.homePenalties else null,
+                    isFavorite = match.homeTeam.name in favoriteTeamNames,
+                    isQualified = isHomeQualified
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1013,8 +1036,9 @@ fun MatchCard(
                 TeamMatchInfo(
                     team = match.awayTeam,
                     score = match.awayScore,
-                    penalties = if ((match.homePenalties != null || match.awayPenalties != null) && match.homeScore != null && match.awayScore != null && match.homeScore == match.awayScore) match.awayPenalties else null,
-                    isFavorite = match.awayTeam.name in favoriteTeamNames
+                    penalties = if (hasPenalties) match.awayPenalties else null,
+                    isFavorite = match.awayTeam.name in favoriteTeamNames,
+                    isQualified = isAwayQualified
                 )
             }
  
@@ -1590,6 +1614,29 @@ fun MatchCard(
                 )
             }
 
+            if (isHomeQualified || isAwayQualified) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFF2196F3),
+                        modifier = Modifier.size(6.dp)
+                    ) {}
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Clasificado a la siguiente fase",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF90CAF9),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Botón Compartir Historia desde la Tarjeta
@@ -1650,7 +1697,13 @@ fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
 }
 
 @Composable
-fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null, isFavorite: Boolean = false) {
+fun TeamMatchInfo(
+    team: Team, 
+    score: Int?, 
+    penalties: Int? = null, 
+    isFavorite: Boolean = false,
+    isQualified: Boolean = false
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(100.dp)
@@ -1678,14 +1731,27 @@ fun TeamMatchInfo(team: Team, score: Int?, penalties: Int? = null, isFavorite: B
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = team.name, 
-            style = MaterialTheme.typography.labelMedium, 
-            fontWeight = if (isFavorite) FontWeight.Black else FontWeight.ExtraBold, 
-            maxLines = 1, 
-            overflow = TextOverflow.Ellipsis, 
-            color = if (isFavorite) Color(0xFFFFD700) else Color.White
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isQualified) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF2196F3),
+                    modifier = Modifier.size(7.dp).padding(end = 1.dp)
+                ) {}
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = team.name, 
+                style = MaterialTheme.typography.labelMedium, 
+                fontWeight = if (isFavorite || isQualified) FontWeight.Black else FontWeight.ExtraBold, 
+                maxLines = 1, 
+                overflow = TextOverflow.Ellipsis, 
+                color = if (isFavorite) Color(0xFFFFD700) else if (isQualified) Color(0xFF90CAF9) else Color.White
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         val displayText = (score?.toString() ?: "0") + (if (penalties != null) " ($penalties)" else "")
         Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
