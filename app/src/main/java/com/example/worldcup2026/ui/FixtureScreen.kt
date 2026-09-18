@@ -1270,62 +1270,64 @@ fun MatchCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("MI PRONÓSTICO (PRODE)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                        Text("PRODE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                        
+                        if (!matchHasStarted && isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color(0xFFFFD700).copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    "DOBLE",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFFFFD700),
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                     }
 
                     if (!matchHasStarted) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFFFD700).copy(alpha = 0.2f),
-                                    modifier = Modifier.padding(end = 8.dp)
-                                ) {
-                                    Text(
-                                        "APUESTA DOBLE",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFFFFD700),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        if (!isEditingProde) {
+                            Button(
+                                onClick = { 
+                                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    isEditingProde = true 
+                                },
+                                modifier = Modifier.height(28.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
+                            ) {
+                                Text("EDITAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
-
-                            if (!isEditingProde) {
-                                Button(
-                                    onClick = { 
-                                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                                        isEditingProde = true 
-                                    },
-                                    modifier = Modifier.height(28.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
-                                ) {
-                                    Text("EDITAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
-                            } else {
-                                Button(
-                                    onClick = { 
-                                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                                        isEditingProde = false
-                                        onPredictionChange(
-                                            match.id,
-                                            match.predictedWinner,
-                                            match.predictedHomeScore,
-                                            match.predictedAwayScore,
-                                            match.predictedHomePenalties,
-                                            match.predictedAwayPenalties
-                                        )
-                                    },
-                                    modifier = Modifier.height(28.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                                ) {
-                                    Text("GUARDAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                }
+                        } else {
+                            Button(
+                                onClick = { 
+                                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    isEditingProde = false
+                                    onPredictionChange(
+                                        match.id,
+                                        match.predictedWinner,
+                                        match.predictedHomeScore,
+                                        match.predictedAwayScore,
+                                        match.predictedHomePenalties,
+                                        match.predictedAwayPenalties
+                                    )
+                                },
+                                modifier = Modifier.height(28.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                            ) {
+                                Text("GUARDAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
