@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.worldcup2026"
         minSdk = 24
         targetSdk = 34
-        versionCode = 65
-        versionName = "1.7.2"
+        versionCode = 66
+        versionName = "1.7.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true

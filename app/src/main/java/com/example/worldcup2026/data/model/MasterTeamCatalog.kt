@@ -309,8 +309,16 @@ object MasterTeamCatalog {
         val exact = ALL_MASTER_TEAMS.find { it.name.equals(clean, ignoreCase = true) }
         if (exact != null && exact.flagUrl.isNotBlank()) return exact.flagUrl
 
+        val baseName = clean.substringBefore("(").trim()
+        val matchBase = ALL_MASTER_TEAMS.find { 
+            val itBase = it.name.substringBefore("(").trim()
+            itBase.equals(baseName, ignoreCase = true)
+        }
+        if (matchBase != null && matchBase.flagUrl.isNotBlank()) return matchBase.flagUrl
+
         val partial = ALL_MASTER_TEAMS.find { 
-            clean.contains(it.name, ignoreCase = true) || it.name.contains(clean, ignoreCase = true)
+            val itBase = it.name.substringBefore("(").trim()
+            clean.contains(itBase, ignoreCase = true) || it.name.contains(clean, ignoreCase = true) || baseName.contains(itBase, ignoreCase = true)
         }
         return partial?.flagUrl?.takeIf { it.isNotBlank() }
     }

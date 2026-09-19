@@ -1711,9 +1711,12 @@ fun TeamMatchInfo(
         modifier = Modifier.width(100.dp)
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
+            val resolvedLogo = team.flagUrl.takeIf { !it.isNullOrBlank() }
+                ?: com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(team.name)
+                ?: ""
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(team.flagUrl)
+                    .data(resolvedLogo)
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
