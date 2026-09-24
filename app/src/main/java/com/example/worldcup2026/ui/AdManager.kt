@@ -222,25 +222,36 @@ object AdManager {
 
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
-    val showAdmobFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    val showHouseBannerFallback = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    // 0: AdMob (3 min), 1: Unity (3 min), 2: House Ads (1 min / 4 banners)
+    var currentProvider by remember { mutableIntStateOf(0) }
+    var providerFailed by remember { mutableStateOf(false) }
 
-    // Rotar o reintentar periódicamente
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(45000L) // cada 45 segundos intentar refrescar
-        if (showHouseBannerFallback.value) {
-            showHouseBannerFallback.value = false
-            showAdmobFallback.value = false
+        while (true) {
+            // Bloque 1: AdMob (3 minutos = 180s)
+            currentProvider = 0
+            providerFailed = false
+            kotlinx.coroutines.delay(180000L)
+
+            // Bloque 2: Unity Ads (3 minutos = 180s)
+            currentProvider = 1
+            providerFailed = false
+            kotlinx.coroutines.delay(180000L)
+
+            // Bloque 3: House Ads propios (1 minuto = 60s)
+            currentProvider = 2
+            providerFailed = false
+            kotlinx.coroutines.delay(60000L)
         }
     }
 
-    if (showHouseBannerFallback.value) {
+    if (currentProvider == 2 || providerFailed) {
         HouseBannerFallback(modifier = modifier)
-    } else if (!showAdmobFallback.value) {
+    } else if (currentProvider == 1) {
         UnityBannerView(
             modifier = modifier,
             onBannerFailed = {
-                showAdmobFallback.value = true
+                providerFailed = true
             }
         )
     } else {
@@ -254,7 +265,7 @@ fun AdmobBanner(modifier: Modifier = Modifier) {
                     adUnitId = AdManager.BANNER_AD_UNIT_ID
                     adListener = object : com.google.android.gms.ads.AdListener() {
                         override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
-                            showHouseBannerFallback.value = true
+                            providerFailed = true
                         }
                     }
                     loadAd(AdRequest.Builder().build())
@@ -269,17 +280,18 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val houseApps = remember {
         listOf(
-            Triple("TimeTracker Pro", "Control de horas y guardias", "https://ellocodelpedal.duckdns.org/timetracker.html"),
-            Triple("Bondi Maps", "Colectivos y mapas interactivos", "https://ellocodelpedal.duckdns.org/bondi.html"),
-            Triple("Los Fondos del Loco", "Wallpapers Ultra HD exclusivos", "https://ellocodelpedal.duckdns.org/fondos.html")
+            Triple("Bondi Maps", "Colectivos, paradas y recorridos en vivo", "https://ellocodelpedal.duckdns.org/bondi.html"),
+            Triple("TimeTracker Pro", "Control de horas de trabajo y guardias", "https://ellocodelpedal.duckdns.org/timetracker.html"),
+            Triple("Los Fondos del Loco", "Wallpapers Ultra HD exclusivos", "https://ellocodelpedal.duckdns.org/fondos.html"),
+            Triple("El Loco del Pedal", "Comunidad ciclista y cicloturismo", "https://ellocodelpedal.duckdns.org")
         )
     }
     var appIndex by remember { mutableIntStateOf(0) }
 
-    // Rotar banner propio cada 12 segundos
+    // Rotar los 4 banners propios cada 15 segundos
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(12000L)
+            kotlinx.coroutines.delay(15000L)
             appIndex = (appIndex + 1) % houseApps.size
         }
     }
