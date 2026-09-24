@@ -89,7 +89,7 @@ object AdManager {
         ),
         HouseVideoAd(
             appName = "Bondi Maps",
-            appTagline = "¡Encontrá paradas, recorridos y horarios de colectivos en tiempo real!",
+            appTagline = "¡Gestioná tus tarjetas de colectivo, saldos y viajes de forma fácil!",
             videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/bondi_ad.mp4",
             targetUrl = "https://ellocodelpedal.duckdns.org/bondi.html",
             accentColor = 0xFF00E676
