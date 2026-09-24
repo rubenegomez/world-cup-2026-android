@@ -81,6 +81,13 @@ object AdManager {
 
     val houseVideoAds = listOf(
         HouseVideoAd(
+            appName = "Arena Prode",
+            appTagline = "¡El Prode oficial con resultados en vivo y estadísticas VIP!",
+            videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/arena_ad.mp4",
+            targetUrl = "https://ellocodelpedal.duckdns.org/arena.html",
+            accentColor = 0xFFFFD700
+        ),
+        HouseVideoAd(
             appName = "Bondi Maps",
             appTagline = "¡Encontrá paradas, recorridos y horarios de colectivos en tiempo real!",
             videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/bondi_ad.mp4",
@@ -113,47 +120,67 @@ object AdManager {
         onHouseAdFinishedCallback = null
     }
 
-    private var interstitialCounter = 0
+    private var rewardedCycleIndex = 0
+    private var interstitialCycleIndex = 0
 
-    fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
-        val activity = context as? Activity
-        if (activity != null) {
-            // Prioridad #1: Unity Ads
-            UnityAdsManager.showRewardedAd(
-                activity = activity,
-                onRewardGranted = onRewardGranted,
-                onFallback = {
-                    // Respaldo #2: AdMob Rewarded
-                    val ad = mRewardedAd
-                    if (ad != null) {
-                        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                            override fun onAdDismissedFullScreenContent() {
-                                mRewardedAd = null
-                                loadRewardedAd(context)
-                            }
-                            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                                mRewardedAd = null
-                                // Respaldo #3: Video House Ad propio
-                                showHouseVideoAd(onRewardGranted)
-                            }
-                        }
-                        ad.show(activity) { _ ->
-                            onRewardGranted()
-                            Toast.makeText(context, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        // Si no cargó AdMob ni Unity, mostrar Video House Ad propio de Bondi o TimeTracker
-                        showHouseVideoAd(onRewardGranted)
-                    }
+    // Función auxiliar para mostrar video de AdMob
+    private fun showAdmobRewarded(activity: Activity, onRewardGranted: () -> Unit, onFallback: () -> Unit) {
+        val ad = mRewardedAd
+        if (ad != null) {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mRewardedAd = null
+                    loadRewardedAd(activity)
                 }
-            )
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    mRewardedAd = null
+                    onFallback()
+                }
+            }
+            ad.show(activity) { _ ->
+                onRewardGranted()
+                Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+            }
         } else {
+            onFallback()
+        }
+    }
+
+    // Rotación 1 a 1: 0 -> Google AdMob, 1 -> Unity Ads, 2 -> Video Propio (Nosotros)
+    fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
+        val activity = context as? Activity ?: run {
             onRewardGranted()
+            return
+        }
+
+        val turn = rewardedCycleIndex % 3
+        rewardedCycleIndex++
+
+        when (turn) {
+            0 -> {
+                // Turno Google AdMob
+                showAdmobRewarded(activity, onRewardGranted, onFallback = {
+                    UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
+                        showHouseVideoAd(onRewardGranted)
+                    })
+                })
+            }
+            1 -> {
+                // Turno Unity Ads
+                UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
+                    showAdmobRewarded(activity, onRewardGranted, onFallback = {
+                        showHouseVideoAd(onRewardGranted)
+                    })
+                })
+            }
+            else -> {
+                // Turno Nosotros (Arena Prode / Bondi / TimeTracker)
+                showHouseVideoAd(onRewardGranted)
+            }
         }
     }
 
     fun loadInterstitialAd(context: Context) {
-        // Carga primaria en Unity Ads y respaldo en AdMob
         UnityAdsManager.loadInterstitialAd()
         if (mInterstitialAd != null || isLoading) return
         isLoading = true
@@ -177,45 +204,58 @@ object AdManager {
         )
     }
 
-    fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
-        val activity = context as? Activity
-        interstitialCounter++
+    private fun showAdmobInterstitial(activity: Activity, onComplete: () -> Unit, onFallback: () -> Unit) {
+        val ad = mInterstitialAd
+        if (ad != null) {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    mInterstitialAd = null
+                    onComplete()
+                    loadInterstitialAd(activity)
+                }
 
-        // Intercalar 1 de cada 3 veces con Video House Ad propio (Bondi Maps / TimeTracker Pro)
-        if (interstitialCounter % 3 == 0) {
-            showHouseVideoAd(onComplete)
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    mInterstitialAd = null
+                    onFallback()
+                }
+            }
+            ad.show(activity)
+        } else {
+            onFallback()
+        }
+    }
+
+    // Rotación 1 a 1 para Intersticiales / Estadísticas VIP
+    fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
+        val activity = context as? Activity ?: run {
+            onComplete()
             return
         }
 
-        if (activity != null) {
-            // Prioridad #1: Unity Ads
-            UnityAdsManager.showInterstitialAd(
-                context = context,
-                onComplete = onComplete,
-                onFallback = {
-                    // Respaldo #2: AdMob Interstitial
-                    val ad = mInterstitialAd
-                    if (ad != null) {
-                        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                            override fun onAdDismissedFullScreenContent() {
-                                mInterstitialAd = null
-                                onComplete()
-                                loadInterstitialAd(context)
-                            }
+        val turn = interstitialCycleIndex % 3
+        interstitialCycleIndex++
 
-                            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                                mInterstitialAd = null
-                                showHouseVideoAd(onComplete)
-                            }
-                        }
-                        ad.show(activity)
-                    } else {
+        when (turn) {
+            0 -> {
+                // Turno Google AdMob
+                showAdmobInterstitial(activity, onComplete, onFallback = {
+                    UnityAdsManager.showInterstitialAd(context, onComplete, onFallback = {
                         showHouseVideoAd(onComplete)
-                    }
-                }
-            )
-        } else {
-            onComplete()
+                    })
+                })
+            }
+            1 -> {
+                // Turno Unity Ads
+                UnityAdsManager.showInterstitialAd(context, onComplete, onFallback = {
+                    showAdmobInterstitial(activity, onComplete, onFallback = {
+                        showHouseVideoAd(onComplete)
+                    })
+                })
+            }
+            else -> {
+                // Turno Nosotros
+                showHouseVideoAd(onComplete)
+            }
         }
     }
 }
