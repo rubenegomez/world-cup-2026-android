@@ -40,6 +40,8 @@ object AdManager {
     val INTERSTITIAL_AD_UNIT_ID: String
         get() = if (com.example.worldcup2026.BuildConfig.DEBUG) INTERSTITIAL_TEST_ID else INTERSTITIAL_REAL_ID
 
+    const val ADSTERRA_SMARTLINK_URL = "https://www.profitableratecpmnetwork.com/ugedck5w?key=8537e3c00b02fb7cb23b3137c7867de3"
+
     private var mInterstitialAd: InterstitialAd? = null
     private var isLoading = false
 
@@ -261,32 +263,117 @@ object AdManager {
 }
 
 @Composable
+fun AdsterraBannerView(
+    modifier: Modifier = Modifier,
+    onBannerFailed: () -> Unit = {}
+) {
+    val htmlContent = remember {
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                body { margin: 0; padding: 0; background-color: transparent; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+            </style>
+        </head>
+        <body>
+            <script type="text/javascript">
+                atOptions = {
+                    'key' : '0911397d317b072b7071544159b4d692',
+                    'format' : 'iframe',
+                    'height' : 50,
+                    'width' : 320,
+                    'params' : {}
+                };
+            </script>
+            <script type="text/javascript" src="https://www.highrevenueformat.com/0911397d317b072b7071544159b4d692/invoke.js"></script>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    AndroidView(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        factory = { ctx ->
+            android.webkit.WebView(ctx).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                webViewClient = object : android.webkit.WebViewClient() {
+                    override fun onReceivedError(
+                        view: android.webkit.WebView?,
+                        request: android.webkit.WebResourceRequest?,
+                        error: android.webkit.WebResourceError?
+                    ) {
+                        onBannerFailed()
+                    }
+
+                    override fun shouldOverrideUrlLoading(
+                        view: android.webkit.WebView?,
+                        request: android.webkit.WebResourceRequest?
+                    ): Boolean {
+                        val url = request?.url?.toString() ?: return false
+                        return try {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            ctx.startActivity(intent)
+                            true
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                }
+                loadDataWithBaseURL("https://www.highrevenueformat.com", htmlContent, "text/html", "UTF-8", null)
+            }
+        }
+    )
+}
+
+@Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
-    // 0: AdMob (3 min), 1: Unity (3 min), 2: House Ads (1 min / 4 banners)
+    // 0: AdMob (2 min), 1: Unity (2 min), 2: Adsterra (2 min), 3: House Ads (1 min)
     var currentProvider by remember { mutableIntStateOf(0) }
     var providerFailed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (true) {
-            // Bloque 1: AdMob (3 minutos = 180s)
+            // Bloque 1: AdMob (2 minutos = 120s)
             currentProvider = 0
             providerFailed = false
-            kotlinx.coroutines.delay(180000L)
+            kotlinx.coroutines.delay(120000L)
 
-            // Bloque 2: Unity Ads (3 minutos = 180s)
+            // Bloque 2: Unity Ads (2 minutos = 120s)
             currentProvider = 1
             providerFailed = false
-            kotlinx.coroutines.delay(180000L)
+            kotlinx.coroutines.delay(120000L)
 
-            // Bloque 3: House Ads propios (1 minuto = 60s)
+            // Bloque 3: Adsterra Banner Webview (2 minutos = 120s)
             currentProvider = 2
+            providerFailed = false
+            kotlinx.coroutines.delay(120000L)
+
+            // Bloque 4: House Ads propios (1 minuto = 60s)
+            currentProvider = 3
             providerFailed = false
             kotlinx.coroutines.delay(60000L)
         }
     }
 
-    if (currentProvider == 2 || providerFailed) {
+    if (currentProvider == 3 || providerFailed) {
         HouseBannerFallback(modifier = modifier)
+    } else if (currentProvider == 2) {
+        AdsterraBannerView(
+            modifier = modifier,
+            onBannerFailed = {
+                providerFailed = true
+            }
+        )
     } else if (currentProvider == 1) {
         UnityBannerView(
             modifier = modifier,
@@ -321,6 +408,7 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
     val houseApps = remember {
         listOf(
             Triple("Bondi Maps", "Colectivos, paradas y recorridos en vivo", "https://ellocodelpedal.duckdns.org/bondi.html"),
+            Triple("Ofertas & Patrocinadores", "Descubrí apps recomendadas y promos", AdManager.ADSTERRA_SMARTLINK_URL),
             Triple("TimeTracker Pro", "Control de horas de trabajo y guardias", "https://ellocodelpedal.duckdns.org/timetracker.html"),
             Triple("Los Fondos del Loco", "Wallpapers Ultra HD exclusivos", "https://ellocodelpedal.duckdns.org/fondos.html"),
             Triple("El Loco del Pedal", "Comunidad ciclista y cicloturismo", "https://ellocodelpedal.duckdns.org")
