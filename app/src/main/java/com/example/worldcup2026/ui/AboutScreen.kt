@@ -81,17 +81,35 @@ fun AboutScreen() {
                         )
                     }
                     Spacer(modifier = Modifier.height(14.dp))
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    Button(
-                        onClick = {
-                            openDownloadUrlInChromeOrFallback(context, "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk")
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("🚀 BUSCAR / DESCARGAR ACTUALIZACIÓN", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Button(
+                            onClick = {
+                                openDownloadUrlInChromeOrFallback(context, "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk")
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Build, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("ACTUALIZAR", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                com.example.worldcup2026.data.util.ShareCardGenerator.shareAppApkFile(context)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                        ) {
+                            Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("ENVIAR APK", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White)
+                        }
                     }
                 }
             }

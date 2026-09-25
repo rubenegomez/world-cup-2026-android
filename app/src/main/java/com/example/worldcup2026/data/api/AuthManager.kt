@@ -108,4 +108,17 @@ class AuthManager(private val context: Context) {
     fun signOut() {
         FirebaseAuth.getInstance().signOut()
     }
+
+    companion object {
+        const val ADMIN_EMAIL = "rubeng696@gmail.com"
+
+        fun isAdmin(): Boolean {
+            val user = FirebaseAuth.getInstance().currentUser
+            return user?.email?.trim()?.equals(ADMIN_EMAIL, ignoreCase = true) == true
+        }
+
+        fun getCurrentUserEmail(): String? {
+            return FirebaseAuth.getInstance().currentUser?.email
+        }
+    }
 }

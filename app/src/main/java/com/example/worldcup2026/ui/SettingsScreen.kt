@@ -541,6 +541,23 @@ fun SettingsMenuScreen(
         }
         if (isAdminUser) {
             item {
+                var showAdminScrapersDialog by remember { mutableStateOf(false) }
+
+                SettingSection(title = "Panel de Control Servidor (Admin)") {
+                    SettingItem(
+                        icon = Icons.Default.Build,
+                        title = "🛠️ Control de Scrapers y Servidor",
+                        subtitle = "Forzar escaneos y ver estado de los torneos",
+                        onClick = { showAdminScrapersDialog = true }
+                    )
+                }
+
+                if (showAdminScrapersDialog) {
+                    AdminScrapersDialog(onDismiss = { showAdminScrapersDialog = false })
+                }
+            }
+
+            item {
                 SettingSection(title = "Publicidad y Anuncios (Admin)") {
                     val adFreeUntil by worldCupViewModel.adFreeUntil
                     val isAdFree = adFreeUntil > System.currentTimeMillis()

@@ -235,4 +235,46 @@ object ShareCardGenerator {
         chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(chooser)
     }
+
+    fun shareAppApkFile(context: Context) {
+        try {
+            val appInfo = context.applicationInfo
+            val sourceApk = File(appInfo.sourceDir)
+            
+            val cacheApkDir = File(context.cacheDir, "apk_share")
+            if (!cacheApkDir.exists()) cacheApkDir.mkdirs()
+            val targetApk = File(cacheApkDir, "ArenaProde_v${com.example.worldcup2026.BuildConfig.VERSION_NAME}.apk")
+            
+            sourceApk.copyTo(targetApk, overwrite = true)
+            
+            val apkUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                targetApk
+            )
+
+            val shareText = "⚽ *ARENA PRODE Y TORNEOS*\n\n¡Instalá la app para seguir los resultados en vivo, copas y jugar al prode con amigos!\n\n🌐 Descarga web alternativa: https://ellocodelpedal.duckdns.org/download/ArenaProde.apk"
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/vnd.android.package-archive"
+                putExtra(Intent.EXTRA_STREAM, apkUri)
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            val chooser = Intent.createChooser(shareIntent, "Compartir Arena Prode (Instalador APK)")
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback con enlace de texto
+            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "⚽ ¡Descargá *Arena Prode y Torneos* para seguir los partidos en vivo y jugar al prode!\n📲 Link de descarga directa: https://ellocodelpedal.duckdns.org/download/ArenaProde.apk")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(fallbackIntent, "Compartir Arena Prode").apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+        }
+    }
 }

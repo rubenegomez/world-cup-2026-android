@@ -41,6 +41,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlinx.coroutines.launch
 
+private var savedPredictionsCount = 0
+
 fun isKnockoutMatch(match: Match): Boolean {
     val tId = match.tournament_id ?: 1
     val groupName = match.homeTeam.group
@@ -1310,6 +1312,7 @@ fun MatchCard(
                                 Text("EDITAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         } else {
+                            val context = LocalContext.current
                             Button(
                                 onClick = { 
                                     com.example.worldcup2026.data.util.SoundManager.playTic()
@@ -1322,6 +1325,21 @@ fun MatchCard(
                                         match.predictedHomePenalties,
                                         match.predictedAwayPenalties
                                     )
+
+                                    // Lógica de Video Intercalado Adaptativo
+                                    if (showAds) {
+                                        savedPredictionsCount++
+                                        val totalInList = allMatches.size
+                                        val shouldShowAd = if (totalInList <= 4) {
+                                            savedPredictionsCount % 2 == 0
+                                        } else {
+                                            savedPredictionsCount % 3 == 0
+                                        }
+
+                                        if (shouldShowAd) {
+                                            AdManager.showInterstitialAd(context) {}
+                                        }
+                                    }
                                 },
                                 modifier = Modifier.height(28.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),

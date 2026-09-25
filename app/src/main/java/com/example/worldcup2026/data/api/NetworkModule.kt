@@ -51,7 +51,31 @@ interface WorldCupApiService {
 
     @retrofit2.http.POST("api/admin/match/update")
     suspend fun updateMatchAdmin(@retrofit2.http.Body req: AdminMatchUpdateRequest): retrofit2.Response<Unit>
+
+    @GET("api/admin/scrapers/status")
+    suspend fun getScrapersStatus(@Query("email") email: String): ScrapersStatusResponse
+
+    @retrofit2.http.POST("api/admin/scrapers/run")
+    suspend fun runScrapersAdmin(
+        @Query("email") email: String,
+        @Query("tournament_id") tournamentId: Int? = null
+    ): retrofit2.Response<Unit>
 }
+
+data class ScraperStatusItem(
+    val tournament_id: Int,
+    val tournament_name: String,
+    val type: String,
+    val match_count: Int,
+    val live_count: Int,
+    val latest_date: String?,
+    val status: String
+)
+
+data class ScrapersStatusResponse(
+    val status: String,
+    val scrapers: List<ScraperStatusItem>
+)
 
 data class AdminMatchUpdateRequest(
     val matchId: Int,
