@@ -1327,18 +1327,16 @@ fun MatchCard(
                                     )
 
                                     // Lógica de Video Intercalado Adaptativo
-                                    if (showAds) {
-                                        savedPredictionsCount++
-                                        val totalInList = allMatches.size
-                                        val shouldShowAd = if (totalInList <= 4) {
-                                            savedPredictionsCount % 2 == 0
-                                        } else {
-                                            savedPredictionsCount % 3 == 0
-                                        }
+                                    savedPredictionsCount++
+                                    val totalInList = allMatches.size
+                                    val shouldShowAd = if (totalInList <= 4) {
+                                        savedPredictionsCount % 2 == 0
+                                    } else {
+                                        savedPredictionsCount % 3 == 0
+                                    }
 
-                                        if (shouldShowAd) {
-                                            AdManager.showInterstitialAd(context) {}
-                                        }
+                                    if (shouldShowAd) {
+                                        AdManager.showInterstitialAd(context) {}
                                     }
                                 },
                                 modifier = Modifier.height(28.dp),

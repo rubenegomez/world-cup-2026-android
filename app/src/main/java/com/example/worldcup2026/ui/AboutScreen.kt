@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun AboutScreen() {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val libraries = listOf(
         LibraryInfo("Jetpack Compose", "Google", "Apache 2.0"),
         LibraryInfo("Room Database", "Google", "Apache 2.0"),
