@@ -19,9 +19,9 @@ import com.unity3d.services.banners.UnityBannerSize
 object UnityAdsManager {
     const val GAME_ID = "800359844"
     const val REWARDED_PLACEMENT_ID = "Rewarded_Android"
-    const val INTERSTITIAL_PLACEMENT_ID = "Intersticial_Android"
+    const val INTERSTITIAL_PLACEMENT_ID = "Interstitial_Android"
     const val BANNER_PLACEMENT_ID = "Banner_Android"
-    const val TEST_MODE = true
+    const val TEST_MODE = false
 
     private var isInitialized = false
     private var isRewardedLoaded = false
@@ -41,12 +41,14 @@ object UnityAdsManager {
             TEST_MODE,
             object : IUnityAdsInitializationListener {
                 override fun onInitializationComplete() {
+                    android.util.Log.d("UnityAdsManager", "✅ Unity Ads Inicializado con Éxito (GameID: $GAME_ID, TestMode: $TEST_MODE)")
                     isInitialized = true
                     loadRewardedAd()
                     loadInterstitialAd()
                 }
 
                 override fun onInitializationFailed(error: UnityAds.UnityAdsInitializationError?, message: String?) {
+                    android.util.Log.e("UnityAdsManager", "❌ Error al inicializar Unity Ads: $error | $message")
                     isInitialized = false
                 }
             }
@@ -55,11 +57,15 @@ object UnityAdsManager {
 
     fun loadRewardedAd() {
         if (!isInitialized) return
-        UnityAds.load(REWARDED_PLACEMENT_ID, object : IUnityAdsLoadListener {
+        android.util.Log.d("UnityAdsManager", "Intentando cargar Video Recompensado: $REWARDED_PLACEMENT_ID")
+        val loadOptions = com.unity3d.ads.UnityAdsLoadOptions()
+        UnityAds.load(REWARDED_PLACEMENT_ID, loadOptions, object : IUnityAdsLoadListener {
             override fun onUnityAdsAdLoaded(placementId: String?) {
+                android.util.Log.d("UnityAdsManager", "✅ Video Recompensado CARGADO: $placementId")
                 isRewardedLoaded = true
             }
             override fun onUnityAdsFailedToLoad(placementId: String?, error: UnityAds.UnityAdsLoadError?, message: String?) {
+                android.util.Log.w("UnityAdsManager", "⚠️ Falló carga Video Recompensado: $placementId | Error: $error | Msg: $message")
                 isRewardedLoaded = false
             }
         })
@@ -67,11 +73,15 @@ object UnityAdsManager {
 
     fun loadInterstitialAd() {
         if (!isInitialized) return
-        UnityAds.load(INTERSTITIAL_PLACEMENT_ID, object : IUnityAdsLoadListener {
+        android.util.Log.d("UnityAdsManager", "Intentando cargar Intersticial: $INTERSTITIAL_PLACEMENT_ID")
+        val loadOptions = com.unity3d.ads.UnityAdsLoadOptions()
+        UnityAds.load(INTERSTITIAL_PLACEMENT_ID, loadOptions, object : IUnityAdsLoadListener {
             override fun onUnityAdsAdLoaded(placementId: String?) {
+                android.util.Log.d("UnityAdsManager", "✅ Intersticial CARGADO: $placementId")
                 isInterstitialLoaded = true
             }
             override fun onUnityAdsFailedToLoad(placementId: String?, error: UnityAds.UnityAdsLoadError?, message: String?) {
+                android.util.Log.w("UnityAdsManager", "⚠️ Falló carga Intersticial: $placementId | Error: $error | Msg: $message")
                 isInterstitialLoaded = false
             }
         })
