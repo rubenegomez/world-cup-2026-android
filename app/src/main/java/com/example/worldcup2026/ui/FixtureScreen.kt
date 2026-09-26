@@ -343,8 +343,15 @@ fun DayFilteredFixture(
         }
     }
 
-    val initialDate = remember(dates) {
-        dates.find { it == todayStr } ?: (if (dates.isNotEmpty()) dates.first() else "")
+    val initialDate = remember(dates, matches) {
+        val todayMatch = dates.find { it == todayStr }
+        if (todayMatch != null) {
+            todayMatch
+        } else {
+            // Buscar el partido más cercano a hoy (próximo partido programado o último jugado)
+            val upcomingDate = dates.firstOrNull { it >= todayStr }
+            upcomingDate ?: (dates.lastOrNull() ?: "")
+        }
     }
     
     var selectedDate by remember { mutableStateOf(initialDate) }
