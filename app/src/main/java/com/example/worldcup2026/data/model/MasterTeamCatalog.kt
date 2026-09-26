@@ -299,26 +299,122 @@ object MasterTeamCatalog {
         MasterTeam("Universidad Central de Venezuela (UCV)", "https://a.espncdn.com/i/teamlogos/soccer/500/20361.png", 3, "Venezuela")
     )
 
+    // 1b. SELECCIONES INTERNACIONALES (CONCACAF, UEFA, RESTO DEL MUNDO)
+    val WORLD_SELECTIONS = listOf(
+        // CONCACAF
+        MasterTeam("Estados Unidos", "https://a.espncdn.com/i/teamlogos/soccer/500/628.png", 14, "CONCACAF"),
+        MasterTeam("México", "https://a.espncdn.com/i/teamlogos/soccer/500/201.png", 14, "CONCACAF"),
+        MasterTeam("Canadá", "https://a.espncdn.com/i/teamlogos/soccer/500/208.png", 14, "CONCACAF"),
+        MasterTeam("Costa Rica", "https://a.espncdn.com/i/teamlogos/soccer/500/215.png", 14, "CONCACAF"),
+        MasterTeam("Panamá", "https://a.espncdn.com/i/teamlogos/soccer/500/218.png", 14, "CONCACAF"),
+        MasterTeam("Jamaica", "https://a.espncdn.com/i/teamlogos/soccer/500/212.png", 14, "CONCACAF"),
+        MasterTeam("Honduras", "https://a.espncdn.com/i/teamlogos/soccer/500/210.png", 14, "CONCACAF"),
+
+        // UEFA
+        MasterTeam("España", "https://a.espncdn.com/i/teamlogos/soccer/500/164.png", 14, "UEFA"),
+        MasterTeam("Francia", "https://a.espncdn.com/i/teamlogos/soccer/500/476.png", 14, "UEFA"),
+        MasterTeam("Alemania", "https://a.espncdn.com/i/teamlogos/soccer/500/481.png", 14, "UEFA"),
+        MasterTeam("Italia", "https://a.espncdn.com/i/teamlogos/soccer/500/479.png", 14, "UEFA"),
+        MasterTeam("Inglaterra", "https://a.espncdn.com/i/teamlogos/soccer/500/449.png", 14, "UEFA"),
+        MasterTeam("Portugal", "https://a.espncdn.com/i/teamlogos/soccer/500/482.png", 14, "UEFA"),
+        MasterTeam("Países Bajos", "https://a.espncdn.com/i/teamlogos/soccer/500/477.png", 14, "UEFA"),
+        MasterTeam("Croacia", "https://a.espncdn.com/i/teamlogos/soccer/500/478.png", 14, "UEFA"),
+        MasterTeam("Bélgica", "https://a.espncdn.com/i/teamlogos/soccer/500/480.png", 14, "UEFA"),
+
+        // ASIA / ÁFRICA / OCEANÍA
+        MasterTeam("Corea del Sur", "https://a.espncdn.com/i/teamlogos/soccer/500/451.png", 14, "AFC"),
+        MasterTeam("Japón", "https://a.espncdn.com/i/teamlogos/soccer/500/452.png", 14, "AFC"),
+        MasterTeam("Marruecos", "https://a.espncdn.com/i/teamlogos/soccer/500/644.png", 14, "CAF"),
+        MasterTeam("Senegal", "https://a.espncdn.com/i/teamlogos/soccer/500/654.png", 14, "CAF"),
+        MasterTeam("Nigeria", "https://a.espncdn.com/i/teamlogos/soccer/500/650.png", 14, "CAF"),
+        MasterTeam("Arabia Saudita", "https://a.espncdn.com/i/teamlogos/soccer/500/652.png", 14, "AFC"),
+        MasterTeam("Australia", "https://a.espncdn.com/i/teamlogos/soccer/500/629.png", 14, "AFC")
+    )
+
+    private val ALIAS_TO_CANONICAL = mapOf(
+        "peru" to "Perú",
+        "mexico" to "México",
+        "canada" to "Canadá",
+        "panama" to "Panamá",
+        "usa" to "Estados Unidos",
+        "united states" to "Estados Unidos",
+        "united states of america" to "Estados Unidos",
+        "united states men" to "Estados Unidos",
+        "south korea" to "Corea del Sur",
+        "korea republic" to "Corea del Sur",
+        "korea south" to "Corea del Sur",
+        "corea" to "Corea del Sur",
+        "brazil" to "Brasil",
+        "spain" to "España",
+        "espana" to "España",
+        "germany" to "Alemania",
+        "france" to "Francia",
+        "italy" to "Italia",
+        "england" to "Inglaterra",
+        "netherlands" to "Países Bajos",
+        "holanda" to "Países Bajos",
+        "paises bajos" to "Países Bajos",
+        "japan" to "Japón",
+        "japon" to "Japón",
+        "croatia" to "Croacia",
+        "belgium" to "Bélgica",
+        "belgica" to "Bélgica",
+        "morocco" to "Marruecos",
+        "saudi arabia" to "Arabia Saudita"
+    )
+
     private val ALL_MASTER_TEAMS by lazy {
-        CONMEBOL_SELECTIONS + LIGA_PROFESIONAL + PRIMERA_NACIONAL + PRIMERA_B_METRO + TORNEO_FEDERAL_A + INTERNATIONAL_CLUBS
+        CONMEBOL_SELECTIONS + WORLD_SELECTIONS + LIGA_PROFESIONAL + PRIMERA_NACIONAL + PRIMERA_B_METRO + TORNEO_FEDERAL_A + INTERNATIONAL_CLUBS
+    }
+
+    private fun removeAccents(str: String): String {
+        return str.replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ú", "u")
+            .replace("Á", "A")
+            .replace("É", "E")
+            .replace("Í", "I")
+            .replace("Ó", "O")
+            .replace("Ú", "U")
+            .replace("ñ", "n")
+            .replace("Ñ", "N")
     }
 
     fun findTeamLogo(teamName: String?): String? {
         if (teamName.isNullOrBlank()) return null
         val clean = teamName.trim()
-        val exact = ALL_MASTER_TEAMS.find { it.name.equals(clean, ignoreCase = true) }
+        val lowerClean = clean.lowercase()
+
+        // 1. Verificar alias directo o traducción de selección
+        val canonicalFromAlias = ALIAS_TO_CANONICAL[lowerClean]
+        val targetName = canonicalFromAlias ?: clean
+
+        // 2. Coincidencia exacta o canónica
+        val exact = ALL_MASTER_TEAMS.find { it.name.equals(targetName, ignoreCase = true) }
         if (exact != null && exact.flagUrl.isNotBlank()) return exact.flagUrl
 
+        // 3. Coincidencia sin tildes
+        val normalizedClean = removeAccents(targetName).lowercase()
+        val matchNoAccent = ALL_MASTER_TEAMS.find {
+            removeAccents(it.name).equals(normalizedClean, ignoreCase = true)
+        }
+        if (matchNoAccent != null && matchNoAccent.flagUrl.isNotBlank()) return matchNoAccent.flagUrl
+
+        // 4. Búsqueda por nombre base antes de paréntesis
         val baseName = clean.substringBefore("(").trim()
+        val baseNoAccent = removeAccents(baseName).lowercase()
         val matchBase = ALL_MASTER_TEAMS.find { 
-            val itBase = it.name.substringBefore("(").trim()
-            itBase.equals(baseName, ignoreCase = true)
+            val itBase = removeAccents(it.name.substringBefore("(").trim()).lowercase()
+            itBase == baseNoAccent
         }
         if (matchBase != null && matchBase.flagUrl.isNotBlank()) return matchBase.flagUrl
 
+        // 5. Coincidencia parcial amplia
         val partial = ALL_MASTER_TEAMS.find { 
-            val itBase = it.name.substringBefore("(").trim()
-            clean.contains(itBase, ignoreCase = true) || it.name.contains(clean, ignoreCase = true) || baseName.contains(itBase, ignoreCase = true)
+            val itBase = removeAccents(it.name.substringBefore("(").trim()).lowercase()
+            normalizedClean.contains(itBase) || itBase.contains(normalizedClean)
         }
         return partial?.flagUrl?.takeIf { it.isNotBlank() }
     }
