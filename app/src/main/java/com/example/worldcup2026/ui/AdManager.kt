@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -493,6 +495,7 @@ fun HouseVideoAdPlayerOverlay(
     val context = androidx.compose.ui.platform.LocalContext.current
     var countdown by remember { mutableIntStateOf(5) }
     var canSkip by remember { mutableStateOf(false) }
+    var videoError by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (countdown > 0) {
@@ -513,25 +516,61 @@ fun HouseVideoAdPlayerOverlay(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(Color(0xFF0A0E14))
         ) {
-            // Reproductor nativo VideoView
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                    android.widget.VideoView(ctx).apply {
-                        setVideoURI(android.net.Uri.parse(houseAd.videoUrl))
-                        setOnPreparedListener { mp ->
-                            mp.isLooping = true
-                            start()
-                        }
-                        setOnErrorListener { _, _, _ ->
-                            onDismiss()
-                            true
+            if (!videoError) {
+                // Reproductor nativo VideoView con manejo seguro de errores
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        android.widget.VideoView(ctx).apply {
+                            setVideoURI(android.net.Uri.parse(houseAd.videoUrl))
+                            setOnPreparedListener { mp ->
+                                mp.isLooping = true
+                                start()
+                            }
+                            setOnErrorListener { _, _, _ ->
+                                videoError = true
+                                true
+                            }
                         }
                     }
+                )
+            } else {
+                // Vista de respaldo rica en caso de que el códec de video falle en el dispositivo
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(houseAd.accentColor).copy(alpha = 0.15f),
+                        modifier = Modifier.size(100.dp),
+                        border = BorderStroke(2.dp, Color(houseAd.accentColor))
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("⭐", fontSize = 48.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = houseAd.appName,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(houseAd.accentColor)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = houseAd.appTagline,
+                        fontSize = 14.sp,
+                        color = Color.White.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center
+                    )
                 }
-            )
+            }
 
             // Header con Cuenta Regresiva / Botón de Cerrar
             Row(
@@ -556,17 +595,17 @@ fun HouseVideoAdPlayerOverlay(
                 }
 
                 Surface(
-                    color = Color.Black.copy(alpha = 0.75f),
+                    color = if (canSkip) Color(0xFFE53935) else Color.Black.copy(alpha = 0.75f),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.clickable {
                         if (canSkip) onDismiss()
                     }
                 ) {
                     Text(
-                        text = if (canSkip) "✕ Omitir" else "Omitir en ${countdown}s",
+                        text = if (canSkip) "✕ Omitir Anuncio" else "Omitir en ${countdown}s",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (canSkip) Color.White else Color.White.copy(alpha = 0.6f),
+                        color = Color.White,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                     )
                 }
