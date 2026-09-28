@@ -861,13 +861,25 @@ fun MatchCard(
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     if (!tournamentName.isNullOrBlank()) {
+                        val cleanTournamentName = when {
+                            tournamentName.contains("B Metropolitana", ignoreCase = true) -> "B Metropolitana"
+                            tournamentName.contains("Liga Profesional", ignoreCase = true) -> "Liga Profesional"
+                            tournamentName.contains("Primera Nacional", ignoreCase = true) -> "Primera Nacional"
+                            tournamentName.contains("Federal A", ignoreCase = true) -> "Federal A"
+                            tournamentName.contains("Libertadores", ignoreCase = true) -> "Libertadores"
+                            tournamentName.contains("Sudamericana", ignoreCase = true) -> "Sudamericana"
+                            tournamentName.contains("Copa Argentina", ignoreCase = true) -> "Copa Argentina"
+                            tournamentName.contains("Supercopa", ignoreCase = true) -> "Supercopa Inter."
+                            else -> tournamentName
+                        }
                         Text(
-                            text = tournamentName.uppercase(),
+                            text = cleanTournamentName.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
                             color = Color(0xFFFFD700),
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
-                            maxLines = 1
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (stageLabel.isNotBlank()) {
                             Text(
