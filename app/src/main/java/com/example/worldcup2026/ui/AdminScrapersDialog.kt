@@ -46,7 +46,8 @@ fun AdminScrapersDialog(
                 val res = withContext(Dispatchers.IO) {
                     NetworkModule.apiService.getScrapersStatus(adminEmail)
                 }
-                statusList = res.scrapers
+                val allowedTournaments = setOf(3, 4, 5, 6, 7, 8, 14, 15, 27, 30)
+                statusList = res.scrapers.filter { it.tournament_id in allowedTournaments }
             } catch (e: Exception) {
                 feedbackMessage = "Error al conectar: ${e.message}"
             } finally {
