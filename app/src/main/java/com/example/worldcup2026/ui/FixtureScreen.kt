@@ -2679,25 +2679,14 @@ fun AdminMatchDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Selector de marcador y botón de edición de equipos
+                // Selector de marcador
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                match.homeTeam.name, 
-                                fontSize = 11.sp, 
-                                color = Color.White.copy(alpha = 0.85f), 
-                                maxLines = 1,
-                                fontWeight = FontWeight.Bold
-                            )
-                            IconButton(onClick = { editingTeamTarget = match.homeTeam }, modifier = Modifier.size(20.dp).padding(start = 2.dp)) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar Equipo Local", tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
-                            }
-                        }
+                        Text(match.homeTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f), maxLines = 1, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
@@ -2719,18 +2708,7 @@ fun AdminMatchDialog(
                     Text("VS", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color.White.copy(alpha = 0.3f))
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                match.awayTeam.name, 
-                                fontSize = 11.sp, 
-                                color = Color.White.copy(alpha = 0.85f), 
-                                maxLines = 1,
-                                fontWeight = FontWeight.Bold
-                            )
-                            IconButton(onClick = { editingTeamTarget = match.awayTeam }, modifier = Modifier.size(20.dp).padding(start = 2.dp)) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar Equipo Visitante", tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
-                            }
-                        }
+                        Text(match.awayTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f), maxLines = 1, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
@@ -2746,6 +2724,46 @@ fun AdminMatchDialog(
                             }, modifier = Modifier.size(32.dp)) {
                                 Text("+", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
                             }
+                        }
+                    }
+                }
+
+                // Botones grandes y claros para Editar Equipos y Escudos
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("🛡️ Edición de Nombres y Escudos:", fontSize = 11.sp, color = Color(0xFFFFD700), fontWeight = FontWeight.Bold)
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { editingTeamTarget = match.homeTeam },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A364F)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Editar Local", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        }
+
+                        Button(
+                            onClick = { editingTeamTarget = match.awayTeam },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A364F)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(13.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Editar Visita", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
                     }
                 }
