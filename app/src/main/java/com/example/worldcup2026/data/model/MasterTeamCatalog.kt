@@ -27,6 +27,7 @@ object MasterTeamCatalog {
         MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true),
         MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true),
         MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ Torneo Clausura B Metropolitana", "Nacional", isActive = true),
+        MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = true),
         MasterTournament(14, "Amistosos FIFA y Selecciones", "🇦🇷 Amistosos FIFA y Selecciones", "Selecciones", isActive = true),
 
         // NO EN JUEGO
@@ -42,7 +43,6 @@ object MasterTeamCatalog {
         MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional", isActive = false),
         MasterTournament(25, "Trofeo de Campeones", "🏆 Trofeo de Campeones", "Nacional", isActive = false),
         MasterTournament(26, "Supercopa Argentina", "🇦🇷 Supercopa Argentina", "Nacional", isActive = false),
-        MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = false),
         MasterTournament(28, "Trofeo de Liga", "🏆 Trofeo de Liga", "Nacional", isActive = false),
         MasterTournament(29, "Recopa de Campeones", "👑 Recopa de Campeones", "Nacional", isActive = false)
     )

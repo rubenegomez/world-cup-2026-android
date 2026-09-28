@@ -703,7 +703,7 @@ fun MatchCard(
                             4 -> "Cuartos"
                             5 -> "Semifinal"
                             6 -> "Final"
-                            else -> "Octavos"
+                            else -> "Cuartos"
                         }
                     } else if (!match.date.isNullOrBlank()) {
                         val dtStr = match.date.take(10)
@@ -715,7 +715,7 @@ fun MatchCard(
                             dtStr <= "2026-11-15" -> "Semifinal"
                             else -> "Final"
                         }
-                    } else "Octavos"
+                    } else "Cuartos"
                 }
                 3, 4 -> { // Libertadores / Sudamericana
                     val mDay = match.matchday
@@ -771,9 +771,9 @@ fun MatchCard(
                             dtStr in "2026-10-07".."2026-10-13" -> "Fecha 13"
                             dtStr in "2026-10-14".."2026-10-20" -> "Fecha 14"
                             dtStr in "2026-10-21".."2026-10-27" -> "Fecha 15"
-                            else -> "Fecha 8"
+                            else -> "Fecha 11"
                         }
-                    } else "Fecha 8"
+                    } else "Fecha 11"
                 }
                 7 -> { // Primera Nacional
                     if (match.matchday != null && match.matchday > 0) {
@@ -781,16 +781,18 @@ fun MatchCard(
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
-                            dtStr <= "2026-08-16" -> "Fecha 25"
-                            dtStr in "2026-08-17".."2026-08-24" -> "Fecha 26"
-                            dtStr in "2026-08-25".."2026-08-31" -> "Fecha 27"
-                            dtStr in "2026-09-01".."2026-09-07" -> "Fecha 28"
-                            dtStr in "2026-09-08".."2026-09-14" -> "Fecha 29"
-                            dtStr in "2026-09-15".."2026-09-21" -> "Fecha 30"
-                            dtStr in "2026-09-22".."2026-09-28" -> "Fecha 31"
-                            else -> "Fecha 28"
+                            dtStr <= "2026-08-16" -> "Fecha 26"
+                            dtStr in "2026-08-17".."2026-08-24" -> "Fecha 27"
+                            dtStr in "2026-08-25".."2026-08-31" -> "Fecha 28"
+                            dtStr in "2026-09-01".."2026-09-07" -> "Fecha 29"
+                            dtStr in "2026-09-08".."2026-09-14" -> "Fecha 30"
+                            dtStr in "2026-09-15".."2026-09-21" -> "Fecha 31"
+                            dtStr in "2026-09-22".."2026-09-28" -> "Fecha 32"
+                            dtStr in "2026-09-29".."2026-10-05" -> "Fecha 33"
+                            dtStr in "2026-10-06".."2026-10-12" -> "Fecha 34"
+                            else -> "Fecha 30"
                         }
-                    } else "Fecha 28"
+                    } else "Fecha 30"
                 }
                 8 -> { // Primera B Metropolitana
                     if (match.matchday != null && match.matchday > 0) {
@@ -798,21 +800,15 @@ fun MatchCard(
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
-                            dtStr <= "2026-08-20" -> "Fecha 30"
-                            dtStr in "2026-08-21".."2026-08-31" -> "Fecha 31"
-                            dtStr in "2026-09-01".."2026-09-08" -> "Fecha 32"
-                            dtStr in "2026-09-09".."2026-09-15" -> "Fecha 33"
-                            else -> "Fecha 32"
+                            dtStr <= "2026-08-20" -> "Fecha 33"
+                            dtStr in "2026-08-21".."2026-08-31" -> "Fecha 34"
+                            dtStr in "2026-09-01".."2026-09-08" -> "Fecha 35"
+                            dtStr in "2026-09-09".."2026-09-22" -> "Fecha 36"
+                            dtStr in "2026-09-23".."2026-09-30" -> "Fecha 37"
+                            dtStr in "2026-10-01".."2026-10-08" -> "Fecha 38"
+                            else -> "Fecha 36"
                         }
-                    } else "Fecha 32"
-                }
-                9 -> { // Primera C Metropolitana
-                    if (match.matchday != null && match.matchday > 0) {
-                        "Fecha ${match.matchday}"
-                    } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
-                        val dtStr = match.date.substring(0, 10)
-                        if (dtStr <= "2026-08-20") "Fecha 24" else "Fecha 25"
-                    } else "Fecha 25"
+                    } else "Fecha 36"
                 }
                 15 -> { // Torneo Federal A
                     if (match.matchday != null && match.matchday > 0) {
@@ -820,14 +816,16 @@ fun MatchCard(
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
-                            dtStr <= "2026-08-24" -> "Fecha 5"
-                            dtStr in "2026-08-25".."2026-08-31" -> "Fecha 6"
-                            dtStr in "2026-09-01".."2026-09-08" -> "Fecha 7"
-                            dtStr in "2026-09-09".."2026-09-15" -> "Fecha 8"
-                            else -> "Fecha 7"
+                            dtStr <= "2026-08-24" -> "Fecha 6"
+                            dtStr in "2026-08-25".."2026-08-31" -> "Fecha 7"
+                            dtStr in "2026-09-01".."2026-09-08" -> "Fecha 8"
+                            dtStr in "2026-09-09".."2026-09-22" -> "Fecha 9"
+                            dtStr in "2026-09-23".."2026-09-30" -> "Fecha 10"
+                            else -> "Fecha 9"
                         }
-                    } else "Fecha 7"
+                    } else "Fecha 9"
                 }
+                27 -> "Final · Supercopa Internacional"
                 13 -> { // Promocional Amateur
                     val isZonaB = match.homeTeam.group.contains("B", ignoreCase = true) || match.awayTeam.group.contains("B", ignoreCase = true)
                     if (match.matchday != null && match.matchday > 0) {
