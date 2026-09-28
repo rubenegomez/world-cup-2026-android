@@ -638,13 +638,14 @@ fun MatchCard(
         parsedStartDate != null && parsedStartDate.plusMinutes(150).isBefore(java.time.LocalDateTime.now())
     }
 
-    // Estado dinámico inteligente: Si está Scheduled pero ya empezó la hora o tiene marcador cargado, se muestra dinámicamente como LIVE o FINISHED
+    // Estado respetando la base de datos o dinámico
     val statusUpper = remember(rawStatusUpper, isMatchStartedByTime, isMatchFinishedByTime, match.homeScore, match.awayScore) {
         when {
             rawStatusUpper in listOf("FINISHED", "POSTP", "POSTERGADO", "SUSPENDED", "SUSPENDIDO", "CANCELLED", "CANCELADO") -> rawStatusUpper
             rawStatusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") -> rawStatusUpper
+            rawStatusUpper == "SCHEDULED" -> "SCHEDULED"
             match.homeScore != null && match.awayScore != null && isMatchFinishedByTime -> "FINISHED"
-            isMatchStartedByTime || (match.homeScore != null && match.awayScore != null) -> "LIVE"
+            isMatchStartedByTime && match.homeScore != null && match.awayScore != null -> "LIVE"
             else -> rawStatusUpper
         }
     }
@@ -2577,9 +2578,9 @@ fun AdminMatchDialog(
     onDeleteMatch: (() -> Unit)? = null,
     onTeamUpdated: (() -> Unit)? = null
 ) {
-    var homeScoreStr by remember { mutableStateOf(match.homeScore?.toString() ?: "0") }
-    var awayScoreStr by remember { mutableStateOf(match.awayScore?.toString() ?: "0") }
-    var selectedStatus by remember { mutableStateOf(if (match.status.equals("Scheduled", ignoreCase = true)) "Finished" else match.status) }
+    var homeScoreStr by remember { mutableStateOf(match.homeScore?.toString() ?: "") }
+    var awayScoreStr by remember { mutableStateOf(match.awayScore?.toString() ?: "") }
+    var selectedStatus by remember { mutableStateOf(match.status) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
@@ -2692,12 +2693,13 @@ fun AdminMatchDialog(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
-                                val current = homeScoreStr.toIntOrNull() ?: 0
-                                if (current > 0) homeScoreStr = (current - 1).toString()
+                                val current = homeScoreStr.toIntOrNull()
+                                if (current != null && current > 0) homeScoreStr = (current - 1).toString()
+                                else homeScoreStr = ""
                             }, modifier = Modifier.size(32.dp)) {
                                 Text("-", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
                             }
-                            Text(homeScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
+                            Text(if (homeScoreStr.isEmpty()) "-" else homeScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
                             IconButton(onClick = {
                                 val current = homeScoreStr.toIntOrNull() ?: 0
                                 homeScoreStr = (current + 1).toString()
@@ -2714,12 +2716,13 @@ fun AdminMatchDialog(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
-                                val current = awayScoreStr.toIntOrNull() ?: 0
-                                if (current > 0) awayScoreStr = (current - 1).toString()
+                                val current = awayScoreStr.toIntOrNull()
+                                if (current != null && current > 0) awayScoreStr = (current - 1).toString()
+                                else awayScoreStr = ""
                             }, modifier = Modifier.size(32.dp)) {
                                 Text("-", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
                             }
-                            Text(awayScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
+                            Text(if (awayScoreStr.isEmpty()) "-" else awayScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
                             IconButton(onClick = {
                                 val current = awayScoreStr.toIntOrNull() ?: 0
                                 awayScoreStr = (current + 1).toString()
@@ -2874,13 +2877,23 @@ fun AdminEditTeamDialog(
             selectedImageUri = uri
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
-                val bytes = inputStream?.readBytes()
+                val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
                 inputStream?.close()
-                if (bytes != null) {
+                if (originalBitmap != null) {
+                    val maxDim = 256
+                    val ratio = Math.min(maxDim.toFloat() / originalBitmap.width, maxDim.toFloat() / originalBitmap.height)
+                    val targetW = if (ratio < 1.0f) (originalBitmap.width * ratio).toInt() else originalBitmap.width
+                    val targetH = if (ratio < 1.0f) (originalBitmap.height * ratio).toInt() else originalBitmap.height
+                    val scaledBitmap = android.graphics.Bitmap.createScaledBitmap(originalBitmap, targetW, targetH, true)
+                    
+                    val outputStream = java.io.ByteArrayOutputStream()
+                    scaledBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 95, outputStream)
+                    val bytes = outputStream.toByteArray()
                     selectedImageBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                    android.widget.Toast.makeText(context, "Escudo cargado listo para guardar", android.widget.Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "Error leyendo imagen: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, "Error procesando imagen: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
     }
