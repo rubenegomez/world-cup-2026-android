@@ -60,7 +60,7 @@ object MasterTeamCatalog {
         MasterTeam("Ecuador", "https://a.espncdn.com/i/teamlogos/soccer/500/209.png", 2, "CONMEBOL"),
         MasterTeam("Paraguay", "https://a.espncdn.com/i/teamlogos/soccer/500/216.png", 2, "CONMEBOL"),
         MasterTeam("Perú", "https://a.espncdn.com/i/teamlogos/soccer/500/217.png", 2, "CONMEBOL"),
-        MasterTeam("Uruguay", "https://a.espncdn.com/i/teamlogos/soccer/500/219.png", 2, "CONMEBOL"),
+        MasterTeam("Uruguay", "https://ellocodelpedal.duckdns.org/img/teams/uruguay.png", 2, "CONMEBOL"),
         MasterTeam("Venezuela", "https://ellocodelpedal.duckdns.org/img/teams/venezuela.png", 2, "CONMEBOL")
     )
 
