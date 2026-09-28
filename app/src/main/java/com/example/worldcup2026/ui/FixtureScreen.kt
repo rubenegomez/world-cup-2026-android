@@ -310,8 +310,12 @@ fun DayFilteredFixture(
     favoriteTeamNames: Set<String> = emptySet()
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
-    val matchdays = remember(matches) {
-        matches.mapNotNull { it.matchday }.filter { it > 0 }.distinct().sorted()
+    val isCupOrFriendly = remember(matches) { 
+        matches.any { it.tournament_id in listOf(3, 4, 6, 14, 27) } 
+    }
+    val matchdays = remember(matches, isCupOrFriendly) {
+        if (isCupOrFriendly) emptyList()
+        else matches.mapNotNull { it.matchday }.filter { it > 0 }.distinct().sorted()
     }
     
     val defaultMatchday = remember(matchdays, matches) {
@@ -319,7 +323,7 @@ fun DayFilteredFixture(
             val st = it.status.uppercase()
             (st == "LIVE" || st == "SCHEDULED" || st == "HALFTIME") && it.matchday != null && it.matchday > 0 
         }?.matchday
-        active ?: matchdays.firstOrNull()
+        active ?: matchdays.lastOrNull()
     }
 
     var selectedMatchday by remember(matchdays) { mutableStateOf<Int?>(if (matchdays.size > 1) defaultMatchday else null) }
