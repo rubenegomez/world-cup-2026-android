@@ -55,11 +55,11 @@ object MasterTeamCatalog {
         MasterTeam("Argentina", "https://a.espncdn.com/i/teamlogos/soccer/500/202.png", 2, "CONMEBOL"),
         MasterTeam("Bolivia", "https://a.espncdn.com/i/teamlogos/soccer/500/203.png", 2, "CONMEBOL"),
         MasterTeam("Brasil", "https://a.espncdn.com/i/teamlogos/soccer/500/205.png", 2, "CONMEBOL"),
-        MasterTeam("Chile", "https://a.espncdn.com/i/teamlogos/soccer/500/206.png", 2, "CONMEBOL"),
+        MasterTeam("Chile", "https://ellocodelpedal.duckdns.org/img/teams/chile.png", 2, "CONMEBOL"),
         MasterTeam("Colombia", "https://a.espncdn.com/i/teamlogos/soccer/500/207.png", 2, "CONMEBOL"),
         MasterTeam("Ecuador", "https://a.espncdn.com/i/teamlogos/soccer/500/209.png", 2, "CONMEBOL"),
-        MasterTeam("Paraguay", "https://a.espncdn.com/i/teamlogos/soccer/500/216.png", 2, "CONMEBOL"),
-        MasterTeam("Perú", "https://a.espncdn.com/i/teamlogos/soccer/500/217.png", 2, "CONMEBOL"),
+        MasterTeam("Paraguay", "https://ellocodelpedal.duckdns.org/img/teams/paraguay.png", 2, "CONMEBOL"),
+        MasterTeam("Perú", "https://ellocodelpedal.duckdns.org/img/teams/peru.png", 2, "CONMEBOL"),
         MasterTeam("Uruguay", "https://ellocodelpedal.duckdns.org/img/teams/uruguay.png", 2, "CONMEBOL"),
         MasterTeam("Venezuela", "https://ellocodelpedal.duckdns.org/img/teams/venezuela.png", 2, "CONMEBOL")
     )
