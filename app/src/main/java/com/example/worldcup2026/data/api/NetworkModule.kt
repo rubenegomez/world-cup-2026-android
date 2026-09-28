@@ -60,7 +60,27 @@ interface WorldCupApiService {
         @Query("email") email: String,
         @Query("tournament_id") tournamentId: Int? = null
     ): retrofit2.Response<Unit>
+
+    @retrofit2.http.POST("api/admin/teams/edit")
+    suspend fun editTeamAdmin(
+        @Query("email") email: String,
+        @retrofit2.http.Body req: AdminTeamEditRequest
+    ): retrofit2.Response<Unit>
+
+    @retrofit2.http.DELETE("api/admin/matches/{match_id}")
+    suspend fun deleteMatchAdmin(
+        @Path("match_id") matchId: Int,
+        @Query("email") email: String
+    ): retrofit2.Response<Unit>
 }
+
+data class AdminTeamEditRequest(
+    val team_id: Int,
+    val name: String? = null,
+    val flag_url: String? = null,
+    val image_base64: String? = null,
+    val file_extension: String? = ".png"
+)
 
 data class ScraperStatusItem(
     val tournament_id: Int,
@@ -217,9 +237,9 @@ object NetworkModule {
         .create()
 
     private val okHttpClient = OkHttpClient.Builder().apply {
-        connectTimeout(25, TimeUnit.SECONDS)
-        readTimeout(25, TimeUnit.SECONDS)
-        writeTimeout(25, TimeUnit.SECONDS)
+        connectTimeout(90, TimeUnit.SECONDS)
+        readTimeout(90, TimeUnit.SECONDS)
+        writeTimeout(90, TimeUnit.SECONDS)
         retryOnConnectionFailure(true)
         connectionSpecs(listOf(
             okhttp3.ConnectionSpec.MODERN_TLS,

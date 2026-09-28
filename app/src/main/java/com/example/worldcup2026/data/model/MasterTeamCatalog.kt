@@ -39,7 +39,12 @@ object MasterTeamCatalog {
         MasterTournament(17, "Torneo Apertura Liga Profesional", "🏆 Torneo Apertura Liga Profesional (Concluido)", "Nacional", isActive = false),
         MasterTournament(18, "Torneo Apertura B Metropolitana", "🏟️ Torneo Apertura B Metropolitana (Concluido)", "Nacional", isActive = false),
         MasterTournament(21, "Amistosos Conmebol", "🤝 Amistosos Conmebol", "Internacional", isActive = false),
-        MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional", isActive = false)
+        MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional", isActive = false),
+        MasterTournament(25, "Trofeo de Campeones", "🏆 Trofeo de Campeones", "Nacional", isActive = false),
+        MasterTournament(26, "Supercopa Argentina", "🇦🇷 Supercopa Argentina", "Nacional", isActive = false),
+        MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = false),
+        MasterTournament(28, "Trofeo de Liga", "🏆 Trofeo de Liga", "Nacional", isActive = false),
+        MasterTournament(29, "Recopa de Campeones", "👑 Recopa de Campeones", "Nacional", isActive = false)
     )
 
     val ACTIVE_TOURNAMENTS = MASTER_TOURNAMENTS.filter { it.isActive }

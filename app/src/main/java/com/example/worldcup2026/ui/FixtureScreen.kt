@@ -900,37 +900,40 @@ fun MatchCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    val isAdmin = remember { com.example.worldcup2026.data.api.AuthManager.isAdmin() }
                     var showAdminDialog by remember { mutableStateOf(false) }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color.White.copy(alpha = 0.06f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                        modifier = Modifier.clickable {
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            showAdminDialog = true
+                    if (isAdmin) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.White.copy(alpha = 0.06f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                            modifier = Modifier.clickable {
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                showAdminDialog = true
+                            }
+                        ) {
+                            Box(modifier = Modifier.padding(4.dp)) {
+                                Icon(
+                                    Icons.Default.Settings,
+                                    contentDescription = "Ajustar Partido",
+                                    tint = Color.White.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
                         }
-                    ) {
-                        Box(modifier = Modifier.padding(4.dp)) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = "Ajustar Partido",
-                                tint = Color.White.copy(alpha = 0.6f),
-                                modifier = Modifier.size(13.dp)
+
+                        if (showAdminDialog) {
+                            AdminMatchDialog(
+                                match = match,
+                                onDismiss = { showAdminDialog = false },
+                                onSave = { hScore, aScore, newStatus ->
+                                    showAdminDialog = false
+                                    onScoreChange(match.id, hScore, aScore)
+                                    onStatusChange(match.id, newStatus)
+                                }
                             )
                         }
-                    }
-
-                    if (showAdminDialog) {
-                        AdminMatchDialog(
-                            match = match,
-                            onDismiss = { showAdminDialog = false },
-                            onSave = { hScore, aScore, newStatus ->
-                                showAdminDialog = false
-                                onScoreChange(match.id, hScore, aScore)
-                                onStatusChange(match.id, newStatus)
-                            }
-                        )
                     }
 
                     Surface(
@@ -2568,11 +2571,86 @@ fun MatchLiveStatusBadge(
 fun AdminMatchDialog(
     match: Match,
     onDismiss: () -> Unit,
-    onSave: (Int?, Int?, String) -> Unit
+    onSave: (Int?, Int?, String) -> Unit,
+    onDeleteMatch: (() -> Unit)? = null,
+    onTeamUpdated: (() -> Unit)? = null
 ) {
     var homeScoreStr by remember { mutableStateOf(match.homeScore?.toString() ?: "0") }
     var awayScoreStr by remember { mutableStateOf(match.awayScore?.toString() ?: "0") }
     var selectedStatus by remember { mutableStateOf(if (match.status.equals("Scheduled", ignoreCase = true)) "Finished" else match.status) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf<String?>(null) }
+    
+    // Sub-dialogs para editar equipos
+    var editingTeamTarget by remember { mutableStateOf<Team?>(null) } // match.homeTeam o match.awayTeam
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = Color(0xFF251515),
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text("⚠️ Eliminar Partido", fontWeight = FontWeight.Bold, color = Color(0xFFFF5252), fontSize = 16.sp)
+            },
+            text = {
+                Text(
+                    "¿Estás seguro de que deseas eliminar este partido?\n\n${match.homeTeam.name} vs ${match.awayTeam.name}\n\nEsta acción no se puede deshacer.",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 13.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirm = false
+                        isSubmitting = true
+                        coroutineScope.launch {
+                            try {
+                                val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail() ?: ""
+                                val response = com.example.worldcup2026.data.api.NetworkModule.apiService.deleteMatchAdmin(match.id, email)
+                                if (response.isSuccessful) {
+                                    android.widget.Toast.makeText(context, "Partido eliminado correctamente", android.widget.Toast.LENGTH_SHORT).show()
+                                    onDeleteMatch?.invoke()
+                                    onDismiss()
+                                } else {
+                                    android.widget.Toast.makeText(context, "Error al eliminar: ${response.code()}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(context, "Error: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
+                            } finally {
+                                isSubmitting = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("SÍ, ELIMINAR", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("CANCELAR", color = Color.White.copy(alpha = 0.7f))
+                }
+            }
+        )
+    }
+
+    if (editingTeamTarget != null) {
+        val targetTeam = editingTeamTarget!!
+        AdminEditTeamDialog(
+            team = targetTeam,
+            onDismiss = { editingTeamTarget = null },
+            onSuccess = {
+                editingTeamTarget = null
+                onTeamUpdated?.invoke()
+            }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -2581,10 +2659,10 @@ fun AdminMatchDialog(
         title = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "⚙️ Panel de Control",
+                    text = "⚙️ Panel de Control Admin",
                     fontWeight = FontWeight.Black,
                     color = Color.White,
-                    fontSize = 18.sp
+                    fontSize = 17.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -2598,17 +2676,28 @@ fun AdminMatchDialog(
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Selector de marcador
+                // Selector de marcador y botón de edición de equipos
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(match.homeTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f), maxLines = 1)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                match.homeTeam.name, 
+                                fontSize = 11.sp, 
+                                color = Color.White.copy(alpha = 0.85f), 
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(onClick = { editingTeamTarget = match.homeTeam }, modifier = Modifier.size(20.dp).padding(start = 2.dp)) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar Equipo Local", tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
@@ -2627,10 +2716,21 @@ fun AdminMatchDialog(
                         }
                     }
 
-                    Text("VS", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color.White.copy(alpha = 0.3f))
+                    Text("VS", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color.White.copy(alpha = 0.3f))
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(match.awayTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f), maxLines = 1)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                match.awayTeam.name, 
+                                fontSize = 11.sp, 
+                                color = Color.White.copy(alpha = 0.85f), 
+                                maxLines = 1,
+                                fontWeight = FontWeight.Bold
+                            )
+                            IconButton(onClick = { editingTeamTarget = match.awayTeam }, modifier = Modifier.size(20.dp).padding(start = 2.dp)) {
+                                Icon(Icons.Default.Edit, contentDescription = "Editar Equipo Visitante", tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
+                            }
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
@@ -2652,7 +2752,7 @@ fun AdminMatchDialog(
 
                 // Selector de estado
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Estado del partido:", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                    Text("Estado del partido:", fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(6.dp))
                     
                     val statusOptions = listOf(
@@ -2696,6 +2796,19 @@ fun AdminMatchDialog(
                         }
                     }
                 }
+
+                // Botón para eliminar partido (repetido)
+                OutlinedButton(
+                    onClick = { showDeleteConfirm = true },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF5252)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("ELIMINAR PARTIDO", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         },
         confirmButton = {
@@ -2708,7 +2821,162 @@ fun AdminMatchDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+                Text("GUARDAR", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CANCELAR", color = Color.White.copy(alpha = 0.7f))
+            }
+        }
+    )
+}
+
+@Composable
+fun AdminEditTeamDialog(
+    team: Team,
+    onDismiss: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    var teamName by remember { mutableStateOf(team.name) }
+    var flagUrl by remember { mutableStateOf(team.flagUrl ?: "") }
+    var selectedImageBase64 by remember { mutableStateOf<String?>(null) }
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var isUploading by remember { mutableStateOf(false) }
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val imagePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            selectedImageUri = uri
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes()
+                inputStream?.close()
+                if (bytes != null) {
+                    selectedImageBase64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                }
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "Error leyendo imagen: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1E1E1E),
+        shape = RoundedCornerShape(20.dp),
+        title = {
+            Text("🛡️ Editar Equipo y Escudo", fontWeight = FontWeight.Black, color = Color.White, fontSize = 16.sp)
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Previsualización de escudo
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedImageUri != null) {
+                        coil.compose.AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Escudo seleccionado",
+                            modifier = Modifier.size(56.dp)
+                        )
+                    } else if (flagUrl.isNotBlank()) {
+                        coil.compose.AsyncImage(
+                            model = flagUrl,
+                            contentDescription = "Escudo",
+                            modifier = Modifier.size(56.dp)
+                        )
+                    } else {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(32.dp))
+                    }
+                }
+
+                // Botón para elegir archivo de imagen
+                Button(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(if (selectedImageUri != null) "CAMBIAR IMAGEN DE ESCUDO" else "SELECCIONAR ESCUDO DEL TELÉFONO", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+
+                OutlinedTextField(
+                    value = teamName,
+                    onValueChange = { teamName = it },
+                    label = { Text("Nombre del Club / Selección", fontSize = 12.sp) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFFFFD700),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                    )
+                )
+
+                OutlinedTextField(
+                    value = flagUrl,
+                    onValueChange = { flagUrl = it },
+                    label = { Text("URL de Escudo (opcional)", fontSize = 12.sp) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFFFFD700),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    isUploading = true
+                    coroutineScope.launch {
+                        try {
+                            val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail() ?: ""
+                            val req = com.example.worldcup2026.data.api.AdminTeamEditRequest(
+                                team_id = team.id,
+                                name = teamName.trim(),
+                                flag_url = if (flagUrl.isNotBlank()) flagUrl.trim() else null,
+                                image_base64 = selectedImageBase64,
+                                file_extension = ".png"
+                            )
+                            val resp = com.example.worldcup2026.data.api.NetworkModule.apiService.editTeamAdmin(email, req)
+                            if (resp.isSuccessful) {
+                                android.widget.Toast.makeText(context, "Equipo y escudo actualizados", android.widget.Toast.LENGTH_SHORT).show()
+                                onSuccess()
+                            } else {
+                                android.widget.Toast.makeText(context, "Error: ${resp.code()}", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Error: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
+                        } finally {
+                            isUploading = false
+                        }
+                    }
+                },
+                enabled = !isUploading && teamName.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(if (isUploading) "SUBIENDO..." else "GUARDAR ESCUDO/NOMBRE", color = Color.Black, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
