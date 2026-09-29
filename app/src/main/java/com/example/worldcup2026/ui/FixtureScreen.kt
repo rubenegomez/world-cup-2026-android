@@ -1130,7 +1130,7 @@ fun MatchCard(
                 }
             }
 
-            if (match.status.uppercase() == "FINISHED") {
+            if (isFinished || isMatchFinishedByTime || isLive) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { onShowVipStats(match) },
