@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -46,8 +47,7 @@ fun AdminScrapersDialog(
                 val res = withContext(Dispatchers.IO) {
                     NetworkModule.apiService.getScrapersStatus(adminEmail)
                 }
-                val allowedTournaments = setOf(3, 4, 5, 6, 7, 8, 14, 15, 27, 30)
-                statusList = res.scrapers.filter { it.tournament_id in allowedTournaments }
+                statusList = res.scrapers
             } catch (e: Exception) {
                 feedbackMessage = "Error al conectar: ${e.message}"
             } finally {
@@ -67,7 +67,7 @@ fun AdminScrapersDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.85f)
+                .fillMaxHeight(0.88f)
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF141923)),
@@ -97,7 +97,7 @@ fun AdminScrapersDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text("PANEL ADMIN: SCRAPERS", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
-                            Text("Control en Vivo del Servidor", fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f))
+                            Text("Control de Torneos y Scrapers", fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f))
                         }
                     }
 
@@ -131,13 +131,13 @@ fun AdminScrapersDialog(
                 // Botón Forzar Todos los Scrapers
                 Button(
                     onClick = {
-                        runningTournamentId = -1 // -1 significa TODOS
+                        runningTournamentId = -1
                         coroutineScope.launch {
                             try {
                                 withContext(Dispatchers.IO) {
                                     NetworkModule.apiService.runScrapersAdmin(adminEmail, null)
                                 }
-                                feedbackMessage = "✅ Sincronización completa de todos los torneos solicitada al servidor."
+                                feedbackMessage = "✅ Sincronización completa solicitada al servidor."
                                 loadStatus()
                             } catch (e: Exception) {
                                 feedbackMessage = "❌ Error: ${e.message}"
@@ -164,37 +164,71 @@ fun AdminScrapersDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Lista de Torneos y Scrapers
+                // Lista de Categorías y Scrapers
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = Color(0xFF00E676))
                     }
                 } else {
+                    val groupedScrapers = remember(statusList) {
+                        statusList.groupBy { it.category ?: "Otros Torneos" }
+                    }
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        items(statusList, key = { it.tournament_id }) { scraper ->
-                            ScraperStatusCard(
-                                scraper = scraper,
-                                isRunning = runningTournamentId == scraper.tournament_id,
-                                onRun = {
-                                    runningTournamentId = scraper.tournament_id
-                                    coroutineScope.launch {
-                                        try {
-                                            withContext(Dispatchers.IO) {
-                                                NetworkModule.apiService.runScrapersAdmin(adminEmail, scraper.tournament_id)
+                        groupedScrapers.forEach { (catName, scrapersInCat) ->
+                            item {
+                                Surface(
+                                    color = Color(0xFF00E676).copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)
+                                ) {
+                                    Text(
+                                        text = catName.uppercase(),
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF00E676),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+                            items(scrapersInCat, key = { it.tournament_id }) { scraper ->
+                                ScraperStatusCard(
+                                    scraper = scraper,
+                                    isRunning = runningTournamentId == scraper.tournament_id,
+                                    onToggleActive = { newActive ->
+                                        coroutineScope.launch {
+                                            try {
+                                                withContext(Dispatchers.IO) {
+                                                    NetworkModule.apiService.toggleScraperAdmin(adminEmail, scraper.tournament_id, newActive)
+                                                }
+                                                feedbackMessage = "${if (newActive) "✅ Activado" else "⏸️ Pausado"}: ${scraper.tournament_name}"
+                                                loadStatus()
+                                            } catch (e: Exception) {
+                                                feedbackMessage = "❌ Error: ${e.message}"
                                             }
-                                            feedbackMessage = "✅ Scraper de ${scraper.tournament_name} ejecutado con éxito."
-                                            loadStatus()
-                                        } catch (e: Exception) {
-                                            feedbackMessage = "❌ Error en ${scraper.tournament_name}: ${e.message}"
-                                        } finally {
-                                            runningTournamentId = null
+                                        }
+                                    },
+                                    onRun = {
+                                        runningTournamentId = scraper.tournament_id
+                                        coroutineScope.launch {
+                                            try {
+                                                withContext(Dispatchers.IO) {
+                                                    NetworkModule.apiService.runScrapersAdmin(adminEmail, scraper.tournament_id)
+                                                }
+                                                feedbackMessage = "✅ Scraper de ${scraper.tournament_name} ejecutado con éxito."
+                                                loadStatus()
+                                            } catch (e: Exception) {
+                                                feedbackMessage = "❌ Error en ${scraper.tournament_name}: ${e.message}"
+                                            } finally {
+                                                runningTournamentId = null
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
@@ -207,6 +241,7 @@ fun AdminScrapersDialog(
 fun ScraperStatusCard(
     scraper: ScraperStatusItem,
     isRunning: Boolean,
+    onToggleActive: (Boolean) -> Unit,
     onRun: () -> Unit
 ) {
     Card(
@@ -221,7 +256,7 @@ fun ScraperStatusCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     text = scraper.tournament_name,
                     fontWeight = FontWeight.Bold,
@@ -232,14 +267,15 @@ fun ScraperStatusCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = CircleShape,
-                        color = if (scraper.match_count > 0) Color(0xFF00E676) else Color(0xFFFF5252),
+                        color = if (scraper.is_active && scraper.match_count > 0) Color(0xFF00E676) else if (!scraper.is_active) Color(0xFFFF9800) else Color(0xFFFF5252),
                         modifier = Modifier.size(7.dp)
                     ) {}
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "${scraper.match_count} partidos en BD (${scraper.type})",
+                        text = if (!scraper.is_active) "PAUSADO (${scraper.match_count} partidos)" else "${scraper.match_count} partidos en BD",
                         fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = if (!scraper.is_active) Color(0xFFFFB74D) else Color.White.copy(alpha = 0.7f),
+                        fontWeight = if (!scraper.is_active) FontWeight.Bold else FontWeight.Normal
                     )
                 }
                 if (scraper.latest_date != null) {
@@ -251,19 +287,36 @@ fun ScraperStatusCard(
                 }
             }
 
-            Button(
-                onClick = onRun,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E3A52)),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                enabled = !isRunning
-            ) {
-                if (isRunning) {
-                    CircularProgressIndicator(modifier = Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.Refresh, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("ESCANEAR", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Switch Activar / Pausar
+                Switch(
+                    checked = scraper.is_active,
+                    onCheckedChange = onToggleActive,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFF00E676),
+                        checkedTrackColor = Color(0xFF00E676).copy(alpha = 0.3f),
+                        uncheckedThumbColor = Color.Gray,
+                        uncheckedTrackColor = Color.White.copy(alpha = 0.1f)
+                    ),
+                    modifier = Modifier.scale(0.8f)
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Button(
+                    onClick = onRun,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E3A52)),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                    enabled = !isRunning
+                ) {
+                    if (isRunning) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("ESCANEAR", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
                 }
             }
         }

@@ -61,6 +61,13 @@ interface WorldCupApiService {
         @Query("tournament_id") tournamentId: Int? = null
     ): retrofit2.Response<Unit>
 
+    @retrofit2.http.POST("api/admin/scrapers/toggle")
+    suspend fun toggleScraperAdmin(
+        @Query("email") email: String,
+        @Query("tournament_id") tournamentId: Int,
+        @Query("active") active: Boolean
+    ): retrofit2.Response<Unit>
+
     @retrofit2.http.POST("api/admin/teams/edit")
     suspend fun editTeamAdmin(
         @Query("email") email: String,
@@ -86,10 +93,12 @@ data class ScraperStatusItem(
     val tournament_id: Int,
     val tournament_name: String,
     val type: String,
+    val category: String? = null,
     val match_count: Int,
     val live_count: Int,
     val latest_date: String?,
-    val status: String
+    val status: String,
+    val is_active: Boolean = true
 )
 
 data class ScrapersStatusResponse(

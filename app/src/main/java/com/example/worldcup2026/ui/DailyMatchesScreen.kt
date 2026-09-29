@@ -19,8 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 
-import com.example.worldcup2026.ui.internacionales
-import com.example.worldcup2026.ui.nacionales
+import com.example.worldcup2026.ui.allTournaments
 import com.example.worldcup2026.data.model.Match
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +42,7 @@ fun DailyMatchesScreen(
     }
 
     val allTournamentsList = remember {
-        listOf(0 to "🏆 Todos") + (internacionales + nacionales).map { it.id to it.name }
+        listOf(0 to "🏆 Todos") + allTournaments.map { it.id to it.name }
     }
 
     val matchesForSelectedDate = remember(matches, date, filterLiveOnly, selectedTournamentIds, favTournaments, favTeams) {
@@ -272,7 +271,6 @@ fun DailyMatchesScreen(
 }
 
 private fun resolveTournamentName(match: Match): String {
-    val allTournaments = internacionales + nacionales
     val tId = match.tournament_id
     if (tId != null) {
         val found = allTournaments.find { it.id == tId }?.name

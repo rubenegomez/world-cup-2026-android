@@ -43,35 +43,53 @@ import androidx.compose.ui.window.DialogProperties
 data class TournamentItem(
     val id: Int, 
     val name: String, 
-    val type: String, 
-    val active: Boolean = false
+    val category: String,
+    val type: String = "Torneo", 
+    val active: Boolean = true
 )
 
-val internacionales = listOf(
-    TournamentItem(3, "Copa CONMEBOL Libertadores", "Internacional", active = true),
-    TournamentItem(4, "Copa CONMEBOL Sudamericana", "Internacional", active = true),
-    TournamentItem(14, "Amistosos FIFA", "Internacional", active = true),
-    TournamentItem(30, "Juegos ODESUR", "Internacional", active = true),
-    TournamentItem(1, "Campeonato Mundial De Fútbol", "Internacional", active = false),
-    TournamentItem(12, "Finalísima", "Internacional", active = false),
-    TournamentItem(24, "Copa América", "Internacional", active = false),
-    TournamentItem(2, "Eliminatorias Sudamericanas", "Internacional", active = false),
-    TournamentItem(22, "Copa Mundial De Clubes", "Internacional", active = false),
-    TournamentItem(23, "Copa Intercontinental", "Internacional", active = false),
-    TournamentItem(21, "Amistosos Conmebol", "Internacional", active = false)
+// Categoría 1: Selección de Fútbol
+val seleccionFutbol = listOf(
+    TournamentItem(1, "Campeonato Mundial de Fútbol", "Selección de Fútbol", active = false),
+    TournamentItem(12, "Finalísima", "Selección de Fútbol", active = false),
+    TournamentItem(24, "Copa América", "Selección de Fútbol", active = false),
+    TournamentItem(2, "Eliminatorias Sudamericanas", "Selección de Fútbol", active = false),
+    TournamentItem(14, "Amistosos FIFA", "Selección de Fútbol", active = true),
+    TournamentItem(30, "Juegos Olímpicos y ODESUR", "Selección de Fútbol", active = true)
 )
 
-val nacionales = listOf(
-    TournamentItem(5, "Torneo Clausura Liga Profesional", "Nacional", active = true),
-    TournamentItem(6, "Copa Argentina", "Nacional", active = true),
-    TournamentItem(7, "Torneo Primera Nacional", "Nacional", active = true),
-    TournamentItem(15, "Torneo Federal A", "Nacional", active = true),
-    TournamentItem(8, "B Metropolitana", "Nacional", active = true),
-    TournamentItem(27, "Supercopa Internacional", "Nacional", active = true),
-    TournamentItem(17, "Torneo Apertura Liga Profesional", "Nacional", active = false),
-    TournamentItem(18, "Torneo Apertura B Metropolitana", "Nacional", active = false),
-    TournamentItem(19, "Amistosos AFA", "Nacional", active = false)
+// Categoría 2: Clubes CONMEBOL
+val clubesConmebol = listOf(
+    TournamentItem(22, "Mundial de Clubes", "Clubes Conmebol", active = false),
+    TournamentItem(23, "Copa Intercontinental", "Clubes Conmebol", active = false),
+    TournamentItem(3, "Copa CONMEBOL Libertadores", "Clubes Conmebol", active = true),
+    TournamentItem(4, "Copa CONMEBOL Sudamericana", "Clubes Conmebol", active = true),
+    TournamentItem(21, "Amistosos Conmebol", "Clubes Conmebol", active = false)
 )
+
+// Categoría 3: Liga Profesional AFA (8 Títulos Oficiales)
+val ligaProfesionalAfa = listOf(
+    TournamentItem(17, "Torneo Apertura", "Liga Profesional AFA", active = false),
+    TournamentItem(5, "Torneo Clausura", "Liga Profesional AFA", active = true),
+    TournamentItem(6, "Copa Argentina", "Liga Profesional AFA", active = true),
+    TournamentItem(25, "Trofeo de Campeones", "Liga Profesional AFA", active = false),
+    TournamentItem(26, "Supercopa Argentina", "Liga Profesional AFA", active = false),
+    TournamentItem(27, "Supercopa Internacional", "Liga Profesional AFA", active = true),
+    TournamentItem(28, "Trofeo de Liga", "Liga Profesional AFA", active = false),
+    TournamentItem(29, "Recopa de Campeones", "Liga Profesional AFA", active = false)
+)
+
+// Categoría 4: Torneos del Ascenso
+val torneosAscenso = listOf(
+    TournamentItem(7, "Torneo Primera Nacional", "Torneos del Ascenso", active = true),
+    TournamentItem(15, "Torneo Federal A", "Torneos del Ascenso", active = true),
+    TournamentItem(18, "Primera B Metro (Apertura)", "Torneos del Ascenso", active = false),
+    TournamentItem(8, "Primera B Metro (Clausura)", "Torneos del Ascenso", active = true),
+    TournamentItem(19, "Amistosos AFA", "Torneos del Ascenso", active = false)
+)
+
+// Todos los 24 torneos canónicos combinados
+val allTournaments = seleccionFutbol + clubesConmebol + ligaProfesionalAfa + torneosAscenso
 
 @Composable
 fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, String) -> Unit) {
@@ -79,7 +97,7 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
     val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
     
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Internacionales", "Nacionales")
+    val tabs = listOf("Selección", "CONMEBOL", "Liga AFA", "Ascenso")
     
     // Estado de favoritos reactivo sincronizado con ViewModel
     val favoriteTournaments by viewModel.favoriteTournamentIds
@@ -104,12 +122,18 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
 
     val liveStatuses by viewModel.liveTournaments
     
-    // Detectar si hay vivos generales en cada pestaña
-    val hasInternacionalesLive = remember(liveStatuses) {
-        liveStatuses[1] == true || liveStatuses[2] == true || liveStatuses[3] == true || liveStatuses[4] == true
+    // Detectar si hay vivos generales en cada una de las 4 pestañas
+    val hasSeleccionLive = remember(liveStatuses) {
+        seleccionFutbol.any { liveStatuses[it.id] == true }
     }
-    val hasNacionalesLive = remember(liveStatuses) {
-        liveStatuses[5] == true || liveStatuses[6] == true || liveStatuses[7] == true || liveStatuses[8] == true || liveStatuses[15] == true
+    val hasConmebolLive = remember(liveStatuses) {
+        clubesConmebol.any { liveStatuses[it.id] == true }
+    }
+    val hasLigaAfaLive = remember(liveStatuses) {
+        ligaProfesionalAfa.any { liveStatuses[it.id] == true }
+    }
+    val hasAscensoLive = remember(liveStatuses) {
+        torneosAscenso.any { liveStatuses[it.id] == true }
     }
 
     // Función para alternar favorito sincronizada con ViewModel
@@ -205,7 +229,12 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
             }
         ) {
             tabs.forEachIndexed { index, title ->
-                val hasLive = if (index == 0) hasInternacionalesLive else hasNacionalesLive
+                val hasLive = when (index) {
+                    0 -> hasSeleccionLive
+                    1 -> hasConmebolLive
+                    2 -> hasLigaAfaLive
+                    else -> hasAscensoLive
+                }
                 Tab(
                     selected = selectedTabIndex == index,
                     onClick = { selectedTabIndex = index },
@@ -214,14 +243,14 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
                             Text(
                                 text = title.uppercase(), 
                                 fontWeight = FontWeight.Black,
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 letterSpacing = 0.5.sp
                             )
                             if (hasLive) {
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Box(
                                     modifier = Modifier
-                                        .size(8.dp)
+                                        .size(7.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFF4CAF50).copy(alpha = livePulseAlpha))
                                 )
@@ -234,8 +263,14 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
             }
         }
 
-        // Obtener lista filtrando solo torneos activos y ordenar por favorito
-        val baseList = (if (selectedTabIndex == 0) internacionales else nacionales).filter { it.active }
+        // Obtener lista según la categoría seleccionada (mostrando activos) y ordenar por favorito
+        val currentCategoryList = when (selectedTabIndex) {
+            0 -> seleccionFutbol
+            1 -> clubesConmebol
+            2 -> ligaProfesionalAfa
+            else -> torneosAscenso
+        }
+        val baseList = currentCategoryList.filter { it.active }
         val tournamentsToList = remember(baseList, favoriteTournaments) {
             baseList.sortedWith(
                 compareByDescending<TournamentItem> { favoriteTournaments.contains(it.id) }
