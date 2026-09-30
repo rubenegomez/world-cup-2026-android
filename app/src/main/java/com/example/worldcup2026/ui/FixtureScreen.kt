@@ -607,7 +607,9 @@ fun MatchCard(
     tournamentName: String? = null,
     allMatches: List<Match> = emptyList(),
     onToggleComodin: ((Int) -> Unit)? = null,
-    favoriteTeamNames: Set<String> = emptySet()
+    favoriteTeamNames: Set<String> = emptySet(),
+    onTeamUpdated: (() -> Unit)? = null,
+    onDeleteMatch: (() -> Unit)? = null
 ) {
     var showTeamStats by remember { mutableStateOf(false) }
     var showGameRules by remember { mutableStateOf(false) }
@@ -946,6 +948,13 @@ fun MatchCard(
                                     showAdminDialog = false
                                     onScoreChange(match.id, hScore, aScore)
                                     onStatusChange(match.id, newStatus)
+                                },
+                                onDeleteMatch = {
+                                    showAdminDialog = false
+                                    onDeleteMatch?.invoke()
+                                },
+                                onTeamUpdated = {
+                                    onTeamUpdated?.invoke()
                                 }
                             )
                         }

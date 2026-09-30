@@ -262,7 +262,13 @@ fun DailyMatchesScreen(
                         onToggleComodin = { matchId ->
                             viewModel.toggleComodin(matchId)
                         },
-                        favoriteTeamNames = favTeams
+                        favoriteTeamNames = favTeams,
+                        onTeamUpdated = {
+                            viewModel.syncLiveResults()
+                        },
+                        onDeleteMatch = {
+                            viewModel.syncLiveResults()
+                        }
                     )
                 }
             }
