@@ -199,6 +199,10 @@ fun AdminScrapersDialog(
                                     scraper = scraper,
                                     isRunning = runningTournamentId == scraper.tournament_id,
                                     onToggleActive = { newActive ->
+                                        // Actualización optimista inmediata en la UI
+                                        statusList = statusList.map {
+                                            if (it.tournament_id == scraper.tournament_id) it.copy(is_active = newActive) else it
+                                        }
                                         coroutineScope.launch {
                                             try {
                                                 withContext(Dispatchers.IO) {
@@ -208,6 +212,7 @@ fun AdminScrapersDialog(
                                                 loadStatus()
                                             } catch (e: Exception) {
                                                 feedbackMessage = "❌ Error: ${e.message}"
+                                                loadStatus()
                                             }
                                         }
                                     },
