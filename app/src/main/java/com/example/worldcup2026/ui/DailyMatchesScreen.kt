@@ -35,10 +35,8 @@ fun DailyMatchesScreen(
     var filterLiveOnly by remember { mutableStateOf(false) }
     val favTournaments by viewModel.favoriteTournamentIds
     val favTeams by viewModel.favoriteTeamNames
-    var selectedTournamentIds by remember(favTournaments) { 
-        mutableStateOf<Set<Int>>(
-            if (favTournaments.isNotEmpty()) favTournaments.toSet() else setOf(0)
-        ) 
+    var selectedTournamentIds by remember { 
+        mutableStateOf<Set<Int>>(setOf(0)) 
     }
 
     val allTournamentsList = remember {
@@ -48,13 +46,18 @@ fun DailyMatchesScreen(
     val matchesForSelectedDate = remember(matches, date, filterLiveOnly, selectedTournamentIds, favTournaments, favTeams) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
-            .filter { it.date?.startsWith(dateStr) == true }
             .filter { match ->
-                val mId = match.tournament_id ?: 1
-                if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) {
-                    true
-                } else {
-                    selectedTournamentIds.contains(mId)
+                if (filterLiveOnly) true else (match.date?.startsWith(dateStr) == true)
+            }
+            .filter { match ->
+                if (filterLiveOnly) true
+                else {
+                    val mId = match.tournament_id ?: 1
+                    if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) {
+                        true
+                    } else {
+                        selectedTournamentIds.contains(mId)
+                    }
                 }
             }
             .filter { match ->

@@ -283,11 +283,11 @@ fun ScraperStatusCard(
                         fontWeight = if (!scraper.is_active) FontWeight.Bold else FontWeight.Normal
                     )
                 }
-                if (scraper.latest_date != null) {
+                if (!scraper.latest_date.isNullOrEmpty()) {
                     Text(
-                        text = "Último: ${scraper.latest_date}",
+                        text = "Último escaneo: ${scraper.latest_date}",
                         fontSize = 10.sp,
-                        color = Color.White.copy(alpha = 0.5f)
+                        color = Color.White.copy(alpha = 0.6f)
                     )
                 }
             }
