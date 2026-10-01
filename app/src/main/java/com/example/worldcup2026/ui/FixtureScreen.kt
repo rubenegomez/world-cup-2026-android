@@ -637,23 +637,23 @@ fun MatchCard(
     }
 
     val isMatchFinishedByTime = remember(parsedStartDate) {
-        parsedStartDate != null && parsedStartDate.plusMinutes(150).isBefore(java.time.LocalDateTime.now())
+        parsedStartDate != null && parsedStartDate.plusMinutes(135).isBefore(java.time.LocalDateTime.now())
     }
 
     // Estado respetando la base de datos o dinámico
     val statusUpper = remember(rawStatusUpper, isMatchStartedByTime, isMatchFinishedByTime, match.homeScore, match.awayScore) {
         when {
-            rawStatusUpper in listOf("FINISHED", "POSTP", "POSTERGADO", "SUSPENDED", "SUSPENDIDO", "CANCELLED", "CANCELADO") -> rawStatusUpper
-            rawStatusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") -> rawStatusUpper
-            rawStatusUpper == "SCHEDULED" -> "SCHEDULED"
-            match.homeScore != null && match.awayScore != null && isMatchFinishedByTime -> "FINISHED"
-            isMatchStartedByTime && match.homeScore != null && match.awayScore != null -> "LIVE"
-            else -> rawStatusUpper
+            rawStatusUpper in listOf("FINISHED", "FINALIZADO", "FT", "FINAL", "TERMINADO") -> "FINISHED"
+            rawStatusUpper in listOf("POSTP", "POSTERGADO", "SUSPENDED", "SUSPENDIDO", "CANCELLED", "CANCELADO") -> "SUSPENDED"
+            rawStatusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "EN VIVO", "1T", "2T", "ET", "PENALES") -> "LIVE"
+            isMatchFinishedByTime -> "FINISHED"
+            isMatchStartedByTime -> "LIVE"
+            else -> "SCHEDULED"
         }
     }
 
-    val isLive = statusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
-    val matchHasStarted = statusUpper != "SCHEDULED" || isMatchStartedByTime
+    val isLive = statusUpper == "LIVE"
+    val matchHasStarted = statusUpper != "SCHEDULED"
     
     val infiniteTransition = rememberInfiniteTransition()
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -668,7 +668,7 @@ fun MatchCard(
 
     // Cálculo de ganador/clasificado para torneos con eliminación directa (mata-mata)
     val isKnockout = match.tournament_id in listOf(1, 3, 4, 6, 12, 16, 24) || (match.tournament_id == 5 && (match.matchday ?: 0) >= 15)
-    val isFinished = match.status.uppercase() == "FINISHED"
+    val isFinished = statusUpper == "FINISHED"
     val homePen = match.homePenalties
     val awayPen = match.awayPenalties
     val homeSc = match.homeScore
@@ -1012,10 +1012,8 @@ fun MatchCard(
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val isLiveLocal = statusUpper == "LIVE" || statusUpper == "HALFTIME" || statusUpper == "ENTREETIEMPO" || statusUpper == "PAUSA" || statusUpper == "PAUSE"
-
                     when {
-                        statusUpper.contains("POSTP") || statusUpper.contains("SUSPEND") || statusUpper.contains("CANCEL") -> {
+                        statusUpper == "SUSPENDED" || statusUpper.contains("POSTP") || statusUpper.contains("SUSPEND") || statusUpper.contains("CANCEL") -> {
                             Text(
                                 text = "POSTERGADO / SUSPENDIDO",
                                 style = MaterialTheme.typography.labelSmall,
@@ -1023,6 +1021,12 @@ fun MatchCard(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 10.sp,
                                 modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Text(
+                                text = "VS",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White.copy(alpha = 0.2f)
                             )
                         }
                         statusUpper == "FINISHED" -> {
@@ -1034,38 +1038,47 @@ fun MatchCard(
                                 fontSize = 11.sp,
                                 modifier = Modifier.padding(bottom = 4.dp)
                             )
+                            Text(
+                                text = "VS",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White.copy(alpha = 0.2f)
+                            )
                         }
-                        isLiveLocal -> {
+                        isLive -> {
                             Text(
                                 text = "EN VIVO",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color(0xFF4CAF50),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                            MatchLiveStatusBadge(
+                                statusUpper = rawStatusUpper,
+                                clock = match.clock,
+                                parsedStartDate = parsedStartDate
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "VS",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White.copy(alpha = 0.2f)
                             )
                         }
-                        statusUpper == "SCHEDULED" -> {
+                        else -> {
                             MatchCountdownBadge(
                                 parsedStartDate = parsedStartDate,
                                 rawDate = match.date ?: ""
                             )
+                            Text(
+                                text = "VS",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White.copy(alpha = 0.2f)
+                            )
                         }
-                    }
-
-                    Text(
-                        text = "VS",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White.copy(alpha = 0.2f)
-                    )
-
-                    if (isLiveLocal) {
-                        MatchLiveStatusBadge(
-                            statusUpper = statusUpper,
-                            clock = match.clock,
-                            parsedStartDate = parsedStartDate
-                        )
                     }
                 }
                 
@@ -1078,7 +1091,11 @@ fun MatchCard(
                 )
             }
  
-            if (match.scorers.isNotEmpty()) {
+            if (isLive) {
+                // Durante el partido: línea de tiempo con goles, tarjetas y cambios
+                Spacer(modifier = Modifier.height(12.dp))
+                MatchTimelineView(match = match)
+            } else if (match.scorers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     modifier = Modifier
@@ -1139,7 +1156,7 @@ fun MatchCard(
                 }
             }
 
-            if (isFinished || isMatchFinishedByTime || isLive) {
+            if (isFinished) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { onShowVipStats(match) },
@@ -2524,10 +2541,19 @@ fun MatchLiveStatusBadge(
 
     // Cronómetro dinámico o minuto oficial
     val (labelText, labelColor) = when {
-        isPenalties -> "PENALES" to Color(0xFFE91E63)
-        isExtraTime -> "ALARGUE" to Color(0xFF9C27B0)
-        isWaterBreak -> "PAUSA HIDRATACIÓN" to Color(0xFF03A9F4)
-        isHalftime -> "ENTREETIEMPO" to Color(0xFFFF9800)
+        isPenalties -> "Penales" to Color(0xFFE91E63)
+        isExtraTime -> "Alargue" to Color(0xFF9C27B0)
+        isWaterBreak -> "Pausa Hidratación" to Color(0xFF03A9F4)
+        isHalftime -> {
+            if (elapsedSeconds != null && elapsedSeconds in (45 * 60)..(64 * 60)) {
+                val remainingHalftime = (64 * 60) - elapsedSeconds
+                val m = remainingHalftime / 60
+                val s = remainingHalftime % 60
+                String.format(java.util.Locale.US, "Entretiempo %02d:%02d", m, s) to Color(0xFFFF9800)
+            } else {
+                "Entretiempo" to Color(0xFFFF9800)
+            }
+        }
         else -> {
             if (elapsedSeconds != null) {
                 when {
@@ -2535,42 +2561,41 @@ fun MatchLiveStatusBadge(
                         // 1er Tiempo: 00:00 a 45:00
                         val m = elapsedSeconds / 60
                         val s = elapsedSeconds % 60
-                        val timerStr = String.format(java.util.Locale.US, "1T %02d:%02d", m, s)
-                        timerStr to Color(0xFF4CAF50)
+                        String.format(java.util.Locale.US, "1er T %02d:%02d", m, s) to Color(0xFF4CAF50)
                     }
                     elapsedSeconds in (45 * 60)..(49 * 60) -> {
                         // Adición 1T: 45+m
                         val addMin = (elapsedSeconds - 45 * 60) / 60
-                        "1T 45'+$addMin" to Color(0xFF4CAF50)
+                        "1er T 45'+$addMin" to Color(0xFF4CAF50)
                     }
                     elapsedSeconds in (49 * 60)..(64 * 60) -> {
                         // Entretiempo estimado (15 min) con cuenta regresiva de descanso
                         val remainingHalftime = (64 * 60) - elapsedSeconds
                         val m = remainingHalftime / 60
                         val s = remainingHalftime % 60
-                        val timerStr = String.format(java.util.Locale.US, "ET %02d:%02d", m, s)
-                        timerStr to Color(0xFFFF9800)
+                        String.format(java.util.Locale.US, "Entretiempo %02d:%02d", m, s) to Color(0xFFFF9800)
                     }
                     elapsedSeconds in (64 * 60)..(109 * 60) -> {
                         // 2do Tiempo: 45:00 a 90:00
                         val secondHalfSeconds = (45 * 60) + (elapsedSeconds - 64 * 60)
                         val m = secondHalfSeconds / 60
                         val s = secondHalfSeconds % 60
-                        val timerStr = String.format(java.util.Locale.US, "2T %02d:%02d", m, s)
-                        timerStr to Color(0xFF4CAF50)
+                        String.format(java.util.Locale.US, "2do T %02d:%02d", m, s) to Color(0xFF4CAF50)
                     }
                     else -> {
                         // Adición 2T: 90+m hasta un máximo de 15 minutos
                         val addMin = (elapsedSeconds - 109 * 60) / 60
                         if (addMin <= 15) {
-                            "2T 90'+$addMin" to Color(0xFF4CAF50)
+                            "2do T 90'+$addMin" to Color(0xFF4CAF50)
                         } else {
-                            "2T CUMPLIDO" to Color(0xFFFF9800)
+                            "2do T Cumplido" to Color(0xFFFF9800)
                         }
                     }
                 }
+            } else if (!clock.isNullOrBlank()) {
+                clock to Color(0xFF4CAF50)
             } else {
-                "2º TIEMPO" to Color(0xFF4CAF50)
+                "2do Tiempo" to Color(0xFF4CAF50)
             }
         }
     }

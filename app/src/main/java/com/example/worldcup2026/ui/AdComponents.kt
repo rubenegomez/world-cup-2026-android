@@ -1184,7 +1184,9 @@ fun parseEventString(eventStr: String, homeTeamName: String): ParsedEvent {
             eventStr.substring(firstColon + 1).trim()
         } else eventStr
         
-        val isHome = team.lowercase().trim() == homeTeamName.lowercase().trim()
+        val tLow = team.lowercase().trim()
+        val hLow = homeTeamName.lowercase().trim()
+        val isHome = tLow == hLow || (tLow.isNotEmpty() && (hLow.contains(tLow) || tLow.contains(hLow)))
         return ParsedEvent(emojiMatch, minute, team, detail, isHome)
     } catch (e: Exception) {
         return ParsedEvent("", "", "", eventStr, true)
