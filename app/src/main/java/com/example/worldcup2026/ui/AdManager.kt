@@ -74,13 +74,14 @@ object AdManager {
         )
     }
 
-    // House Ads de Videos propios alojados en el Servidor
+    // House Ads de Videos e Imágenes propios alojados en el Servidor / App
     data class HouseVideoAd(
         val appName: String,
         val appTagline: String,
         val videoUrl: String,
         val targetUrl: String,
-        val accentColor: Long = 0xFF00E676
+        val accentColor: Long = 0xFF00E676,
+        val imageDrawableRes: Int? = null
     )
 
     val houseVideoAds = listOf(
@@ -89,37 +90,55 @@ object AdManager {
             appTagline = "¡El Prode oficial con resultados en vivo y estadísticas VIP!",
             videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/arena_ad.mp4",
             targetUrl = "https://ellocodelpedal.duckdns.org/arena.html",
-            accentColor = 0xFFFFD700
+            accentColor = 0xFFFFD700,
+            imageDrawableRes = com.example.worldcup2026.R.drawable.banner_arena_ad
         ),
         HouseVideoAd(
             appName = "Bondi Maps",
             appTagline = "¡Gestioná tus tarjetas de colectivo, saldos y viajes de forma fácil!",
             videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/bondi_ad.mp4",
             targetUrl = "https://ellocodelpedal.duckdns.org/bondi.html",
-            accentColor = 0xFF00E676
+            accentColor = 0xFF00E676,
+            imageDrawableRes = com.example.worldcup2026.R.drawable.banner_bondi_ad
         ),
         HouseVideoAd(
             appName = "TimeTracker Pro",
             appTagline = "¡Gestioná tus horas de trabajo, guardias y cobros con precisión!",
             videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/timetracker_ad.mp4",
             targetUrl = "https://ellocodelpedal.duckdns.org/timetracker.html",
-            accentColor = 0xFFFFC107
+            accentColor = 0xFFFFC107,
+            imageDrawableRes = com.example.worldcup2026.R.drawable.banner_timetracker_ad
+        ),
+        HouseVideoAd(
+            appName = "Los Fondos del Loco",
+            appTagline = "¡Wallpapers Ultra HD y calidad AMOLED para tu celular!",
+            videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/fondos_ad.mp4",
+            targetUrl = "https://ellocodelpedal.duckdns.org/fondos.html",
+            accentColor = 0xFFE040FB,
+            imageDrawableRes = com.example.worldcup2026.R.drawable.banner_fondos_ad
         )
     )
 
     private var houseAdIndex = 0
+    private var houseAdShowImage = false
     val currentHouseVideoAd = androidx.compose.runtime.mutableStateOf<HouseVideoAd?>(null)
+    val currentHouseAdIsImage = androidx.compose.runtime.mutableStateOf(false)
     private var onHouseAdFinishedCallback: (() -> Unit)? = null
 
     fun showHouseVideoAd(onFinished: () -> Unit) {
         val ad = houseVideoAds[houseAdIndex % houseVideoAds.size]
         houseAdIndex++
+        val showImageThisTime = houseAdShowImage && (ad.imageDrawableRes != null)
+        houseAdShowImage = !houseAdShowImage // Alternar: una vez video, una vez imagen
+
         onHouseAdFinishedCallback = onFinished
+        currentHouseAdIsImage.value = showImageThisTime
         currentHouseVideoAd.value = ad
     }
 
     fun dismissHouseVideoAd() {
         currentHouseVideoAd.value = null
+        currentHouseAdIsImage.value = false
         onHouseAdFinishedCallback?.invoke()
         onHouseAdFinishedCallback = null
     }
@@ -404,29 +423,34 @@ fun AdmobBanner(modifier: Modifier = Modifier) {
     }
 }
 
+data class HouseBannerItem(
+    val title: String,
+    val drawableRes: Int,
+    val targetUrl: String
+)
+
 @Composable
 fun HouseBannerFallback(modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val houseApps = remember {
+    val houseBanners = remember {
         listOf(
-            Triple("Bondi Maps", "Colectivos, paradas y recorridos en vivo", "https://ellocodelpedal.duckdns.org/bondi.html"),
-            Triple("Ofertas & Patrocinadores", "Descubrí apps recomendadas y promos", AdManager.ADSTERRA_SMARTLINK_URL),
-            Triple("TimeTracker Pro", "Control de horas de trabajo y guardias", "https://ellocodelpedal.duckdns.org/timetracker.html"),
-            Triple("Los Fondos del Loco", "Wallpapers Ultra HD exclusivos", "https://ellocodelpedal.duckdns.org/fondos.html"),
-            Triple("El Loco del Pedal", "Comunidad ciclista y cicloturismo", "https://ellocodelpedal.duckdns.org")
+            HouseBannerItem("Arena Prode y Torneos", com.example.worldcup2026.R.drawable.banner_arena_ad, "https://ellocodelpedal.duckdns.org/arena.html"),
+            HouseBannerItem("Bondi Horarios y SUBE", com.example.worldcup2026.R.drawable.banner_bondi_ad, "https://ellocodelpedal.duckdns.org/bondi.html"),
+            HouseBannerItem("TimeTracker Pro", com.example.worldcup2026.R.drawable.banner_timetracker_ad, "https://ellocodelpedal.duckdns.org/timetracker.html"),
+            HouseBannerItem("Fondos del Loco", com.example.worldcup2026.R.drawable.banner_fondos_ad, "https://ellocodelpedal.duckdns.org/fondos.html")
         )
     }
-    var appIndex by remember { mutableIntStateOf(0) }
+    var bannerIndex by remember { mutableIntStateOf(0) }
 
-    // Rotar los 4 banners propios cada 15 segundos
+    // Rotar banners propios cada 15 segundos
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(15000L)
-            appIndex = (appIndex + 1) % houseApps.size
+            bannerIndex = (bannerIndex + 1) % houseBanners.size
         }
     }
 
-    val currentApp = houseApps[appIndex]
+    val currentBanner = houseBanners[bannerIndex]
 
     Surface(
         modifier = modifier
@@ -434,7 +458,7 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
             .height(50.dp)
             .clickable {
                 try {
-                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(currentApp.third)).apply {
+                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(currentBanner.targetUrl)).apply {
                         addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(intent)
@@ -442,48 +466,14 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
                     e.printStackTrace()
                 }
             },
-        color = Color(0xFF131F2E),
-        border = BorderStroke(0.5.dp, Color(0xFF00E676).copy(alpha = 0.5f))
+        color = Color(0xFF0A0F1D)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⭐", fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = currentApp.first,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                        color = Color(0xFF00E676)
-                    )
-                    Text(
-                        text = currentApp.second,
-                        fontSize = 10.sp,
-                        color = Color.White.copy(alpha = 0.8f),
-                        maxLines = 1
-                    )
-                }
-            }
-
-            Surface(
-                color = Color(0xFF00E676),
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = "DESCARGAR",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 9.sp,
-                    color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-        }
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = currentBanner.drawableRes),
+            contentDescription = currentBanner.title,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.FillBounds
+        )
     }
 }
 
@@ -518,24 +508,85 @@ fun HouseVideoAdPlayerOverlay(
                 .fillMaxSize()
                 .background(Color(0xFF0A0E14))
         ) {
-            if (!videoError) {
-                // Reproductor nativo VideoView con manejo seguro de errores
-                AndroidView(
+            val isImageMode = AdManager.currentHouseAdIsImage.value && houseAd.imageDrawableRes != null
+
+            if (isImageMode) {
+                // Modo Imagen completa: Mostrar banner/diseño visual de alta resolución
+                Box(
                     modifier = Modifier.fillMaxSize(),
-                    factory = { ctx ->
-                        android.widget.VideoView(ctx).apply {
-                            setVideoURI(android.net.Uri.parse(houseAd.videoUrl))
-                            setOnPreparedListener { mp ->
-                                mp.isLooping = true
-                                start()
-                            }
-                            setOnErrorListener { _, _, _ ->
-                                videoError = true
-                                true
-                            }
-                        }
+                    contentAlignment = Alignment.Center
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = houseAd.imageDrawableRes!!),
+                        contentDescription = houseAd.appName,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        contentScale = androidx.compose.ui.layout.ContentScale.FillWidth
+                    )
+                }
+            } else if (!videoError) {
+                // Reproductor nativo VideoView con contenedor y bandas con texto de la app
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Banda superior explicativa
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.8f),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "⭐ ${houseAd.appName.uppercase()} — ${houseAd.appTagline}",
+                            color = Color(houseAd.accentColor),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(8.dp)
+                        )
                     }
-                )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth(),
+                            factory = { ctx ->
+                                android.widget.VideoView(ctx).apply {
+                                    setVideoURI(android.net.Uri.parse(houseAd.videoUrl))
+                                    setOnPreparedListener { mp ->
+                                        mp.isLooping = true
+                                        start()
+                                    }
+                                    setOnErrorListener { _, _, _ ->
+                                        videoError = true
+                                        true
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    // Banda inferior
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.8f),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "Toque el botón inferior para instalar gratis",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(6.dp)
+                        )
+                    }
+                }
             } else {
                 // Vista de respaldo rica en caso de que el códec de video falle en el dispositivo
                 Column(
