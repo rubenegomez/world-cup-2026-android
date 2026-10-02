@@ -27,6 +27,7 @@ object MasterTeamCatalog {
         MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true),
         MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true),
         MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ B Metropolitana", "Nacional", isActive = true),
+        MasterTournament(10, "Primera C", "🏟️ Primera C", "Nacional", isActive = true),
         MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = true),
         MasterTournament(14, "Amistosos FIFA", "🇦🇷 Amistosos FIFA", "Selecciones", isActive = true),
         MasterTournament(30, "Juegos ODESUR", "🏅 Juegos ODESUR", "Selecciones", isActive = true),

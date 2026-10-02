@@ -85,6 +85,7 @@ val torneosAscenso = listOf(
     TournamentItem(15, "Torneo Federal A", "Torneos del Ascenso", active = true),
     TournamentItem(18, "Primera B Metro (Apertura)", "Torneos del Ascenso", active = false),
     TournamentItem(8, "Primera B Metro (Clausura)", "Torneos del Ascenso", active = true),
+    TournamentItem(10, "Primera C Metropolitana", "Torneos del Ascenso", active = true),
     TournamentItem(19, "Amistosos AFA", "Torneos del Ascenso", active = false)
 )
 
@@ -263,17 +264,17 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
             }
         }
 
-        // Obtener lista según la categoría seleccionada (mostrando activos) y ordenar por favorito
+        // Obtener lista según la categoría seleccionada (todos los torneos, priorizando favoritos y activos)
         val currentCategoryList = when (selectedTabIndex) {
             0 -> seleccionFutbol
             1 -> clubesConmebol
             2 -> ligaProfesionalAfa
             else -> torneosAscenso
         }
-        val baseList = currentCategoryList.filter { it.active }
-        val tournamentsToList = remember(baseList, favoriteTournaments) {
-            baseList.sortedWith(
+        val tournamentsToList = remember(currentCategoryList, favoriteTournaments) {
+            currentCategoryList.sortedWith(
                 compareByDescending<TournamentItem> { favoriteTournaments.contains(it.id) }
+                .thenByDescending { it.active }
                 .thenBy { it.id }
             )
         }
