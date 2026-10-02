@@ -169,18 +169,40 @@ object AdManager {
         }
     }
 
-    // Rotación 1 a 1: 0 -> Google AdMob, 1 -> Unity Ads, 2 -> Video Propio (Nosotros)
+    // Diálogo Intersticial / Oferta Patrocinada de Adsterra
+    val showAdsterraInterstitialDialog = androidx.compose.runtime.mutableStateOf(false)
+    private var onAdsterraInterstitialCompletedCallback: (() -> Unit)? = null
+
+    fun showAdsterraInterstitial(onComplete: () -> Unit) {
+        onAdsterraInterstitialCompletedCallback = onComplete
+        showAdsterraInterstitialDialog.value = true
+    }
+
+    fun dismissAdsterraInterstitial() {
+        showAdsterraInterstitialDialog.value = false
+        onAdsterraInterstitialCompletedCallback?.invoke()
+        onAdsterraInterstitialCompletedCallback = null
+    }
+
+    // Rotación de Recompensas: 0 -> Adsterra (Smartlink/Patrocinio), 1 -> Google AdMob, 2 -> Unity Ads, 3 -> Videos Propios
     fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
         val activity = context as? Activity ?: run {
             onRewardGranted()
             return
         }
 
-        val turn = rewardedCycleIndex % 3
+        val turn = rewardedCycleIndex % 4
         rewardedCycleIndex++
 
         when (turn) {
             0 -> {
+                // Turno Adsterra Smartlink (Recompensa inmediata con oferta patrocinada)
+                showAdsterraInterstitial(onComplete = {
+                    onRewardGranted()
+                    Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+                })
+            }
+            1 -> {
                 // Turno Google AdMob
                 showAdmobRewarded(activity, onRewardGranted, onFallback = {
                     UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
@@ -188,7 +210,7 @@ object AdManager {
                     })
                 })
             }
-            1 -> {
+            2 -> {
                 // Turno Unity Ads
                 UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
                     showAdmobRewarded(activity, onRewardGranted, onFallback = {
@@ -197,7 +219,7 @@ object AdManager {
                 })
             }
             else -> {
-                // Turno Nosotros (Arena Prode / Bondi / TimeTracker)
+                // Turno Nosotros (Arena Prode / Bondi / TimeTracker / Fondos)
                 showHouseVideoAd(onRewardGranted)
             }
         }
@@ -248,18 +270,23 @@ object AdManager {
         }
     }
 
-    // Rotación 1 a 1 para Intersticiales / Estadísticas VIP
+    // Rotación para Intersticiales / Estadísticas VIP:
+    // 0 -> Adsterra (Smartlink/Patrocinio), 1 -> Google AdMob, 2 -> Unity Ads, 3 -> Nosotros
     fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
         val activity = context as? Activity ?: run {
             onComplete()
             return
         }
 
-        val turn = interstitialCycleIndex % 3
+        val turn = interstitialCycleIndex % 4
         interstitialCycleIndex++
 
         when (turn) {
             0 -> {
+                // Turno Adsterra Intersticial
+                showAdsterraInterstitial(onComplete = onComplete)
+            }
+            1 -> {
                 // Turno Google AdMob
                 showAdmobInterstitial(activity, onComplete, onFallback = {
                     UnityAdsManager.showInterstitialAd(context, onComplete, onFallback = {
@@ -267,7 +294,7 @@ object AdManager {
                     })
                 })
             }
-            1 -> {
+            2 -> {
                 // Turno Unity Ads
                 UnityAdsManager.showInterstitialAd(context, onComplete, onFallback = {
                     showAdmobInterstitial(activity, onComplete, onFallback = {
@@ -358,28 +385,29 @@ fun AdsterraBannerView(
 
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
-    // 0: AdMob (2 min), 1: Unity (2 min), 2: Adsterra (2 min), 3: House Ads (1 min)
+    // Rotación con prioridad a Adsterra:
+    // 0: Adsterra (3 min = 180s), 1: AdMob (1 min = 60s), 2: Unity (1 min = 60s), 3: House Ads (1 min = 60s)
     var currentProvider by remember { mutableIntStateOf(0) }
     var providerFailed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (true) {
-            // Bloque 1: AdMob (2 minutos = 120s)
+            // Bloque 1: Adsterra Banner Webview (Prioridad: 3 minutos)
             currentProvider = 0
             providerFailed = false
-            kotlinx.coroutines.delay(120000L)
+            kotlinx.coroutines.delay(180000L)
 
-            // Bloque 2: Unity Ads (2 minutos = 120s)
+            // Bloque 2: AdMob (1 minuto)
             currentProvider = 1
             providerFailed = false
-            kotlinx.coroutines.delay(120000L)
+            kotlinx.coroutines.delay(60000L)
 
-            // Bloque 3: Adsterra Banner Webview (2 minutos = 120s)
+            // Bloque 3: Unity Ads (1 minuto)
             currentProvider = 2
             providerFailed = false
-            kotlinx.coroutines.delay(120000L)
+            kotlinx.coroutines.delay(60000L)
 
-            // Bloque 4: House Ads propios (1 minuto = 60s)
+            // Bloque 4: House Ads propios (1 minuto)
             currentProvider = 3
             providerFailed = false
             kotlinx.coroutines.delay(60000L)
@@ -388,14 +416,14 @@ fun AdmobBanner(modifier: Modifier = Modifier) {
 
     if (currentProvider == 3 || providerFailed) {
         HouseBannerFallback(modifier = modifier)
-    } else if (currentProvider == 2) {
+    } else if (currentProvider == 0) {
         AdsterraBannerView(
             modifier = modifier,
             onBannerFailed = {
                 providerFailed = true
             }
         )
-    } else if (currentProvider == 1) {
+    } else if (currentProvider == 2) {
         UnityBannerView(
             modifier = modifier,
             onBannerFailed = {
@@ -726,3 +754,142 @@ fun HouseVideoAdPlayerOverlay(
     }
 }
 
+@Composable
+fun AdsterraInterstitialOverlay(
+    onDismiss: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var countdown by remember { mutableIntStateOf(5) }
+    var canSkip by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        while (countdown > 0) {
+            kotlinx.coroutines.delay(1000L)
+            countdown--
+        }
+        canSkip = true
+    }
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = { if (canSkip) onDismiss() },
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = canSkip,
+            dismissOnClickOutside = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0F172A))
+        ) {
+            // Contenido central de patrocinio Adsterra Smartlink
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFFF5722).copy(alpha = 0.2f),
+                    modifier = Modifier.size(90.dp),
+                    border = BorderStroke(2.dp, Color(0xFFFF5722))
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("🎁", fontSize = 42.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = "OFERTA PATROCINADA",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFFFF7043)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Descubrí promociones exclusivas y apps destacadas de nuestros patrocinadores para apoyar la app.",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                androidx.compose.material3.Button(
+                    onClick = {
+                        try {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse(AdManager.ADSTERRA_SMARTLINK_URL)
+                            ).apply {
+                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                        onDismiss()
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF5722)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                ) {
+                    Text(
+                        text = "🚀 VER OFERTA Y CONTINUAR",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // Barra superior con botón para omitir tras 5 segundos
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 40.dp, start = 16.dp, end = 16.dp)
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color.Black.copy(alpha = 0.65f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "PUBLICIDAD PATROCINADA",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFAB91),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+
+                Surface(
+                    color = if (canSkip) Color(0xFFE53935) else Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.clickable {
+                        if (canSkip) onDismiss()
+                    }
+                ) {
+                    Text(
+                        text = if (canSkip) "✕ Continuar" else "Esperar ${countdown}s",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    )
+                }
+            }
+        }
+    }
+}

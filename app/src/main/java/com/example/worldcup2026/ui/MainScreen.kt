@@ -463,6 +463,12 @@ fun MainScreen(
                                      )
                                  }
 
+                                 if (AdManager.showAdsterraInterstitialDialog.value) {
+                                     AdsterraInterstitialOverlay(
+                                         onDismiss = { AdManager.dismissAdsterraInterstitial() }
+                                     )
+                                 }
+
                                 if (pendingReward != null) {
                                     val reward = pendingReward!!
                                     
