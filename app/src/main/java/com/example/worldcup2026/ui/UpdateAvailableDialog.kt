@@ -22,51 +22,82 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-fun openDownloadUrlInChromeOrFallback(context: Context, urlStr: String) {
+fun downloadAndInstallApk(context: Context, urlStr: String) {
     val cleanUrl = if (urlStr.contains("?")) "$urlStr&t=${System.currentTimeMillis()}" else "$urlStr?t=${System.currentTimeMillis()}"
     val uri = Uri.parse(cleanUrl)
-    
-    // 1. Intentar abrir con navegador externo genérico (evita caché interna y abre diálogo de descarga)
-    val genericIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    
-    try {
-        context.startActivity(genericIntent)
-        Toast.makeText(context, "🌐 Abriendo enlace de descarga...", Toast.LENGTH_SHORT).show()
-        return
-    } catch (e: Exception) {
-        // Fallback si falla el intent genérico
-    }
 
-    // 2. Si falló, intentar con Chrome específico si está instalado
     try {
-        val chromeIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-            setPackage("com.android.chrome")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val fileName = "ArenaProde_update.apk"
+        val destinationFile = java.io.File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+        if (destinationFile.exists()) {
+            destinationFile.delete()
         }
-        context.startActivity(chromeIntent)
-        return
-    } catch (e: Exception) {
-        // Chrome no disponible
-    }
 
-    // 3. Fallback usando DownloadManager nativo
-    try {
         val request = DownloadManager.Request(uri).apply {
-            setTitle("Arena Prode APK")
-            setDescription("Descargando última versión...")
+            setTitle("Arena Prode - Actualización")
+            setDescription("Descargando nueva versión...")
             setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "ArenaProde_${System.currentTimeMillis()}.apk")
+            setDestinationUri(Uri.fromFile(destinationFile))
             setAllowedOverMetered(true)
             setAllowedOverRoaming(true)
         }
+
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        downloadManager.enqueue(request)
-        Toast.makeText(context, "📥 Descargando en la barra de notificaciones...", Toast.LENGTH_LONG).show()
-    } catch (ex: Exception) {
-        Toast.makeText(context, "Error al iniciar la descarga: ${ex.message}", Toast.LENGTH_SHORT).show()
+        val downloadId = downloadManager.enqueue(request)
+        Toast.makeText(context, "📥 Descargando actualización...", Toast.LENGTH_SHORT).show()
+
+        // Receptor para instalar inmediatamente al completarse
+        val onComplete = object : android.content.BroadcastReceiver() {
+            override fun onReceive(ctxt: Context, intent: Intent) {
+                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                if (id == downloadId) {
+                    try {
+                        ctxt.unregisterReceiver(this)
+                    } catch (e: Exception) {}
+
+                    try {
+                        if (destinationFile.exists()) {
+                            val apkUri = androidx.core.content.FileProvider.getUriForFile(
+                                ctxt,
+                                "${ctxt.packageName}.fileprovider",
+                                destinationFile
+                            )
+                            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            ctxt.startActivity(installIntent)
+                        }
+                    } catch (ex: Exception) {
+                        Toast.makeText(ctxt, "Error al abrir instalador: ${ex.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
+        val filter = android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
+        } else {
+            context.registerReceiver(onComplete, filter)
+        }
+
+    } catch (e: Exception) {
+        // Fallback al navegador si DownloadManager falla
+        try {
+            val browserIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(browserIntent)
+        } catch (ex: Exception) {
+            Toast.makeText(context, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
+        }
     }
+}
+
+fun openDownloadUrlInChromeOrFallback(context: Context, urlStr: String) {
+    downloadAndInstallApk(context, urlStr)
 }
 
 @Composable
