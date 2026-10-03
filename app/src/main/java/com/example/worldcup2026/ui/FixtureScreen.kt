@@ -1091,11 +1091,20 @@ fun MatchCard(
                 )
             }
  
-            if (isLive) {
+            val hasLiveEvents = remember(match.events, match.scorers) {
+                match.events.any { 
+                    !it.contains("tanda de penales", ignoreCase = true) && 
+                    !it.contains("[Penales]", ignoreCase = true) &&
+                    !it.contains("upcoming", ignoreCase = true) &&
+                    !it.contains("notification", ignoreCase = true)
+                } || match.scorers.isNotEmpty()
+            }
+
+            if (isLive && hasLiveEvents) {
                 // Durante el partido: línea de tiempo con goles, tarjetas y cambios
                 Spacer(modifier = Modifier.height(12.dp))
                 MatchTimelineView(match = match)
-            } else if (match.scorers.isNotEmpty()) {
+            } else if (!isLive && match.scorers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     modifier = Modifier

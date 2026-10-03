@@ -998,7 +998,10 @@ fun MatchTimelineView(match: Match) {
         val list = mutableListOf<ParsedEvent>()
         if (match.events.isNotEmpty()) {
             val filtered = match.events.filter { 
-                !it.contains("tanda de penales", ignoreCase = true) && !it.contains("[Penales]", ignoreCase = true) 
+                !it.contains("tanda de penales", ignoreCase = true) && 
+                !it.contains("[Penales]", ignoreCase = true) &&
+                !it.contains("upcoming", ignoreCase = true) &&
+                !it.contains("notification", ignoreCase = true)
             }
             filtered.forEach { ev ->
                 list.add(parseEventString(ev, match.homeTeam.name))
