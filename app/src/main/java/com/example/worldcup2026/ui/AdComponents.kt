@@ -1016,19 +1016,56 @@ fun MatchTimelineView(match: Match) {
         list
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE) }
+    var isNewestFirst by remember { mutableStateOf(prefs.getBoolean("timeline_newest_first", true)) }
+
+    val displayEvents = remember(eventsList, isNewestFirst) {
+        if (isNewestFirst) eventsList.reversed() else eventsList
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        Text(
-            text = "DETALLE DEL PARTIDO",
-            fontWeight = FontWeight.Black,
-            color = Color.White.copy(alpha = 0.5f),
-            fontSize = 10.sp,
-            letterSpacing = 0.5.sp,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "DETALLE DEL PARTIDO",
+                fontWeight = FontWeight.Black,
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 10.sp,
+                letterSpacing = 0.5.sp
+            )
+
+            Surface(
+                color = Color.White.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.clickable {
+                    val next = !isNewestFirst
+                    isNewestFirst = next
+                    prefs.edit().putBoolean("timeline_newest_first", next).apply()
+                }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = if (isNewestFirst) "⇅ Reciente primero" else "⇅ Cronológico (1'-90')",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700)
+                    )
+                }
+            }
+        }
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -1039,7 +1076,20 @@ fun MatchTimelineView(match: Match) {
                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (eventsList.isEmpty()) {
+                if (isNewestFirst && displayEvents.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFFD700).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "⏱️", fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+
+                if (displayEvents.isEmpty()) {
                     Text(
                         "Sin incidencias registradas para este encuentro.",
                         style = MaterialTheme.typography.bodySmall,
@@ -1047,24 +1097,25 @@ fun MatchTimelineView(match: Match) {
                         modifier = Modifier.padding(vertical = 12.dp)
                     )
                 } else {
-                    eventsList.forEach { event ->
+                    displayEvents.forEach { event ->
                         TimelineEventRow(event = event)
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(8.dp))
-                // Bottom Stopwatch Icon
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.08f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "⏱️",
-                        fontSize = 13.sp
-                    )
+                if (!isNewestFirst && displayEvents.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "⏱️",
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             }
         }
