@@ -152,7 +152,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             val homeShots = baseMatch.homeShots ?: saved.homeShots
             val awayShots = baseMatch.awayShots ?: saved.awayShots
             val scorers = if (baseMatch.scorers.isNotEmpty()) baseMatch.scorers else (if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"))
-            val events = if (baseMatch.events.isNotEmpty()) baseMatch.events else (if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|"))
+            val events = (if (baseMatch.events.isNotEmpty()) baseMatch.events else (if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|")))
+                .filter { !it.contains("upcoming", ignoreCase = true) && !it.contains("notification", ignoreCase = true) }
             val vipStats = baseMatch.vipStats ?: saved.vipStats
             val clock = baseMatch.clock ?: saved.clock
 
@@ -374,6 +375,7 @@ class WorldCupRepository(private val matchDao: MatchDao) {
 
                 val scorersList = liveMatch.scorers.orEmpty()
                 val eventsList = liveMatch.events.orEmpty()
+                    .filter { !it.contains("upcoming", ignoreCase = true) && !it.contains("notification", ignoreCase = true) }
                 val scorersStr = if (scorersList.isEmpty()) null else scorersList.joinToString("|")
                 val eventsStr = if (eventsList.isEmpty()) null else eventsList.joinToString("|")
 
