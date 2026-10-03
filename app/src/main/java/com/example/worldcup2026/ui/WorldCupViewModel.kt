@@ -917,8 +917,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
     
-    private var lastCelebratedMatchKey: String? = null
-    private var lastCelebratedTimestamp: Long = 0L
+    private val celebratedGoalKeys = mutableSetOf<String>()
 
     fun triggerCelebration(matchId: Int, fallbackMatch: Match? = null) {
         viewModelScope.launch {
@@ -962,16 +961,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
 
                 val h = match.homeScore ?: 0
                 val a = match.awayScore ?: 0
-                val key = "${match.id}_${h}_${a}_${match.status}"
-                val now = System.currentTimeMillis()
+                val key = "${match.id}_${h}_${a}"
 
-                // Evitar doble festejo si ya hay un festejo mostrándose o si fue celebrado dentro de los últimos 30 segundos
-                if (_celebrationMatch.value != null || (lastCelebratedMatchKey == key && (now - lastCelebratedTimestamp) < 30000L)) {
+                // Evitar doble festejo si ya hay un festejo mostrándose o si este gol exacto ya fue celebrado
+                if (_celebrationMatch.value != null || celebratedGoalKeys.contains(key)) {
                     return@launch
                 }
 
-                lastCelebratedMatchKey = key
-                lastCelebratedTimestamp = now
+                celebratedGoalKeys.add(key)
                 _celebrationMatch.value = match
             }
         }
