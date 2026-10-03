@@ -3,6 +3,7 @@ package com.example.worldcup2026.ui
 import com.example.worldcup2026.data.model.Match
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
