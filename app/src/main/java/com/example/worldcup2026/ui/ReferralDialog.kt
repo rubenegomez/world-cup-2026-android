@@ -39,7 +39,7 @@ fun ReferralDialog(
     val clipboardManager = LocalClipboardManager.current
 
     val referralCode = userId.ifEmpty { "prode" }
-    val referralUrl = "https://ellocodelpedal.duckdns.org/download/ArenaProde?ref=$referralCode"
+    val referralUrl = "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk?ref=$referralCode"
     val invitationText = "⚽ ¡Hola! Te invito a jugar a Arena Prode y Torneos conmigo.\nDescargá la app directamente desde mi enlace para recibir +12 Horas Sin Anuncios:\n👉 $referralUrl"
 
     Dialog(onDismissRequest = onDismiss) {
