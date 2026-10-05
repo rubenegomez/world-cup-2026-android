@@ -35,8 +35,10 @@ fun DailyMatchesScreen(
     var filterLiveOnly by remember { mutableStateOf(false) }
     val favTournaments by viewModel.favoriteTournamentIds
     val favTeams by viewModel.favoriteTeamNames
-    var selectedTournamentIds by remember { 
-        mutableStateOf<Set<Int>>(setOf(0)) 
+    var selectedTournamentIds by remember(favTournaments) { 
+        mutableStateOf<Set<Int>>(
+            if (favTournaments.isNotEmpty()) setOf(favTournaments.first()) else setOf(0)
+        ) 
     }
 
     val allTournamentsList = remember {
@@ -50,14 +52,11 @@ fun DailyMatchesScreen(
                 if (filterLiveOnly) true else (match.date?.startsWith(dateStr) == true)
             }
             .filter { match ->
-                if (filterLiveOnly) true
-                else {
-                    val mId = match.tournament_id ?: 1
-                    if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) {
-                        true
-                    } else {
-                        selectedTournamentIds.contains(mId)
-                    }
+                val mId = match.tournament_id ?: 1
+                if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) {
+                    true
+                } else {
+                    selectedTournamentIds.contains(mId)
                 }
             }
             .filter { match ->
@@ -140,18 +139,10 @@ fun DailyMatchesScreen(
                         selected = isSelected,
                         onClick = {
                             com.example.worldcup2026.data.util.SoundManager.playTic()
-                            if (tId == 0) {
-                                selectedTournamentIds = setOf(0)
+                            selectedTournamentIds = if (tId == 0 || selectedTournamentIds == setOf(tId)) {
+                                setOf(0)
                             } else {
-                                val newSet = selectedTournamentIds.toMutableSet()
-                                newSet.remove(0)
-                                if (newSet.contains(tId)) {
-                                    newSet.remove(tId)
-                                    if (newSet.isEmpty()) newSet.add(0)
-                                } else {
-                                    newSet.add(tId)
-                                }
-                                selectedTournamentIds = newSet
+                                setOf(tId)
                             }
                         },
                         label = { 
@@ -187,15 +178,11 @@ fun DailyMatchesScreen(
                         selected = isSelected,
                         onClick = {
                             com.example.worldcup2026.data.util.SoundManager.playTic()
-                            val newSet = selectedTournamentIds.toMutableSet()
-                            newSet.remove(0)
-                            if (newSet.contains(tId)) {
-                                newSet.remove(tId)
-                                if (newSet.isEmpty()) newSet.add(0)
+                            selectedTournamentIds = if (selectedTournamentIds == setOf(tId)) {
+                                setOf(0)
                             } else {
-                                newSet.add(tId)
+                                setOf(tId)
                             }
-                            selectedTournamentIds = newSet
                         },
                         label = { 
                             Text(
