@@ -25,14 +25,45 @@ object MatchReminderScheduler {
                 val matchDate = sdf.parse(match.date) ?: return@forEach
                 val matchTimeMs = matchDate.time
 
-                // 1. Alarma de recordatorio (30 minutos antes)
-                val reminderTimeMs = matchTimeMs - (30 * 60 * 1000)
-                if (reminderTimeMs > currentTime) {
+                // 1. Alarma de recordatorio de Prode (35 minutos antes)
+                val reminderProdeTimeMs = matchTimeMs - (35 * 60 * 1000)
+                if (reminderProdeTimeMs > currentTime) {
                     val intent = Intent(context, MatchReminderReceiver::class.java).apply {
-                        action = "worldcup.alarm.REMINDER_${match.id}"
+                        action = "worldcup.alarm.REMINDER_PRODE_${match.id}"
                         putExtra("match_id", match.id)
                         putExtra("home_team", match.homeTeam?.name)
                         putExtra("away_team", match.awayTeam?.name)
+                        putExtra("reminder_type", "prode_35m")
+                        putExtra("is_reminder", true)
+                        putExtra("match_time", matchTimeMs)
+                    }
+                    val pendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        match.id * 10 + 3,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+
+                    try {
+                        alarmManager.setExactAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            reminderProdeTimeMs,
+                            pendingIntent
+                        )
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
+
+                // 2. Alarma de aviso de inicio de partido (30 minutos antes)
+                val reminderMatchTimeMs = matchTimeMs - (30 * 60 * 1000)
+                if (reminderMatchTimeMs > currentTime) {
+                    val intent = Intent(context, MatchReminderReceiver::class.java).apply {
+                        action = "worldcup.alarm.REMINDER_MATCH_${match.id}"
+                        putExtra("match_id", match.id)
+                        putExtra("home_team", match.homeTeam?.name)
+                        putExtra("away_team", match.awayTeam?.name)
+                        putExtra("reminder_type", "match_30m")
                         putExtra("is_reminder", true)
                         putExtra("match_time", matchTimeMs)
                     }
@@ -46,7 +77,7 @@ object MatchReminderScheduler {
                     try {
                         alarmManager.setExactAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
-                            reminderTimeMs,
+                            reminderMatchTimeMs,
                             pendingIntent
                         )
                     } catch (e: Throwable) {
@@ -54,13 +85,14 @@ object MatchReminderScheduler {
                     }
                 }
 
-                // 2. Alarma de comienzo (Exactamente a la hora de inicio)
+                // 3. Alarma de comienzo (Exactamente a la hora de inicio)
                 if (matchTimeMs > currentTime) {
                     val intent = Intent(context, MatchReminderReceiver::class.java).apply {
                         action = "worldcup.alarm.START_${match.id}"
                         putExtra("match_id", match.id)
                         putExtra("home_team", match.homeTeam?.name)
                         putExtra("away_team", match.awayTeam?.name)
+                        putExtra("reminder_type", "start")
                         putExtra("is_reminder", false)
                         putExtra("match_time", matchTimeMs)
                     }

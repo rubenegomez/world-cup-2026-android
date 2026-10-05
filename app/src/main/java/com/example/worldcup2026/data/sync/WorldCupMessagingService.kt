@@ -60,29 +60,41 @@ class WorldCupMessagingService : FirebaseMessagingService() {
                 return
             }
 
-            if (eventType == "upcoming_30m" && matchId != null) {
-                // Check local Prode
+            if (eventType == "upcoming_prode_35m" && matchId != null) {
+                // Notificación 35 minutos antes: solo para quien no cargó su pronóstico (si ya lo hizo, se anula)
                 val mId = matchId.toIntOrNull() ?: return
                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                     val db = com.example.worldcup2026.data.local.WorldCupDatabase.getDatabase(applicationContext)
                     val match = db.matchDao().getMatchById(mId)
                     val hasPredicted = match != null && (match.predictedHomeScore != null || !match.predictedWinner.isNullOrBlank())
                     
-                    val title: String
-                    val body: String
-                    if (hasPredicted && match != null) {
-                        title = "⚽ ¡En 30 minutos empieza!"
-                        val predStr = if (match.predictedHomeScore != null && match.predictedAwayScore != null) {
-                            " Tu pronóstico: ${match.predictedHomeScore} - ${match.predictedAwayScore}."
-                        } else if (!match.predictedWinner.isNullOrBlank()) {
-                            " Tu pronóstico: ${match.predictedWinner}."
-                        } else ""
-                        body = "El partido $homeTeam vs $awayTeam empieza en 30 minutos.$predStr"
-                    } else {
-                        title = "📝 Recordatorio de Prode"
-                        body = "Recuerda hacer tu Prode para $homeTeam vs $awayTeam que empieza en 30 minutos."
+                    if (hasPredicted) {
+                        // Si ya realizó el pronóstico, la notificación se anula por completo
+                        return@launch
                     }
-                    sendNotification(title, body, matchId)
+                    
+                    val title = "⚠️ ¡COMPLETÁ TU PRODE! ⚠️"
+                    val body = "En 35 minutos arranca $homeTeam vs $awayTeam y aún no cargaste tu pronóstico."
+                    sendNotification(title, body, matchId, "prode_35m")
+                }
+                return
+            }
+
+            if (eventType == "upcoming_30m" && matchId != null) {
+                // Notificación 30 minutos antes: aviso general de que faltan 30 minutos para el inicio del partido
+                val mId = matchId.toIntOrNull() ?: return
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    val db = com.example.worldcup2026.data.local.WorldCupDatabase.getDatabase(applicationContext)
+                    val match = db.matchDao().getMatchById(mId)
+                    val title = "⏱️ ¡Faltan 30 minutos! ⏱️"
+                    val predStr = if (match != null && match.predictedHomeScore != null && match.predictedAwayScore != null) {
+                        " Tu pronóstico: ${match.predictedHomeScore} - ${match.predictedAwayScore}."
+                    } else if (match != null && !match.predictedWinner.isNullOrBlank()) {
+                        " Tu pronóstico: ${match.predictedWinner}."
+                    } else ""
+                    val body = "Faltan 30 minutos para el inicio del partido: $homeTeam vs $awayTeam.$predStr"
+                    
+                    sendNotification(title, body, matchId, "match_30m")
                 }
                 return // Do not process standard live events
             }
@@ -168,6 +180,7 @@ class WorldCupMessagingService : FirebaseMessagingService() {
 
         val soundRes = when (eventType) {
             "goal" -> R.raw.gooolll
+            "prode_35m" -> R.raw.world_cup_whistle
             else -> R.raw.silbato
         }
 
@@ -189,8 +202,12 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        // Unificar ID por partido para que se actualice la notificación del mismo partido en vez de apilarse
-        val notifId = matchId?.toIntOrNull() ?: (matchId?.hashCode() ?: 10001)
+        val baseId = matchId?.toIntOrNull() ?: (matchId?.hashCode() ?: 10001)
+        val notifId = when (eventType) {
+            "prode_35m" -> baseId * 10 + 3
+            "match_30m" -> baseId * 10 + 1
+            else -> baseId
+        }
         notificationManager.notify(notifId, notificationBuilder.build())
     }
 
