@@ -35,6 +35,7 @@ import com.example.worldcup2026.data.api.AuthManager
 import com.example.worldcup2026.data.local.LeagueEntity
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.util.ShareCardGenerator
+import com.example.worldcup2026.data.util.TournamentConfig.formatLeagueDate
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -649,13 +650,21 @@ fun MisLigasTab(
             items(leagues) { league ->
                 val myPts = leaguePointsMap[league.id] ?: 0
                 val tName = if (league.mode == "MULTI_TOURNAMENT") "🌐 Multitorneo" else if (league.mode == "DAY_MATCHES") "📅 Partidos del Día" else (tournamentOptions.find { it.first == league.tournamentId }?.second ?: "🏆 Liga General")
+                val formattedStart = formatLeagueDate(league.startDate)
+                val formattedEnd = formatLeagueDate(league.endDate)
                 val modeDesc = when (league.mode) {
-                    "SINGLE_MATCHDAY" -> "📅 Fecha ${league.startMatchday ?: 1}"
-                    "RANGE_MATCHDAYS" -> "📅 Fechas ${league.startMatchday ?: 1} a ${league.endMatchday ?: 5}"
-                    "MULTI_TOURNAMENT" -> "🌐 Multitorneo Simultáneo"
-                    "DAY_MATCHES" -> "📅 Partidos de la Jornada"
-                    else -> "📅 Torneo Completo"
+                    "SINGLE_MATCHDAY" -> "Fecha ${league.startMatchday ?: 1}"
+                    "RANGE_MATCHDAYS" -> "Fechas ${league.startMatchday ?: 1} a ${league.endMatchday ?: 5}"
+                    "MULTI_TOURNAMENT" -> "🌐 Multitorneo"
+                    "DAY_MATCHES" -> if (formattedStart.isNotBlank()) "Día: $formattedStart" else "Partidos del Día"
+                    else -> "Torneo Completo"
                 }
+                val matchesBadge = if (league.matchesCount > 0) "• ⚽ ${league.matchesCount} Partidos" else ""
+                val dateBadge = if (formattedStart.isNotBlank()) {
+                    if (formattedStart == formattedEnd || formattedEnd.isBlank()) "📅 $formattedStart"
+                    else "📅 $formattedStart al $formattedEnd"
+                } else ""
+
                 val isFinished = league.status?.uppercase() == "FINISHED"
 
                 Card(
@@ -686,7 +695,13 @@ fun MisLigasTab(
                                 }
                             }
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text("$tName • $modeDesc", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("$tName • $modeDesc $matchesBadge", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            
+                            if (dateBadge.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(dateBadge, color = Color(0xFFFFD700).copy(alpha = 0.9f), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            }
+
                             Spacer(modifier = Modifier.height(2.dp))
                             Text("Código: ${league.code}", color = Color.Gray, fontSize = 13.sp)
                             

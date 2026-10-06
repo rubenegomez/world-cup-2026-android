@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.worldcup2026.data.api.StandingDto
 import com.example.worldcup2026.data.local.LeagueEntity
+import com.example.worldcup2026.data.util.TournamentConfig.formatLeagueDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,11 +183,14 @@ fun LeagueDetailScreen(
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
         )
 
+        val formattedStart = formatLeagueDate(activeLeague.startDate)
+        val formattedEnd = formatLeagueDate(activeLeague.endDate)
+
         val modeDesc = when (activeLeague.mode) {
             "SINGLE_MATCHDAY" -> "Fecha ${activeLeague.startMatchday ?: 1}"
             "RANGE_MATCHDAYS" -> "Fechas ${activeLeague.startMatchday ?: 1} a ${activeLeague.endMatchday ?: 5}"
             "MULTI_TOURNAMENT" -> "Multitorneo"
-            "DAY_MATCHES" -> "Partidos del Día"
+            "DAY_MATCHES" -> if (!formattedStart.isNullOrBlank()) "Día: $formattedStart" else "Partidos del Día"
             else -> "Torneo Completo"
         }
         val isFinished = activeLeague.status?.uppercase() == "FINISHED"
@@ -206,6 +210,21 @@ fun LeagueDetailScreen(
                         Text("ℹ️ Configuración y Puntuación de la Liga", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         Spacer(modifier = Modifier.height(3.dp))
                         Text("• Modalidad: $modeDesc", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+                        if (activeLeague.matchesCount > 0) {
+                            Text(
+                                "• ⚽ Comprende: ${activeLeague.matchesCount} ${if (activeLeague.matchesCount == 1) "partido" else "partidos"}${if (activeLeague.maxPoints > 0) " (Máx: ${activeLeague.maxPoints} pts)" else ""}",
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 12.sp
+                            )
+                        }
+                        if (!formattedStart.isNullOrBlank()) {
+                            val datesText = if (!formattedEnd.isNullOrBlank() && formattedEnd != formattedStart) {
+                                "del $formattedStart al $formattedEnd"
+                            } else {
+                                formattedStart
+                            }
+                            Text("• 📅 Cronograma: $datesText", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp)
+                        }
                         if (!activeLeague.customPrize.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(2.dp))
                             Text("• 🎁 Premio Configurado: ${activeLeague.customPrize}", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold, fontSize = 12.sp)
