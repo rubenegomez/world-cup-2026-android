@@ -56,6 +56,14 @@ fun LeagueDetailScreen(
     val currentLeagues by viewModel.leagues.collectAsState(initial = emptyList())
     val activeLeague = currentLeagues.find { it.id == league.id } ?: league
     val currentUser by viewModel.currentUser.collectAsState()
+    var achievementToShare by remember { mutableStateOf<AchievementData?>(null) }
+
+    if (achievementToShare != null) {
+        ShareAchievementModal(
+            achievement = achievementToShare!!,
+            onDismiss = { achievementToShare = null }
+        )
+    }
 
     if (selectedStandingForBreakdown != null) {
         val standing = selectedStandingForBreakdown!!
@@ -145,6 +153,30 @@ fun LeagueDetailScreen(
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                }
+            },
+            actions = {
+                Button(
+                    onClick = {
+                        val myStanding = standings.find { it.id == currentUser?.id || it.name.trim().equals(currentUser?.fullName?.trim(), ignoreCase = true) }
+                        val myPos = (standings.indexOf(myStanding).takeIf { it >= 0 } ?: 0) + 1
+                        achievementToShare = AchievementData(
+                            userName = currentUser?.fullName ?: "Jugador",
+                            userAvatarUrl = currentUser?.avatarUrl ?: "",
+                            type = if (myPos == 1) AchievementType.TOURNAMENT_CHAMPION else AchievementType.DAILY_TOP,
+                            title = "¡MI PUESTO EN LA LIGA ${activeLeague.name.uppercase()}!",
+                            subtitle = "Liga Privada: ${activeLeague.name}",
+                            points = myStanding?.points ?: 0,
+                            position = myPos,
+                            referralCode = activeLeague.code
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Text("📣 Presumir", fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -270,8 +302,34 @@ fun LeagueDetailScreen(
                 }
             }
 
+            if (standings.isNotEmpty()) {
+                item {
+                    val myStanding = standings.find { it.id == currentUser?.id || it.name.trim().equals(currentUser?.fullName?.trim(), ignoreCase = true) }
+                    val myPos = (standings.indexOf(myStanding).takeIf { it >= 0 } ?: 0) + 1
+                    Button(
+                        onClick = {
+                            achievementToShare = AchievementData(
+                                userName = currentUser?.fullName ?: "Jugador",
+                                userAvatarUrl = currentUser?.avatarUrl ?: "",
+                                type = if (myPos == 1) AchievementType.TOURNAMENT_CHAMPION else AchievementType.DAILY_TOP,
+                                title = "¡MI PUESTO EN LA LIGA ${activeLeague.name.uppercase()}!",
+                                subtitle = "Liga Privada: ${activeLeague.name}",
+                                points = myStanding?.points ?: 0,
+                                position = myPos,
+                                referralCode = activeLeague.code
+                            )
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📣 Presumir mi Posición en esta Liga", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+
             item {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

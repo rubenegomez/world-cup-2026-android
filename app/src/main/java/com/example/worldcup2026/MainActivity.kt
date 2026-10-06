@@ -89,6 +89,10 @@ class MainActivity : ComponentActivity() {
         val navMatchId = intent?.getStringExtra("nav_match_id")
         val dataUri = intent?.data
         val joinCodeFromUri = dataUri?.getQueryParameter("code") ?: dataUri?.lastPathSegment?.takeIf { it != "join" }
+        val refCodeFromUri = dataUri?.getQueryParameter("ref")
+        if (!refCodeFromUri.isNullOrBlank()) {
+            getSharedPreferences("world_cup_prefs", MODE_PRIVATE).edit().putString("pending_referral_code", refCodeFromUri).apply()
+        }
         
         setContent {
             WorldCup2026Theme {
@@ -105,6 +109,11 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         checkUpdateIntent(intent)
+        intent.data?.getQueryParameter("ref")?.let { refCode ->
+            if (refCode.isNotBlank()) {
+                getSharedPreferences("world_cup_prefs", MODE_PRIVATE).edit().putString("pending_referral_code", refCode).apply()
+            }
+        }
     }
 
     private fun checkUpdateIntent(intent: android.content.Intent?) {

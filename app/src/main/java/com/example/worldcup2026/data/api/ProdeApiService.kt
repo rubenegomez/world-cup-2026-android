@@ -41,7 +41,8 @@ data class CreateLeagueRequest(
     val start_date: String? = null,
     val end_date: String? = null,
     val custom_prize: String? = null,
-    val tournament_configs: String? = null
+    val tournament_configs: String? = null,
+    val include_postponed: Boolean? = true
 )
 data class JoinLeagueRequest(val code: String)
 
@@ -58,6 +59,7 @@ data class LeagueDto(
     val end_date: String? = null,
     val custom_prize: String? = null,
     val tournament_configs: String? = null,
+    val include_postponed: Boolean? = true,
     val status: String? = "ACTIVE",
     val matches_count: Int? = 0,
     val max_points: Int? = 0
@@ -114,8 +116,18 @@ data class UserMedalsDto(
     val bronzeMedals: Int = 0,
     val totalLeaguesPlayed: Int = 0,
     val globalRank: Int = 1,
-    val totalPoints: Int = 0
+    val totalPoints: Int = 0,
+    val availablePoints: Int = 0,
+    val claimedPoints: Int = 0
 )
+
+data class ClaimPointsRequest(val pointsToClaim: Int)
+data class ClaimPointsResponse(val success: Boolean, val pointsClaimed: Int, val remainingPoints: Int)
+
+data class WelcomeBonusResponse(val success: Boolean, val message: String, val grantedHours: Int)
+
+data class ApplyReferralRequest(val referralCode: String)
+data class ApplyReferralResponse(val success: Boolean, val message: String, val userBonusHours: Int, val referrerBonusHours: Int)
 
 // --- API Service ---
 
@@ -179,6 +191,23 @@ interface ProdeApiService {
     suspend fun getUserStats(
         @Header("Authorization") token: String
     ): UserMedalsDto
+
+    @POST("api/prode/users/me/claim-points")
+    suspend fun claimPoints(
+        @Header("Authorization") token: String,
+        @Body req: ClaimPointsRequest
+    ): ClaimPointsResponse
+
+    @POST("api/prode/users/me/claim-welcome-bonus")
+    suspend fun claimWelcomeBonus(
+        @Header("Authorization") token: String
+    ): WelcomeBonusResponse
+
+    @POST("api/prode/users/me/apply-referral")
+    suspend fun applyReferral(
+        @Header("Authorization") token: String,
+        @Body req: ApplyReferralRequest
+    ): ApplyReferralResponse
 
     @GET("api/prode/users/me/favorites")
     suspend fun getUserFavorites(

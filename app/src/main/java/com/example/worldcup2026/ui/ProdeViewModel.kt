@@ -37,6 +37,13 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
     private val _isRankingLoading = MutableStateFlow(false)
     val isRankingLoading = _isRankingLoading.asStateFlow()
 
+    private val _bonusNotification = MutableStateFlow<String?>(null)
+    val bonusNotification = _bonusNotification.asStateFlow()
+
+    fun dismissBonusNotification() {
+        _bonusNotification.value = null
+    }
+
     init {
         loadMatches()
         checkExistingSession()
@@ -116,6 +123,38 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 // Sincronizar pronósticos locales existentes con el servidor al iniciar sesión si hubiera nuevos
                 syncAllLocalPredictions()
+
+                // Bono de bienvenida (24 horas sin anuncios, único por cuenta)
+                launch {
+                    val bonusRes = prodeRepository.claimWelcomeBonus()
+                    if (bonusRes != null && bonusRes.success && bonusRes.grantedHours > 0) {
+                        val prefs = getApplication<android.app.Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+                        val curAdFree = prefs.getLong("ad_free_until", System.currentTimeMillis())
+                        val baseTime = if (curAdFree > System.currentTimeMillis()) curAdFree else System.currentTimeMillis()
+                        val newUntil = baseTime + (bonusRes.grantedHours * 3600 * 1000L)
+                        prefs.edit().putLong("ad_free_until", newUntil).apply()
+                        _bonusNotification.value = "🎁 ¡Bono de Bienvenida! Se activaron ${bonusRes.grantedHours} horas sin anuncios en tu cuenta."
+                    }
+                }
+
+                // Referido pendiente desde deep-link / link de descarga
+                launch {
+                    val prefs = getApplication<android.app.Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+                    val pendingRef = prefs.getString("pending_referral_code", null)
+                    if (!pendingRef.isNullOrBlank()) {
+                        val refRes = prodeRepository.applyReferral(pendingRef)
+                        if (refRes != null && refRes.success) {
+                            prefs.edit().remove("pending_referral_code").apply()
+                            if (refRes.userBonusHours > 0) {
+                                val curAdFree = prefs.getLong("ad_free_until", System.currentTimeMillis())
+                                val baseTime = if (curAdFree > System.currentTimeMillis()) curAdFree else System.currentTimeMillis()
+                                val newUntil = baseTime + (refRes.userBonusHours * 3600 * 1000L)
+                                prefs.edit().putLong("ad_free_until", newUntil).apply()
+                                _bonusNotification.value = "🎉 ¡Código de referido aplicado! Recibiste +${refRes.userBonusHours} horas sin anuncios."
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -162,10 +201,11 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
         endDate: String? = null,
         customPrize: String? = null,
         tournamentConfigs: String? = null,
+        includePostponed: Boolean = true,
         onSuccess: ((com.example.worldcup2026.data.api.LeagueDto) -> Unit)? = null
     ) {
         viewModelScope.launch {
-            val dto = prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, startDate, endDate, customPrize, tournamentConfigs)
+            val dto = prodeRepository.createLeague(name, mode, tournamentId, startMatchday, endMatchday, startDate, endDate, customPrize, tournamentConfigs, includePostponed)
             if (dto != null) {
                 _leagueSummaryDialog.value = dto
                 onSuccess?.invoke(dto)
@@ -179,6 +219,41 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
             if (dto != null) {
                 _leagueSummaryDialog.value = dto
                 onSuccess?.invoke(dto)
+            }
+        }
+    }
+
+    fun claimPoints(points: Int, onSuccess: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            val res = prodeRepository.claimPoints(points)
+            if (res != null && res.success) {
+                loadGlobalRanking()
+                onSuccess?.invoke()
+            }
+        }
+    }
+
+    fun claimWelcomeBonus(onResult: ((Boolean, String, Int) -> Unit)? = null) {
+        viewModelScope.launch {
+            val res = prodeRepository.claimWelcomeBonus()
+            if (res != null) {
+                onResult?.invoke(res.success, res.message, res.grantedHours)
+            }
+        }
+    }
+
+    fun applyReferral(code: String, onResult: ((Boolean, String, Int) -> Unit)? = null) {
+        viewModelScope.launch {
+            val res = prodeRepository.applyReferral(code)
+            if (res != null) {
+                if (res.success && res.userBonusHours > 0) {
+                    val prefs = getApplication<android.app.Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+                    val curAdFree = prefs.getLong("ad_free_until", System.currentTimeMillis())
+                    val baseTime = if (curAdFree > System.currentTimeMillis()) curAdFree else System.currentTimeMillis()
+                    val newUntil = baseTime + (res.userBonusHours * 3600 * 1000L)
+                    prefs.edit().putLong("ad_free_until", newUntil).apply()
+                }
+                onResult?.invoke(res.success, res.message, res.userBonusHours)
             }
         }
     }

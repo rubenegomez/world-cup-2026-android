@@ -98,6 +98,8 @@ fun ProdeScreen(
                 ReferralDialog(
                     userId = currentUser!!.id,
                     userName = currentUser!!.fullName,
+                    viewModel = viewModel,
+                    worldCupViewModel = worldCupViewModel,
                     onDismiss = { showReferralDialog = false }
                 )
             }
@@ -110,6 +112,29 @@ fun ProdeScreen(
             }
             
             Column(modifier = Modifier.fillMaxSize()) {
+
+                // Notificación de Bonos de Bienvenida o Referidos
+                val bonusNotification by viewModel.bonusNotification.collectAsState()
+                if (!bonusNotification.isNullOrBlank()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                            .clickable { viewModel.dismissBonusNotification() },
+                        color = Color(0xFF00E676).copy(alpha = 0.25f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E676))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(bonusNotification!!, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text("✕", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        }
+                    }
+                }
                 
                 // Banner de Recompensas Pendientes
                 if (worldCupViewModel != null) {
@@ -154,7 +179,7 @@ fun ProdeScreen(
                 }
 
                 val totalUserPoints = userStats?.totalPoints ?: 0
-                val availablePointsToClaim = worldCupViewModel?.getAvailablePointsToClaim(totalUserPoints) ?: 0
+                val availablePoints = userStats?.availablePoints ?: 0
                 val adFreeUntilVal = worldCupViewModel?.adFreeUntil?.value ?: 0L
                 val remainingMs = adFreeUntilVal - System.currentTimeMillis()
 
@@ -211,7 +236,7 @@ fun ProdeScreen(
                                                 fontWeight = FontWeight.Bold
                                             )
                                             Text(
-                                                text = "• 🏆 $totalUserPoints Pts Históricos",
+                                                text = "• 🏆 $availablePoints Pts Disponibles ($totalUserPoints Totales)",
                                                 color = Color.White.copy(alpha = 0.8f),
                                                 fontSize = 11.sp
                                             )
@@ -223,6 +248,40 @@ fun ProdeScreen(
                                     colors = ButtonDefaults.textButtonColors(contentColor = Color.Red.copy(alpha = 0.8f))
                                 ) {
                                     Text("Salir", fontSize = 12.sp)
+                                }
+                            }
+
+                            if (availablePoints > 0) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.claimPoints(availablePoints) {
+                                                val addedMs = availablePoints * 22 * 60 * 1000L
+                                                worldCupViewModel?.addAdFreeTime(addedMs)
+                                            }
+                                        },
+                                    color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.Center,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val totalMins = availablePoints * 22
+                                        val h = totalMins / 60
+                                        val m = totalMins % 60
+                                        val durationStr = if (h > 0) "${h}h ${m}m" else "${m}m"
+                                        Text(
+                                            "🎁 Canjear $availablePoints Pts por +$durationStr Sin Publicidad",
+                                            color = Color(0xFFFFD700),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Black
+                                        )
+                                    }
                                 }
                             }
                             
@@ -249,10 +308,10 @@ fun ProdeScreen(
                                             userName = user.fullName,
                                             userAvatarUrl = user.avatarUrl,
                                             type = AchievementType.DAILY_TOP,
-                                            title = "¡PUESTO DE PODIO EN ARENA PRODE!",
+                                            title = "¡MI RANKING EN ARENA PRODE!",
                                             subtitle = "Ranking Global de la Comunidad",
                                             points = totalUserPoints,
-                                            position = 1,
+                                            position = userStats?.globalRank ?: 1,
                                             referralCode = user.id.ifEmpty { "prode" }
                                         )
                                     },
@@ -458,6 +517,7 @@ fun MisLigasTab(
     var selectedDayFilter by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
     var tournamentMatchdaysMap by remember { mutableStateOf<Map<Int, Pair<Int, Int>>>(emptyMap()) }
     var leaguePointsMap by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var includePostponedSwitch by remember { mutableStateOf(true) }
 
     val currentUser by viewModel.currentUser.collectAsState()
 
@@ -859,6 +919,44 @@ fun MisLigasTab(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // Switch para Partidos Postergados
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White.copy(alpha = 0.06f),
+                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (includePostponedSwitch) "⏳ Esperar partidos postergados" else "⚡ Cerrar fecha sin postergados",
+                                    color = if (includePostponedSwitch) Color(0xFFFFD700) else Color(0xFF64B5F6),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (includePostponedSwitch) "La liga espera a que se jueguen los partidos reprogramados." else "Los partidos suspendidos/postergados no computan puntos y la fecha cierra a tiempo.",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Switch(
+                                checked = includePostponedSwitch,
+                                onCheckedChange = { includePostponedSwitch = it },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color(0xFFFFD700),
+                                    checkedTrackColor = Color(0xFFFFD700).copy(alpha = 0.5f)
+                                )
+                            )
+                        }
+                    }
+
                     if (selectedMode == "SINGLE_MATCHDAY" || selectedMode == "RANGE_MATCHDAYS" || selectedMode == "FULL_TOURNAMENT") {
                         val maxForCurrent = worldCupViewModel?.getMaxMatchdayForTournament(selectedTournamentId ?: 5) ?: 20
                         Surface(
@@ -954,7 +1052,8 @@ fun MisLigasTab(
                             startDate = finalStartDate,
                             endDate = finalEndDate,
                             customPrize = customPrizeInput.ifBlank { null },
-                            tournamentConfigs = finalConfigs
+                            tournamentConfigs = finalConfigs,
+                            includePostponed = includePostponedSwitch
                         )
                         leagueNameInput = ""
                         customPrizeInput = ""

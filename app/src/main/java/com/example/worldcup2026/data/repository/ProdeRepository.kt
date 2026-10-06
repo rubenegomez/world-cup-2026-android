@@ -84,7 +84,8 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
         startDate: String? = null,
         endDate: String? = null,
         customPrize: String? = null,
-        tournamentConfigs: String? = null
+        tournamentConfigs: String? = null,
+        includePostponed: Boolean = true
     ): LeagueDto? {
         val token = authToken ?: return null
         return try {
@@ -99,7 +100,8 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
                     start_date = startDate,
                     end_date = endDate,
                     custom_prize = customPrize,
-                    tournament_configs = tournamentConfigs
+                    tournament_configs = tournamentConfigs,
+                    include_postponed = includePostponed
                 )
             )
             leagueDao.insertLeague(
@@ -246,6 +248,36 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
             api.updateUserFavorites(token, com.example.worldcup2026.data.api.UpdateFavoritesRequest(tournaments, teams))
         } catch (e: Exception) {
             Log.e("ProdeRepo", "Error updating user favorites", e)
+            null
+        }
+    }
+
+    suspend fun claimPoints(points: Int): com.example.worldcup2026.data.api.ClaimPointsResponse? {
+        val token = authToken ?: return null
+        return try {
+            api.claimPoints(token, com.example.worldcup2026.data.api.ClaimPointsRequest(points))
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error claiming points", e)
+            null
+        }
+    }
+
+    suspend fun claimWelcomeBonus(): com.example.worldcup2026.data.api.WelcomeBonusResponse? {
+        val token = authToken ?: return null
+        return try {
+            api.claimWelcomeBonus(token)
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error claiming welcome bonus", e)
+            null
+        }
+    }
+
+    suspend fun applyReferral(code: String): com.example.worldcup2026.data.api.ApplyReferralResponse? {
+        val token = authToken ?: return null
+        return try {
+            api.applyReferral(token, com.example.worldcup2026.data.api.ApplyReferralRequest(code))
+        } catch (e: Exception) {
+            Log.e("ProdeRepo", "Error applying referral", e)
             null
         }
     }

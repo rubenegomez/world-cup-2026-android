@@ -33,14 +33,18 @@ import androidx.compose.ui.window.Dialog
 fun ReferralDialog(
     userId: String,
     userName: String,
+    viewModel: ProdeViewModel? = null,
+    worldCupViewModel: WorldCupViewModel? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    var inputCode by remember { mutableStateOf("") }
+    var isSubmittingCode by remember { mutableStateOf(false) }
 
     val referralCode = userId.ifEmpty { "prode" }
     val referralUrl = "https://ellocodelpedal.duckdns.org/download/ArenaProde.apk?ref=$referralCode"
-    val invitationText = "⚽ ¡Hola! Te invito a jugar a Arena Prode y Torneos conmigo.\nDescargá la app directamente desde mi enlace para recibir +12 Horas Sin Anuncios:\n👉 $referralUrl"
+    val invitationText = "⚽ ¡Hola! Te invito a jugar a Arena Prode y Torneos conmigo.\nDescargá la app directamente desde mi enlace para recibir +6 Horas Sin Anuncios (¡y yo recibiré +12 Horas!):\n👉 $referralUrl"
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -65,7 +69,7 @@ fun ReferralDialog(
                         Text("🎁", fontSize = 24.sp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "REFERIR UN AMIGO",
+                            text = "REFERIR Y BONOS",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 color = Color(0xFFFFD700),
                                 fontWeight = FontWeight.Black
@@ -87,21 +91,32 @@ fun ReferralDialog(
                 ) {
                     Column(
                         modifier = Modifier.padding(14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.Start
                     ) {
                         Text(
-                            text = "⚡ ¡GANA +12 HORAS SIN PUBLICIDAD!",
+                            text = "⚡ BENEFICIOS SIN PUBLICIDAD:",
                             fontWeight = FontWeight.Black,
-                            fontSize = 13.sp,
-                            color = Color(0xFFFFC107),
-                            textAlign = TextAlign.Center
+                            fontSize = 12.sp,
+                            color = Color(0xFFFFC107)
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Por cada amigo que descargue la app e ingrese con tu enlace de referido, ¡ambos recibirán 12 horas automáticas sin anuncios!",
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.85f),
-                            textAlign = TextAlign.Center
+                            text = "• 🎁 +12 Horas para vos por cada amigo que descargue e inicie sesión con tu enlace.",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "• 🤝 +6 Horas para tu amigo al ingresar mediante tu invitación.",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "• 🌟 +24 Horas de Bono de Bienvenida único al iniciar sesión por primera vez.",
+                            fontSize = 11.sp,
+                            color = Color(0xFFFFD700),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -163,6 +178,58 @@ fun ReferralDialog(
                     // General
                     ReferralChannelButton("Más Apps", Color(0xFF2196F3)) {
                         shareInvitation(context, invitationText, null)
+                    }
+                }
+
+                if (viewModel != null) {
+                    Spacer(modifier = Modifier.height(18.dp))
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text("¿Un amigo te compartió un código?", fontSize = 11.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = inputCode,
+                            onValueChange = { inputCode = it },
+                            placeholder = { Text("Código de referido", fontSize = 11.sp, color = Color.Gray) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color(0xFFFFD700),
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                            )
+                        )
+                        Button(
+                            onClick = {
+                                if (inputCode.isNotBlank()) {
+                                    isSubmittingCode = true
+                                    viewModel.applyReferral(inputCode.trim()) { success, msg, bonusHours ->
+                                        isSubmittingCode = false
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                        if (success) {
+                                            if (bonusHours > 0) {
+                                                worldCupViewModel?.addAdFreeTime(bonusHours * 3600 * 1000L)
+                                            }
+                                            inputCode = ""
+                                            onDismiss()
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !isSubmittingCode && inputCode.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Canjear (+6h)", fontSize = 11.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
