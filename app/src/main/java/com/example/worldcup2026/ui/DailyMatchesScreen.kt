@@ -49,7 +49,7 @@ fun DailyMatchesScreen(
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
             .filter { match ->
-                if (filterLiveOnly) true else (match.date?.startsWith(dateStr) == true)
+                match.date?.startsWith(dateStr) == true
             }
             .filter { match ->
                 val mId = match.tournament_id ?: 1
@@ -61,17 +61,19 @@ fun DailyMatchesScreen(
             }
             .filter { match ->
                 val rawStatus = match.status.uppercase()
+                val isCancelledOrPostponed = rawStatus.contains("POSTP") || rawStatus.contains("SUSPEND") || rawStatus.contains("CANC")
                 val isLiveRaw = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
                 val isTimePassed = try {
                     val rawDate = match.date ?: ""
                     if (rawDate.length >= 16) {
                         val dt = if (rawDate.contains("T")) java.time.LocalDateTime.parse(rawDate.take(19))
                                  else java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                        dt.isBefore(java.time.LocalDateTime.now()) && rawStatus != "FINISHED" && !rawStatus.contains("POSTP") && !rawStatus.contains("SUSPEND")
+                        val now = java.time.LocalDateTime.now()
+                        dt.isBefore(now) && dt.plusMinutes(135).isAfter(now) && rawStatus != "FINISHED" && !isCancelledOrPostponed
                     } else false
                 } catch (e: Exception) { false }
                 
-                val isLive = isLiveRaw || isTimePassed || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED")
+                val isLive = !isCancelledOrPostponed && (isLiveRaw || isTimePassed || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED"))
                 if (filterLiveOnly) isLive else true
             }
             // Deduplicación inteligente por nombres de equipos: da prioridad al partido en vivo / jugado sobre el vacio
