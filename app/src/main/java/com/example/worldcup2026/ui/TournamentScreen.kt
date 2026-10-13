@@ -54,8 +54,7 @@ val seleccionFutbol = listOf(
     TournamentItem(12, "Finalísima", "Selección de Fútbol", active = false),
     TournamentItem(24, "Copa América", "Selección de Fútbol", active = false),
     TournamentItem(2, "Eliminatorias Sudamericanas", "Selección de Fútbol", active = false),
-    TournamentItem(14, "Amistosos FIFA", "Selección de Fútbol", active = true),
-    TournamentItem(30, "Juegos Olímpicos y ODESUR", "Selección de Fútbol", active = true)
+    TournamentItem(14, "Amistosos FIFA", "Selección de Fútbol", active = true)
 )
 
 // Categoría 2: Clubes CONMEBOL
@@ -89,8 +88,15 @@ val torneosAscenso = listOf(
     TournamentItem(19, "Amistosos AFA", "Torneos del Ascenso", active = false)
 )
 
-// Todos los 24 torneos canónicos combinados
-val allTournaments = seleccionFutbol + clubesConmebol + ligaProfesionalAfa + torneosAscenso
+// Categoría 5: Torneos Juveniles
+val torneosJuveniles = listOf(
+    TournamentItem(31, "Messi Cup", "Torneos Juveniles", active = true),
+    TournamentItem(30, "Juegos Olímpicos y ODESUR", "Torneos Juveniles", active = true),
+    TournamentItem(32, "Mundial Sub-20", "Torneos Juveniles", active = false)
+)
+
+// Todos los 27 torneos canónicos combinados
+val allTournaments = seleccionFutbol + clubesConmebol + ligaProfesionalAfa + torneosAscenso + torneosJuveniles
 
 @Composable
 fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, String) -> Unit) {
@@ -98,7 +104,7 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
     val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
     
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Selección", "CONMEBOL", "Liga AFA", "Ascenso")
+    val tabs = listOf("Selección", "CONMEBOL", "Liga AFA", "Ascenso", "Juveniles")
     
     // Estado de favoritos reactivo sincronizado con ViewModel
     val favoriteTournaments by viewModel.favoriteTournamentIds
@@ -123,7 +129,7 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
 
     val liveStatuses by viewModel.liveTournaments
     
-    // Detectar si hay vivos generales en cada una de las 4 pestañas
+    // Detectar si hay vivos generales en cada una de las pestañas
     val hasSeleccionLive = remember(liveStatuses) {
         seleccionFutbol.any { liveStatuses[it.id] == true }
     }
@@ -135,6 +141,9 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
     }
     val hasAscensoLive = remember(liveStatuses) {
         torneosAscenso.any { liveStatuses[it.id] == true }
+    }
+    val hasJuvenilesLive = remember(liveStatuses) {
+        torneosJuveniles.any { liveStatuses[it.id] == true }
     }
 
     // Función para alternar favorito sincronizada con ViewModel
@@ -217,24 +226,27 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
         Spacer(modifier = Modifier.height(24.dp))
         
         // Pestañas Estilizadas Doradas
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = Color.Transparent,
             contentColor = Color.White,
+            edgePadding = 16.dp,
             indicator = { tabPositions ->
                 TabRowDefaults.Indicator(
                     modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
                     color = Color(0xFFE5B842),
                     height = 3.dp
                 )
-            }
+            },
+            divider = {}
         ) {
             tabs.forEachIndexed { index, title ->
                 val hasLive = when (index) {
                     0 -> hasSeleccionLive
                     1 -> hasConmebolLive
                     2 -> hasLigaAfaLive
-                    else -> hasAscensoLive
+                    3 -> hasAscensoLive
+                    else -> hasJuvenilesLive
                 }
                 Tab(
                     selected = selectedTabIndex == index,
@@ -269,7 +281,8 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
             0 -> seleccionFutbol
             1 -> clubesConmebol
             2 -> ligaProfesionalAfa
-            else -> torneosAscenso
+            3 -> torneosAscenso
+            else -> torneosJuveniles
         }
         val tournamentsToList = remember(currentCategoryList, favoriteTournaments) {
             currentCategoryList.sortedWith(
@@ -301,6 +314,9 @@ fun TournamentScreen(viewModel: WorldCupViewModel, onTournamentSelected: (Int, S
                         7 -> Icons.Default.EmojiEvents
                         12 -> Icons.Default.EmojiEvents
                         14 -> Icons.Default.Public
+                        30 -> Icons.Default.EmojiEvents
+                        31 -> Icons.Default.EmojiEvents
+                        32 -> Icons.Default.Public
                         else -> Icons.Default.Book
                     }
                     val isLive = liveStatuses[tournament.id] == true

@@ -30,6 +30,7 @@ Este documento sirve para realizar el seguimiento del desarrollo de **world-cup-
 | **[x]** | Comodín ⭐ x2 compacto, interactivo y con auto-asignación por fecha | Android y Backend | 2026-08-10 | Chip ⭐ x2 en esquina superior derecha de la tarjeta con toggle táctil y asignación automática al primer pronóstico. |
 | **[x]** | Regla de Misma Diferencia de Gol (+1 punto) | Android y Backend | 2026-08-10 | Se suma +1 punto extra al acertar el ganador/empate con la misma diferencia de gol no exacta. |
 | **[x]** | Separación limpia de canales y sonidos de notificaciones (silbato vs gooolll) | Android / Notif. | 2026-08-10 | Canales `_v3` en Android con sonido de silbato para incidencias/cambios y gol exclusivo para goles. |
+| **[x]** | Categoría 'Torneos Juveniles' y alta de Messi Cup (ID 31) | Android y Backend | 2026-10-13 | Agregada pestaña 'Juveniles' en TournamentScreen con ScrollableTabRow, soporte para Messi Cup, ODESUR y Mundial Sub-20. |
 
 ---
 
