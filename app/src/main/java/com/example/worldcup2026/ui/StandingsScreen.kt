@@ -223,7 +223,7 @@ fun StandingsScreen(
 
     val tournamentFormat = remember(tournamentId) {
         when (tournamentId) {
-            1 -> TournamentFormat.WORLD_CUP
+            1, 30, 31, 32 -> TournamentFormat.WORLD_CUP
             2 -> TournamentFormat.ELIMINATORIAS_CONMEBOL
             3 -> TournamentFormat.LIBERTADORES
             4 -> TournamentFormat.SUDAMERICANA

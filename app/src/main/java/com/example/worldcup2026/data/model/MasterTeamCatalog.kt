@@ -31,6 +31,7 @@ object MasterTeamCatalog {
         MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = true),
         MasterTournament(14, "Amistosos FIFA", "🇦🇷 Amistosos FIFA", "Selecciones", isActive = true),
         MasterTournament(30, "Juegos ODESUR", "🏅 Juegos ODESUR", "Selecciones", isActive = true),
+        MasterTournament(31, "Messi Cup", "🏆 Messi Cup", "Juveniles", isActive = true),
 
         // NO EN JUEGO
         MasterTournament(1, "Campeonato Mundial De Fútbol", "🌍 Campeonato Mundial De Fútbol", "Selecciones", isActive = false),
@@ -39,6 +40,7 @@ object MasterTeamCatalog {
         MasterTournament(2, "Eliminatorias Sudamericanas", "🌎 Eliminatorias Sudamericanas", "Selecciones", isActive = false),
         MasterTournament(22, "Copa Mundial De Clubes", "🌐 Copa Mundial De Clubes", "Internacional", isActive = false),
         MasterTournament(23, "Copa Intercontinental", "🌐 Copa Intercontinental", "Internacional", isActive = false),
+        MasterTournament(32, "Mundial Sub-20", "🌍 Mundial Sub-20", "Juveniles", isActive = false),
         MasterTournament(17, "Torneo Apertura Liga Profesional", "🏆 Apertura Liga Profesional (Concluido)", "Nacional", isActive = false),
         MasterTournament(18, "Torneo Apertura B Metropolitana", "🏟️ Apertura B Metro (Concluido)", "Nacional", isActive = false),
         MasterTournament(21, "Amistosos Conmebol", "🤝 Amistosos Conmebol", "Internacional", isActive = false),
@@ -360,6 +362,29 @@ object MasterTeamCatalog {
         MasterTeam("Australia", "https://a.espncdn.com/i/teamlogos/soccer/500/629.png", 14, "AFC")
     )
 
+    // 1c. EQUIPOS MESSI CUP (16 Clubes Internacionales Sub-16)
+    val MESSI_CUP_TEAMS = listOf(
+        MasterTeam("Inter Miami CF", "https://a.espncdn.com/i/teamlogos/soccer/500/19692.png", 31, "Messi Cup"),
+        MasterTeam("River Plate", "https://a.espncdn.com/i/teamlogos/soccer/500/16.png", 31, "Messi Cup"),
+        MasterTeam("Boca Juniors", "https://a.espncdn.com/i/teamlogos/soccer/500/5.png", 31, "Messi Cup"),
+        MasterTeam("Newell's Old Boys", "https://a.espncdn.com/i/teamlogos/soccer/500/14.png", 31, "Messi Cup"),
+        MasterTeam("FC Barcelona", "https://a.espncdn.com/i/teamlogos/soccer/500/83.png", 31, "Messi Cup"),
+        MasterTeam("Barcelona", "https://a.espncdn.com/i/teamlogos/soccer/500/83.png", 31, "Messi Cup"),
+        MasterTeam("Atlético de Madrid", "https://a.espncdn.com/i/teamlogos/soccer/500/1068.png", 31, "Messi Cup"),
+        MasterTeam("Chelsea", "https://a.espncdn.com/i/teamlogos/soccer/500/363.png", 31, "Messi Cup"),
+        MasterTeam("Manchester City", "https://a.espncdn.com/i/teamlogos/soccer/500/382.png", 31, "Messi Cup"),
+        MasterTeam("Arsenal", "https://a.espncdn.com/i/teamlogos/soccer/500/359.png", 31, "Messi Cup"),
+        MasterTeam("Inter Milan", "https://a.espncdn.com/i/teamlogos/soccer/500/110.png", 31, "Messi Cup"),
+        MasterTeam("Inter de Milán", "https://a.espncdn.com/i/teamlogos/soccer/500/110.png", 31, "Messi Cup"),
+        MasterTeam("Ajax", "https://a.espncdn.com/i/teamlogos/soccer/500/139.png", 31, "Messi Cup"),
+        MasterTeam("Benfica", "https://a.espncdn.com/i/teamlogos/soccer/500/299.png", 31, "Messi Cup"),
+        MasterTeam("Palmeiras", "https://a.espncdn.com/i/teamlogos/soccer/500/2029.png", 31, "Messi Cup"),
+        MasterTeam("Flamengo", "https://a.espncdn.com/i/teamlogos/soccer/500/598.png", 31, "Messi Cup"),
+        MasterTeam("Independiente del Valle", "https://a.espncdn.com/i/teamlogos/soccer/500/11980.png", 31, "Messi Cup"),
+        MasterTeam("UE Cornellà", "https://a.espncdn.com/i/teamlogos/soccer/500/10041.png", 31, "Messi Cup"),
+        MasterTeam("Cornellà", "https://a.espncdn.com/i/teamlogos/soccer/500/10041.png", 31, "Messi Cup")
+    )
+
     private val ALIAS_TO_CANONICAL = mapOf(
         "peru" to "Perú",
         "mexico" to "México",
@@ -393,7 +418,7 @@ object MasterTeamCatalog {
     )
 
     private val ALL_MASTER_TEAMS by lazy {
-        CONMEBOL_SELECTIONS + WORLD_SELECTIONS + LIGA_PROFESIONAL + PRIMERA_NACIONAL + PRIMERA_B_METRO + TORNEO_FEDERAL_A + INTERNATIONAL_CLUBS
+        CONMEBOL_SELECTIONS + WORLD_SELECTIONS + LIGA_PROFESIONAL + PRIMERA_NACIONAL + PRIMERA_B_METRO + TORNEO_FEDERAL_A + INTERNATIONAL_CLUBS + MESSI_CUP_TEAMS
     }
 
     private fun removeAccents(str: String): String {

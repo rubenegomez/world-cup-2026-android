@@ -1,6 +1,7 @@
 package com.example.worldcup2026.ui
 
 import com.example.worldcup2026.data.model.Match
+import com.example.worldcup2026.data.model.MasterTeamCatalog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -952,17 +953,28 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                             val city = match.city ?: ""
                             val venue = if (city.isNotEmpty()) "$stadium, $city" else stadium
 
-                            val tourneyName = when (match.tournament_id) {
-                                1 -> "Mundial 2026"
-                                5 -> "Liga Profesional Argentina"
-                                3 -> "Copa Libertadores"
-                                4 -> "Copa Sudamericana"
-                                6 -> "Copa Argentina"
-                                8 -> "Primera Nacional Argentina"
-                                9 -> "Primera B Metropolitana"
-                                10 -> "Primera C"
-                                else -> "Liga Profesional Argentina"
-                            }
+                            val tourneyName = MasterTeamCatalog.MASTER_TOURNAMENTS.find { it.id == match.tournament_id }?.name
+                                ?: when (match.tournament_id) {
+                                    1 -> "Mundial 2026"
+                                    2 -> "Eliminatorias Conmebol"
+                                    3 -> "Copa Libertadores"
+                                    4 -> "Copa Sudamericana"
+                                    5 -> "Liga Profesional Argentina"
+                                    6 -> "Copa Argentina"
+                                    8 -> "Primera Nacional"
+                                    9 -> "Primera B Metropolitana"
+                                    10 -> "Primera C"
+                                    11 -> "Champions League"
+                                    12 -> "Premier League"
+                                    13 -> "La Liga de España"
+                                    14 -> "Serie A de Italia"
+                                    15 -> "Bundesliga"
+                                    16 -> "Ligue 1"
+                                    30 -> "Juegos ODESUR"
+                                    31 -> "Messi Cup"
+                                    32 -> "Mundial Sub-20"
+                                    else -> "Torneo Oficial"
+                                }
 
                             InfoRow("📅 Saque central", displayDate)
                             InfoRow("🏟️ Estadio", venue)
