@@ -68,6 +68,12 @@ interface WorldCupApiService {
         @Query("active") active: Boolean
     ): retrofit2.Response<Unit>
 
+    @retrofit2.http.POST("api/admin/tournaments/edit")
+    suspend fun editTournamentAdmin(
+        @Query("email") email: String,
+        @retrofit2.http.Body req: AdminTournamentEditRequest
+    ): retrofit2.Response<Unit>
+
     @retrofit2.http.POST("api/admin/teams/edit")
     suspend fun editTeamAdmin(
         @Query("email") email: String,
@@ -85,6 +91,14 @@ data class AdminTeamEditRequest(
     val team_id: Int,
     val name: String? = null,
     val flag_url: String? = null,
+    val image_base64: String? = null,
+    val file_extension: String? = ".png"
+)
+
+data class AdminTournamentEditRequest(
+    val tournament_id: Int,
+    val name: String? = null,
+    val logo_url: String? = null,
     val image_base64: String? = null,
     val file_extension: String? = ".png"
 )

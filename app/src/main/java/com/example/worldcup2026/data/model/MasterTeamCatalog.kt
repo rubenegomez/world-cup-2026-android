@@ -12,7 +12,8 @@ data class MasterTournament(
     val name: String,
     val displayName: String,
     val category: String,
-    val isActive: Boolean = false
+    val isActive: Boolean = false,
+    val logoUrl: String? = null
 )
 
 object MasterTeamCatalog {
@@ -20,14 +21,14 @@ object MasterTeamCatalog {
     // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (En juego primero, no en juego al final)
     val MASTER_TOURNAMENTS = listOf(
         // EN JUEGO
-        MasterTournament(3, "Copa Conmebol Libertadores", "🏆 Copa Conmebol Libertadores", "Internacional", isActive = true),
-        MasterTournament(4, "Copa Conmebol Sudamericana", "🏆 Copa Conmebol Sudamericana", "Internacional", isActive = true),
-        MasterTournament(5, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional", isActive = true),
-        MasterTournament(6, "Copa Argentina", "🇦🇷 Copa Argentina", "Nacional", isActive = true),
-        MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true),
-        MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true),
-        MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ B Metropolitana", "Nacional", isActive = true),
-        MasterTournament(10, "Primera C", "🏟️ Primera C", "Nacional", isActive = true),
+        MasterTournament(3, "Copa Conmebol Libertadores", "🏆 Copa Conmebol Libertadores", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2683.png"),
+        MasterTournament(4, "Copa Conmebol Sudamericana", "🏆 Copa Conmebol Sudamericana", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2684.png"),
+        MasterTournament(5, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1.png"),
+        MasterTournament(6, "Copa Argentina", "🇦🇷 Copa Argentina", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1884.png"),
+        MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/78.png"),
+        MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2281.png"),
+        MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ B Metropolitana", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/79.png"),
+        MasterTournament(10, "Primera C", "🏟️ Primera C", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/80.png"),
         MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = true),
         MasterTournament(14, "Amistosos FIFA", "🇦🇷 Amistosos FIFA", "Selecciones", isActive = true),
         MasterTournament(30, "Juegos ODESUR", "🏅 Juegos ODESUR", "Selecciones", isActive = true),
@@ -484,6 +485,35 @@ object MasterTeamCatalog {
             if (partial != null && partial.flagUrl.isNotBlank()) return partial.flagUrl
         }
         return null
+    }
+
+    fun getTournamentLogo(context: android.content.Context?, tournamentId: Int): String? {
+        if (context != null) {
+            val prefs = context.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
+            val custom = prefs.getString("custom_logo_$tournamentId", null)
+            if (!custom.isNullOrBlank()) return custom
+        }
+        return MASTER_TOURNAMENTS.find { it.id == tournamentId }?.logoUrl
+    }
+
+    fun getTournamentDisplayName(context: android.content.Context?, tournamentId: Int): String {
+        if (context != null) {
+            val prefs = context.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
+            val custom = prefs.getString("custom_name_$tournamentId", null)
+            if (!custom.isNullOrBlank()) return custom
+        }
+        return MASTER_TOURNAMENTS.find { it.id == tournamentId }?.displayName
+            ?: MASTER_TOURNAMENTS.find { it.id == tournamentId }?.name
+            ?: "Torneo #$tournamentId"
+    }
+
+    fun saveCustomTournament(context: android.content.Context, tournamentId: Int, name: String?, logoUrl: String?) {
+        val prefs = context.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            if (!name.isNullOrBlank()) putString("custom_name_$tournamentId", name.trim())
+            if (!logoUrl.isNullOrBlank()) putString("custom_logo_$tournamentId", logoUrl.trim())
+            apply()
+        }
     }
 }
 
