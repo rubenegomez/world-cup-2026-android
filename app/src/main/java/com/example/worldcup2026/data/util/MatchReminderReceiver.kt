@@ -65,18 +65,24 @@ class MatchReminderReceiver : BroadcastReceiver() {
                 }
 
                 val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                val soundUri = Uri.parse(
-                    android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + 
-                    "://" + context.packageName + "/" + soundRes
-                )
+                val sharedPrefs = context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
+                val isSilent = sharedPrefs.getBoolean("notif_silent", false)
+                val channelId = if (isSilent) NotificationHelper.CHANNEL_SILENT_ID else "world_cup_2026_notifications_v4"
 
-                val builder = NotificationCompat.Builder(context, "world_cup_2026_notifications_v4")
+                val builder = NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
                     .setContentTitle(title)
                     .setContentText(text)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setSound(soundUri)
+                    .setPriority(if (isSilent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
+
+                if (!isSilent) {
+                    val soundUri = Uri.parse(
+                        android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                        "://" + context.packageName + "/" + soundRes
+                    )
+                    builder.setSound(soundUri)
+                }
 
                 manager.notify(matchId * 10 + notifIdSuffix, builder.build())
             } catch (e: Exception) {

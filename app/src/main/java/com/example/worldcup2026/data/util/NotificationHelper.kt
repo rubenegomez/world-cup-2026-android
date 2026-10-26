@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import com.example.worldcup2026.R
 
 object NotificationHelper {
+    const val CHANNEL_SILENT_ID = "world_cup_2026_silent_v1"
     private const val CHANNEL_GENERAL_ID = "world_cup_2026_notifications_v4"
     private const val CHANNEL_GOALS_ID = "world_cup_2026_goals_v4"
     private const val CHANNEL_INCIDENTS_ID = "world_cup_2026_incidents_v4"
@@ -72,22 +73,40 @@ object NotificationHelper {
                 enableVibration(true)
             }
             manager.createNotificationChannel(incidentChannel)
+
+            // 4. Canal Silencioso (Sin sonido ni vibración)
+            val silentChannel = NotificationChannel(
+                CHANNEL_SILENT_ID,
+                "Mundial 2026 Silencioso",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notificaciones visuales sin sonido"
+                setSound(null, null)
+                enableVibration(false)
+            }
+            manager.createNotificationChannel(silentChannel)
         }
     }
 
     fun showStartNotification(context: Context) {
-        val soundUri = Uri.parse(
-            ContentResolver.SCHEME_ANDROID_RESOURCE + 
-            "://" + context.packageName + "/" + R.raw.silbato
-        )
+        val sharedPrefs = context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
+        val isSilent = sharedPrefs.getBoolean("notif_silent", false)
+        val targetChannel = if (isSilent) CHANNEL_SILENT_ID else CHANNEL_GENERAL_ID
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_GENERAL_ID)
+        val builder = NotificationCompat.Builder(context, targetChannel)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("⚽ ¡EL MUNDIAL HA COMENZADO! ⚽")
             .setContentText("El pitazo inicial ha sonado en México. ¡Que ruede el balón!")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setSound(soundUri)
+            .setPriority(if (isSilent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+
+        if (!isSilent) {
+            val soundUri = Uri.parse(
+                ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                "://" + context.packageName + "/" + R.raw.silbato
+            )
+            builder.setSound(soundUri)
+        }
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(NOTIFICATION_ID, builder.build())
@@ -100,13 +119,9 @@ object NotificationHelper {
             return
         }
 
-        val channelId = if (isGoal) CHANNEL_GOALS_ID else CHANNEL_INCIDENTS_ID
-        val soundRes = if (isGoal) R.raw.gooolll else R.raw.silbato
-        
-        val soundUri = Uri.parse(
-            ContentResolver.SCHEME_ANDROID_RESOURCE + 
-            "://" + context.packageName + "/" + soundRes
-        )
+        val sharedPrefs = context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
+        val isSilent = sharedPrefs.getBoolean("notif_silent", false)
+        val channelId = if (isSilent) CHANNEL_SILENT_ID else if (isGoal) CHANNEL_GOALS_ID else CHANNEL_INCIDENTS_ID
 
         val uniqueNotificationId = (System.currentTimeMillis() % 100000).toInt()
 
@@ -114,9 +129,17 @@ object NotificationHelper {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setSound(soundUri)
+            .setPriority(if (isSilent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+
+        if (!isSilent) {
+            val soundRes = if (isGoal) R.raw.gooolll else R.raw.silbato
+            val soundUri = Uri.parse(
+                ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                "://" + context.packageName + "/" + soundRes
+            )
+            builder.setSound(soundUri)
+        }
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(uniqueNotificationId, builder.build())

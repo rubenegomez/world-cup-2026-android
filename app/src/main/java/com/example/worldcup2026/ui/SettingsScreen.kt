@@ -213,6 +213,7 @@ fun SettingsMenuScreen(
                 
                 if (showNotifSettings) {
                     var notifScope by remember { mutableStateOf(sharedPrefs.getString("notif_scope", "ALL") ?: "ALL") }
+                    var notifSilent by remember { mutableStateOf(sharedPrefs.getBoolean("notif_silent", false)) }
                     var receiveGoals by remember { mutableStateOf(sharedPrefs.getBoolean("notif_goals", true)) }
                     var receiveStart by remember { mutableStateOf(sharedPrefs.getBoolean("notif_start", true)) }
                     var receiveEnd by remember { mutableStateOf(sharedPrefs.getBoolean("notif_end", true)) }
@@ -254,6 +255,33 @@ fun SettingsMenuScreen(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(scopeLabel, fontSize = 12.sp, color = Color.White)
+                                    }
+                                }
+
+                                Divider(color = Color.White.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 10.dp))
+
+                                Text("🔊 Sonido de Notificaciones:", color = Color(0xFFFFC107), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            val next = !notifSilent
+                                            notifSilent = next
+                                            sharedPrefs.edit().putBoolean("notif_silent", next).apply()
+                                        }
+                                        .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Switch(
+                                        checked = notifSilent,
+                                        onCheckedChange = null,
+                                        colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFFFC107))
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(if (notifSilent) "🔕 Notificaciones Silenciosas (Sin Sonido)" else "🔔 Sonido Activado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text(if (notifSilent) "Llegan a la barra de estado en silencio, sin silbato ni goool" else "Reproduce silbato y festejo de gol con cada alerta", fontSize = 11.sp, color = Color.White.copy(alpha = 0.65f))
                                     }
                                 }
 

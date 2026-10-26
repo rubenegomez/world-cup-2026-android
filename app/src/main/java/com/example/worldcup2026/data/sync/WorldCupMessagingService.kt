@@ -172,22 +172,15 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val channelId = when (eventType) {
+        val sharedPrefs = getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
+        val isSilent = sharedPrefs.getBoolean("notif_silent", false)
+
+        val rawChannelId = when (eventType) {
             "goal" -> "world_cup_2026_goals_v4"
             "start", "end", "card" -> "world_cup_2026_incidents_v4"
             else -> "world_cup_2026_notifications_v4"
         }
-
-        val soundRes = when (eventType) {
-            "goal" -> R.raw.gooolll
-            "prode_35m" -> R.raw.world_cup_whistle
-            else -> R.raw.silbato
-        }
-
-        val soundUri = android.net.Uri.parse(
-            android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + 
-            "://" + packageName + "/" + soundRes
-        )
+        val channelId = if (isSilent) NotificationHelper.CHANNEL_SILENT_ID else rawChannelId
 
         // Ensure notification channels exist with custom sounds
         NotificationHelper.createNotificationChannel(this)
@@ -197,9 +190,22 @@ class WorldCupMessagingService : FirebaseMessagingService() {
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)
-            .setSound(soundUri)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(if (isSilent) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
+
+        if (!isSilent) {
+            val soundRes = when (eventType) {
+                "goal" -> R.raw.gooolll
+                "prode_35m" -> R.raw.world_cup_whistle
+                else -> R.raw.silbato
+            }
+
+            val soundUri = android.net.Uri.parse(
+                android.content.ContentResolver.SCHEME_ANDROID_RESOURCE + 
+                "://" + packageName + "/" + soundRes
+            )
+            notificationBuilder.setSound(soundUri)
+        }
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val baseId = matchId?.toIntOrNull() ?: (matchId?.hashCode() ?: 10001)
