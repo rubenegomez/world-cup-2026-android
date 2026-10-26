@@ -224,24 +224,6 @@ fun CalendarHeader(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 IconButton(
-                    onClick = {
-                        SoundManager.playTic()
-                        onNavigateToStandings()
-                    },
-                    modifier = Modifier
-                        .size(34.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFC107).copy(alpha = 0.2f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Leaderboard,
-                        contentDescription = "Tablas de Posiciones y Torneos",
-                        tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                IconButton(
                     onClick = { 
                         SoundManager.playTic()
                         val now = LocalDate.now()

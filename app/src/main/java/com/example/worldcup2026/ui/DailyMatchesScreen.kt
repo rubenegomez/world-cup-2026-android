@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,7 +15,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,7 +44,6 @@ fun DailyMatchesScreen(
     onShowVipStats: (Match) -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var searchQuery by remember { mutableStateOf("") }
     var filterLiveOnly by remember { mutableStateOf(false) }
     val favTournaments by viewModel.favoriteTournamentIds
     val favTeams by viewModel.favoriteTeamNames
@@ -65,7 +62,7 @@ fun DailyMatchesScreen(
     var viewMode by remember { mutableStateOf(0) }
     var selectedMatchday by remember { mutableStateOf<Int?>(null) }
 
-    val singleSelectedTourneyId = if (selectedTournamentIds.size == 1 && !selectedTournamentIds.contains(0)) {
+    val singleSelectedTourneyId = if (!filterLiveOnly && selectedTournamentIds.size == 1 && !selectedTournamentIds.contains(0)) {
         selectedTournamentIds.first()
     } else null
 
@@ -73,7 +70,7 @@ fun DailyMatchesScreen(
         when {
             filterLiveOnly -> "🔴 Partidos En Vivo"
             singleSelectedTourneyId != null -> MasterTeamCatalog.getTournamentDisplayName(context, singleSelectedTourneyId)
-            else -> "🏆 Todos los Torneos"
+            else -> "🌐 Todos los Torneos"
         }
     }
 
@@ -184,19 +181,8 @@ fun DailyMatchesScreen(
         }
     }
 
-    val activeTournamentsList = remember(customVersionTrigger) {
-        listOf(0 to "🔥 Todos los Activos") + MasterTeamCatalog.ACTIVE_TOURNAMENTS.map { 
-            it.id to MasterTeamCatalog.getTournamentDisplayName(context, it.id)
-        }
-    }
-    val otherTournamentsList = remember(customVersionTrigger) {
-        MasterTeamCatalog.MASTER_TOURNAMENTS.filter { !it.isActive }.map { 
-            it.id to MasterTeamCatalog.getTournamentDisplayName(context, it.id)
-        }
-    }
-
     Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Selector Superior Unificado de Torneos (Estilo ProdeMaster)
+        // 1. Selector Superior Unificado de Torneos (En reemplazo de los filtros rápidos anteriores)
         Card(
             onClick = {
                 com.example.worldcup2026.data.util.SoundManager.playTic()
@@ -220,7 +206,10 @@ fun DailyMatchesScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (!currentTourneyLogo.isNullOrBlank()) {
+                    if (filterLiveOnly) {
+                        Text("🔴", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                    } else if (!currentTourneyLogo.isNullOrBlank()) {
                         AsyncImage(
                             model = currentTourneyLogo,
                             contentDescription = "Símbolo",
@@ -229,7 +218,7 @@ fun DailyMatchesScreen(
                                 .clip(RoundedCornerShape(6.dp))
                         )
                         Spacer(modifier = Modifier.width(10.dp))
-                    } else {
+                    } else if (singleSelectedTourneyId != null) {
                         Icon(
                             Icons.Default.EmojiEvents,
                             contentDescription = null,
@@ -237,7 +226,11 @@ fun DailyMatchesScreen(
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
+                    } else {
+                        Text("🌐", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
                     }
+
                     Text(
                         text = currentTourneyName,
                         style = MaterialTheme.typography.titleMedium,
@@ -272,61 +265,68 @@ fun DailyMatchesScreen(
             }
         }
 
-        // 2. Opciones de Modo: Calendario Diario vs Fecha Completa (cuando se selecciona un torneo)
-        if (singleSelectedTourneyId != null && availableMatchdays.isNotEmpty()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = viewMode == 0,
-                    onClick = {
-                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                        viewMode = 0
-                    },
-                    label = {
-                        Text(
-                            "📅 Por Día (${date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))})",
-                            fontSize = 11.sp,
-                            fontWeight = if (viewMode == 0) FontWeight.Bold else FontWeight.Normal,
-                            color = if (viewMode == 0) Color.Black else Color.White.copy(alpha = 0.8f)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFFFD700),
-                        containerColor = Color.White.copy(alpha = 0.08f)
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f).height(30.dp)
-                )
+        // 2. Opciones de Modo: Calendario Diario vs Fecha Completa
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = viewMode == 0,
+                onClick = {
+                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                    viewMode = 0
+                },
+                label = {
+                    Text(
+                        "📅 Por Día (${date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))})",
+                        fontSize = 11.sp,
+                        fontWeight = if (viewMode == 0) FontWeight.Bold else FontWeight.Normal,
+                        color = if (viewMode == 0) Color.Black else Color.White.copy(alpha = 0.8f)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFFFD700),
+                    containerColor = Color.White.copy(alpha = 0.08f)
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f).height(30.dp)
+            )
 
-                FilterChip(
-                    selected = viewMode == 1,
-                    onClick = {
-                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                        viewMode = 1
-                    },
-                    label = {
-                        Text(
-                            "📋 Fecha Completa",
-                            fontSize = 11.sp,
-                            fontWeight = if (viewMode == 1) FontWeight.Bold else FontWeight.Normal,
-                            color = if (viewMode == 1) Color.Black else Color.White.copy(alpha = 0.8f)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFFFD700),
-                        containerColor = Color.White.copy(alpha = 0.08f)
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f).height(30.dp)
-                )
-            }
+            FilterChip(
+                selected = viewMode == 1,
+                onClick = {
+                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                    if (singleSelectedTourneyId == null) {
+                        val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                        val autoTourney = matches.firstOrNull { it.date?.startsWith(dateStr) == true && (it.matchday ?: 0) > 0 }?.tournament_id
+                            ?: matches.firstOrNull { (it.matchday ?: 0) > 0 }?.tournament_id
+                            ?: 5
+                        selectedTournamentIds = setOf(autoTourney)
+                        filterLiveOnly = false
+                    }
+                    viewMode = 1
+                },
+                label = {
+                    Text(
+                        "📋 Fecha Completa",
+                        fontSize = 11.sp,
+                        fontWeight = if (viewMode == 1) FontWeight.Bold else FontWeight.Normal,
+                        color = if (viewMode == 1) Color.Black else Color.White.copy(alpha = 0.8f)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Color(0xFFFFD700),
+                    containerColor = Color.White.copy(alpha = 0.08f)
+                ),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f).height(30.dp)
+            )
+        }
 
-            // Barra selectora de Fechas: [<] FECHA X [>]
-            if (viewMode == 1 && selectedMatchday != null) {
+        // Barra selectora de Fechas: [<] FECHA X [>]
+        if (viewMode == 1 && selectedMatchday != null && availableMatchdays.isNotEmpty()) {
                 val curIndex = availableMatchdays.indexOf(selectedMatchday)
                 val hasPrev = curIndex > 0
                 val hasNext = curIndex >= 0 && curIndex < availableMatchdays.size - 1
@@ -382,139 +382,8 @@ fun DailyMatchesScreen(
                     }
                 }
             }
-        }
 
-        // 3. Chips horizontales rápidos de Torneos con Símbolos Oficiales
-        Column(modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp)) {
-            // Renglón 1: En Vivo + Torneos Activos
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                item {
-                    FilterChip(
-                        selected = filterLiveOnly,
-                        onClick = { 
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            filterLiveOnly = !filterLiveOnly 
-                        },
-                        label = { 
-                            Text(
-                                "🔴 En Vivo", 
-                                fontSize = 10.sp, 
-                                fontWeight = FontWeight.Bold, 
-                                color = if (filterLiveOnly) Color.White else Color.White.copy(alpha = 0.85f)
-                            ) 
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFE53935),
-                            containerColor = Color(0xFFE53935).copy(alpha = 0.15f)
-                        ),
-                        border = if (!filterLiveOnly) BorderStroke(0.5.dp, Color(0xFFE53935).copy(alpha = 0.5f)) else null,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(28.dp)
-                    )
-                }
-
-                items(activeTournamentsList) { (tId, tName) ->
-                    val isSelected = (tId == 0 && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())) || 
-                                     (tId != 0 && selectedTournamentIds.contains(tId))
-                    val isFav = tId in favTournaments
-                    val labelText = if (isFav && tId != 0) "$tName ⭐" else tName
-                    val tourneyLogo = if (tId != 0) MasterTeamCatalog.getTournamentLogo(context, tId) else null
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            selectedTournamentIds = if (tId == 0 || selectedTournamentIds == setOf(tId)) {
-                                setOf(0)
-                            } else {
-                                setOf(tId)
-                            }
-                        },
-                        leadingIcon = if (!tourneyLogo.isNullOrBlank()) {
-                            {
-                                AsyncImage(
-                                    model = tourneyLogo,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp).clip(CircleShape)
-                                )
-                            }
-                        } else null,
-                        label = { 
-                            Text(
-                                text = labelText, 
-                                fontSize = 10.sp, 
-                                fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
-                                color = if (isSelected) Color.Black else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.8f)
-                            ) 
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFFFC107),
-                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.08f)
-                        ),
-                        border = if (isFav && !isSelected) BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(28.dp)
-                    )
-                }
-            }
-
-            // Renglón 2: Próximos y Otros Torneos
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(otherTournamentsList) { (tId, tName) ->
-                    val isSelected = selectedTournamentIds.contains(tId)
-                    val isFav = tId in favTournaments
-                    val labelText = if (isFav) "$tName ⭐" else tName
-                    val tourneyLogo = MasterTeamCatalog.getTournamentLogo(context, tId)
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            selectedTournamentIds = if (selectedTournamentIds == setOf(tId)) {
-                                setOf(0)
-                            } else {
-                                setOf(tId)
-                            }
-                        },
-                        leadingIcon = if (!tourneyLogo.isNullOrBlank()) {
-                            {
-                                AsyncImage(
-                                    model = tourneyLogo,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp).clip(CircleShape)
-                                )
-                            }
-                        } else null,
-                        label = { 
-                            Text(
-                                text = labelText, 
-                                fontSize = 10.sp, 
-                                fontWeight = if (isSelected || isFav) FontWeight.Bold else FontWeight.Normal, 
-                                color = if (isSelected) Color.Black else if (isFav) Color(0xFFFFC107) else Color.White.copy(alpha = 0.7f)
-                            ) 
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFFFC107),
-                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.12f) else Color.White.copy(alpha = 0.05f)
-                        ),
-                        border = if (isFav && !isSelected) BorderStroke(0.5.dp, Color(0xFFFFC107).copy(alpha = 0.5f)) else null,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(28.dp)
-                    )
-                }
-            }
-        }
-
-        // 4. Lista de Partidos (Diaria o Fecha Completa)
+        // 3. Lista de Partidos (Diaria o Fecha Completa)
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -615,17 +484,19 @@ fun DailyMatchesScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Opción: Todos los Torneos
+                        // Opción 1: Todos los Torneos
                         item {
+                            val isTodosSelected = !filterLiveOnly && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())
                             Surface(
                                 onClick = {
                                     com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    filterLiveOnly = false
                                     selectedTournamentIds = setOf(0)
                                     showTournamentSelectorDialog = false
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) Color(0xFFFFD700).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
-                                border = if (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty()) BorderStroke(1.dp, Color(0xFFFFD700)) else null,
+                                color = if (isTodosSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
+                                border = if (isTodosSelected) BorderStroke(1.dp, Color(0xFFFFD700)) else null,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
@@ -636,6 +507,37 @@ fun DailyMatchesScreen(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
                                         "Todos los Torneos",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        // Opción 2: Partidos En Vivo
+                        item {
+                            val isLiveSelected = filterLiveOnly
+                            Surface(
+                                onClick = {
+                                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    filterLiveOnly = true
+                                    selectedTournamentIds = setOf(0)
+                                    showTournamentSelectorDialog = false
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isLiveSelected) Color(0xFFE53935).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f),
+                                border = if (isLiveSelected) BorderStroke(1.dp, Color(0xFFE53935)) else null,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🔴", fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        "Partidos En Vivo",
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
                                         fontSize = 14.sp
@@ -655,13 +557,14 @@ fun DailyMatchesScreen(
                         }
 
                         items(MasterTeamCatalog.ACTIVE_TOURNAMENTS) { tourney ->
-                            val isSelected = selectedTournamentIds.contains(tourney.id)
+                            val isSelected = !filterLiveOnly && selectedTournamentIds.contains(tourney.id)
                             val logo = MasterTeamCatalog.getTournamentLogo(context, tourney.id)
                             val name = MasterTeamCatalog.getTournamentDisplayName(context, tourney.id)
 
                             Surface(
                                 onClick = {
                                     com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    filterLiveOnly = false
                                     selectedTournamentIds = setOf(tourney.id)
                                     showTournamentSelectorDialog = false
                                 },
@@ -732,13 +635,14 @@ fun DailyMatchesScreen(
                         }
 
                         items(MasterTeamCatalog.MASTER_TOURNAMENTS.filter { !it.isActive }) { tourney ->
-                            val isSelected = selectedTournamentIds.contains(tourney.id)
+                            val isSelected = !filterLiveOnly && selectedTournamentIds.contains(tourney.id)
                             val logo = MasterTeamCatalog.getTournamentLogo(context, tourney.id)
                             val name = MasterTeamCatalog.getTournamentDisplayName(context, tourney.id)
 
                             Surface(
                                 onClick = {
                                     com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    filterLiveOnly = false
                                     selectedTournamentIds = setOf(tourney.id)
                                     showTournamentSelectorDialog = false
                                 },

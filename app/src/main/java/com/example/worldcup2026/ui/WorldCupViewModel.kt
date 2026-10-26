@@ -68,6 +68,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _allTeamsState = mutableStateOf<List<Team>>(emptyList())
     val allTeamsState: State<List<Team>> = _allTeamsState
 
+    private val _appThemeMode = mutableStateOf("DARK")
+    val appThemeMode: State<String> = _appThemeMode
+
     init {
         val database = WorldCupDatabase.getDatabase(application)
         repository = WorldCupRepository(database.matchDao())
@@ -75,6 +78,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         _adFreeUntil.value = prefs.getLong("ad_free_until", 0L)
         _claimedAdFreePoints.value = prefs.getInt("claimed_ad_free_points", 0)
         _isVip.value = prefs.getBoolean("is_vip_status", false)
+        _appThemeMode.value = prefs.getString("app_theme_mode", "DARK") ?: "DARK"
         
         val favTournamentsSaved = prefs.getStringSet("favorite_tournament_ids", null)
         if (favTournamentsSaved != null) {
@@ -1076,6 +1080,12 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 _liveTournaments.value = liveMap
             }
         }
+    }
+
+    fun setAppThemeMode(mode: String) {
+        _appThemeMode.value = mode
+        val prefs = getApplication<android.app.Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("app_theme_mode", mode).apply()
     }
 
     override fun onCleared() {

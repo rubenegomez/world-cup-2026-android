@@ -215,6 +215,7 @@ fun getLigaZona(name: String): String? = getCanonicalLigaTeam(name)?.second ?: L
 fun StandingsScreen(
     matches: List<Match>,
     initialTournamentId: Int? = null,
+    initialTabName: String? = null,
     onNavigateToMatch: (Match) -> Unit = {}
 ) {
     var tournamentId by remember(initialTournamentId) {
@@ -253,7 +254,10 @@ fun StandingsScreen(
         TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "GOLEADORES", "FIXTURE")
     }
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember(tournamentFormat, initialTabName) {
+        val targetIdx = if (initialTabName != null) tabs.indexOf(initialTabName) else -1
+        mutableStateOf(if (targetIdx >= 0) targetIdx else 0)
+    }
 
     // Estados para datos dinámicos del backend
     var annualStandings by remember { mutableStateOf<List<AnnualStandingDto>?>(null) }

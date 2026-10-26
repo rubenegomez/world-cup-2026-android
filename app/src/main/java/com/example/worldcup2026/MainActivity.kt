@@ -95,12 +95,23 @@ class MainActivity : ComponentActivity() {
         }
         
         setContent {
-            WorldCup2026Theme {
+            val viewModel: com.example.worldcup2026.ui.WorldCupViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val themeMode = viewModel.appThemeMode.value
+            val isDark = when (themeMode) {
+                "LIGHT" -> false
+                "SYSTEM" -> androidx.compose.foundation.isSystemInDarkTheme()
+                else -> true
+            }
+            WorldCup2026Theme(darkTheme = isDark) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(initialMatchId = navMatchId, initialJoinCode = joinCodeFromUri)
+                    MainScreen(
+                        viewModel = viewModel,
+                        initialMatchId = navMatchId,
+                        initialJoinCode = joinCodeFromUri
+                    )
                 }
             }
         }

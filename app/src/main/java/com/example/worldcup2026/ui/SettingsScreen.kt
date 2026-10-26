@@ -200,6 +200,43 @@ fun SettingsMenuScreen(
             }
         }
         item {
+            SettingSection(title = "Apariencia") {
+                val themeMode by worldCupViewModel.appThemeMode
+                val themeOptions = listOf(
+                    "DARK" to "🌙 Tema Oscuro",
+                    "LIGHT" to "☀️ Tema Blanco / Claro",
+                    "SYSTEM" to "⚙️ Predeterminado del Sistema"
+                )
+
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    themeOptions.forEach { (key, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    worldCupViewModel.setAppThemeMode(key)
+                                }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = themeMode == key,
+                                onClick = { worldCupViewModel.setAppThemeMode(key) },
+                                colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFFFC107))
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = label,
+                                fontSize = 13.sp,
+                                color = Color.White,
+                                fontWeight = if (themeMode == key) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item {
             SettingSection(title = "Permisos") {
                 val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
                 var showNotifSettings by remember { mutableStateOf(false) }

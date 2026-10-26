@@ -118,6 +118,9 @@ fun MainScreen(
             1 -> "Prode"
             2 -> "Acerca de"
             3 -> "Ajustes"
+            4 -> "Partidos del Día"
+            5 -> "Posiciones"
+            6 -> "Fixture"
             else -> "Desconocido"
         }
         com.example.worldcup2026.data.util.AnalyticsManager.logScreenView(screenName)
@@ -203,7 +206,7 @@ fun MainScreen(
                                 title = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         // Siempre mostramos el título general, excepto en vistas anidadas si quisiéramos botón atrás
-                                        if (selectedScreen == 4 || selectedScreen == 5) {
+                                        if (selectedScreen == 4) {
                                             IconButton(onClick = { selectedScreen = 0 }) {
                                                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
                                             }
@@ -296,6 +299,34 @@ fun MainScreen(
                                         },
                                         icon = { Icon(Icons.Default.Today, contentDescription = null) },
                                         label = { Text("Calendario", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
+                                    )
+
+                                    NavigationBarItem(
+                                        selected = selectedScreen == 6,
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 6 
+                                        },
+                                        icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                                        label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                        )
+                                    )
+
+                                    NavigationBarItem(
+                                        selected = selectedScreen == 5,
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 5 
+                                        },
+                                        icon = { Icon(Icons.Default.Leaderboard, contentDescription = null) },
+                                        label = { Text("Posiciones", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
                                             unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
@@ -413,6 +444,27 @@ fun MainScreen(
                                           StandingsScreen(
                                               matches = state.matches,
                                               initialTournamentId = selectedTournamentForStandings ?: 5,
+                                              initialTabName = null,
+                                              onNavigateToMatch = { match ->
+                                                  try {
+                                                      val datePart = match.date?.substringBefore(" ")
+                                                      if (!datePart.isNullOrBlank()) {
+                                                          selectedDate = java.time.LocalDate.parse(datePart)
+                                                          selectedScreen = 4
+                                                      } else {
+                                                          selectedScreen = 1
+                                                      }
+                                                  } catch (e: Exception) {
+                                                      selectedScreen = 1
+                                                  }
+                                              }
+                                          )
+                                      }
+                                      6 -> {
+                                          StandingsScreen(
+                                              matches = state.matches,
+                                              initialTournamentId = selectedTournamentForStandings ?: 5,
+                                              initialTabName = "FIXTURE",
                                               onNavigateToMatch = { match ->
                                                   try {
                                                       val datePart = match.date?.substringBefore(" ")
