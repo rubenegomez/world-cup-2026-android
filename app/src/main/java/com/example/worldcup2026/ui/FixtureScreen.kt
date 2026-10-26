@@ -2052,6 +2052,33 @@ fun MatchRulesHelpView() {
 
 private data class Tuple5<A, B, C, D, E>(val a: A, val b: B, val c: C, val d: D, val e: E)
 
+data class FormMatchItem(
+    val result: String, // "V", "E", "D"
+    val isHome: Boolean,
+    val opponentName: String,
+    val scoreText: String,
+    val date: String?
+)
+
+data class H2HMatchItem(
+    val id: Int,
+    val homeTeamName: String,
+    val awayTeamName: String,
+    val homeScore: Int,
+    val awayScore: Int,
+    val date: String?,
+    val tournamentName: String?
+)
+
+data class TeamStandingOverview(
+    val position: Int,
+    val points: Int,
+    val played: Int,
+    val goalDifference: Int,
+    val group: String? = null,
+    val tournamentName: String = ""
+)
+
 data class SmartPredictionAnalysis(
     val homeProb: Int,
     val drawProb: Int,
@@ -2064,21 +2091,70 @@ data class SmartPredictionAnalysis(
     val awayGeneralForm: List<String>,
     val homeVenueForm: List<String>,
     val awayVenueForm: List<String>,
+    val homeGeneralMatches: List<FormMatchItem> = emptyList(),
+    val awayGeneralMatches: List<FormMatchItem> = emptyList(),
+    val homeVenueMatches: List<FormMatchItem> = emptyList(),
+    val awayVenueMatches: List<FormMatchItem> = emptyList(),
+    val homeStanding: TeamStandingOverview? = null,
+    val awayStanding: TeamStandingOverview? = null,
     val h2hSummary: String,
+    val h2hHomeWins: Int = 0,
+    val h2hDraws: Int = 0,
+    val h2hAwayWins: Int = 0,
+    val h2hMatches: List<H2HMatchItem> = emptyList(),
     val insightText: String
 )
+
+fun computeRealTeamFormDetails(teamName: String, allMatches: List<Match>, venueOnly: Boolean? = null): List<FormMatchItem> {
+    if (teamName.isBlank() || allMatches.isEmpty()) return emptyList()
+    val targetName = teamName.trim().lowercase()
+    val finishedMatches = allMatches.filter { m ->
+        val st = m.status.trim().uppercase()
+        val isFin = st in listOf("FINISHED", "FINALIZADO", "FT", "FINAL") || m.status.equals("Finished", ignoreCase = true)
+        val homeMatch = m.homeTeam.name.trim().lowercase() == targetName
+        val awayMatch = m.awayTeam.name.trim().lowercase() == targetName
+        isFin && when (venueOnly) {
+            true -> homeMatch
+            false -> awayMatch
+            null -> (homeMatch || awayMatch)
+        }
+    }.sortedByDescending { it.date ?: "" }.take(if (venueOnly != null) 4 else 5)
+
+    return finishedMatches.map { match ->
+        val isHome = match.homeTeam.name.trim().lowercase() == targetName
+        val hScore = match.homeScore ?: 0
+        val aScore = match.awayScore ?: 0
+        val res = when {
+            hScore == aScore -> "E"
+            (isHome && hScore > aScore) || (!isHome && aScore > hScore) -> "V"
+            else -> "D"
+        }
+        val oppName = if (isHome) match.awayTeam.name else match.homeTeam.name
+        FormMatchItem(
+            result = res,
+            isHome = isHome,
+            opponentName = oppName,
+            scoreText = "$hScore-$aScore",
+            date = match.date
+        )
+    }
+}
 
 fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): SmartPredictionAnalysis {
     val homeName = match.homeTeam.name
     val awayName = match.awayTeam.name
 
-    // 1. Forma Reciente General (Últimos 5 partidos jugados)
-    val homeGeneral = computeRealTeamForm(homeName, allMatches, venueOnly = null)
-    val awayGeneral = computeRealTeamForm(awayName, allMatches, venueOnly = null)
+    // 1. Forma Reciente General detallada (Últimos 5 partidos)
+    val homeGeneralMatches = computeRealTeamFormDetails(homeName, allMatches, venueOnly = null)
+    val awayGeneralMatches = computeRealTeamFormDetails(awayName, allMatches, venueOnly = null)
+    val homeGeneral = homeGeneralMatches.map { it.result }
+    val awayGeneral = awayGeneralMatches.map { it.result }
 
     // 2. Forma Específica por Condición (Últimos 4 partidos de local / visitante)
-    val homeVenue = computeRealTeamForm(homeName, allMatches, venueOnly = true)
-    val awayVenue = computeRealTeamForm(awayName, allMatches, venueOnly = false)
+    val homeVenueMatches = computeRealTeamFormDetails(homeName, allMatches, venueOnly = true)
+    val awayVenueMatches = computeRealTeamFormDetails(awayName, allMatches, venueOnly = false)
+    val homeVenue = homeVenueMatches.map { it.result }
+    val awayVenue = awayVenueMatches.map { it.result }
 
     // Pesos decrecientes para los últimos 5 partidos: [5, 4, 3, 2, 1]
     val weights = listOf(5, 4, 3, 2, 1)
@@ -2108,7 +2184,9 @@ fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): Smart
 
     // 3. Historial H2H
     val h2h = allMatches.filter {
-        it.status == "Finished" &&
+        val st = it.status.trim().uppercase()
+        val isFin = st in listOf("FINISHED", "FINALIZADO", "FT", "FINAL") || it.status.equals("Finished", ignoreCase = true)
+        isFin &&
         ((it.homeTeam.name.equals(homeName, ignoreCase = true) && it.awayTeam.name.equals(awayName, ignoreCase = true)) ||
          (it.homeTeam.name.equals(awayName, ignoreCase = true) && it.awayTeam.name.equals(homeName, ignoreCase = true)))
     }
@@ -2136,6 +2214,66 @@ fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): Smart
                 h2hAwayWins++
                 h2hAwayPts += 3f
             }
+        }
+    }
+
+    val h2hMatchesList = h2h.sortedByDescending { it.date ?: "" }.take(8).map { m ->
+        val tName = m.tournament_id?.let { tid ->
+            allTournaments.find { it.id == tid }?.name
+        } ?: "Competición Oficial"
+        H2HMatchItem(
+            id = m.id,
+            homeTeamName = m.homeTeam.name,
+            awayTeamName = m.awayTeam.name,
+            homeScore = m.homeScore ?: 0,
+            awayScore = m.awayScore ?: 0,
+            date = m.date?.take(10),
+            tournamentName = tName
+        )
+    }
+
+    // 4. Posiciones en el torneo ("Así llegan en el torneo")
+    var homeStanding: TeamStandingOverview? = null
+    var awayStanding: TeamStandingOverview? = null
+    val tid = match.tournament_id
+    if (tid != null) {
+        val tName = allTournaments.find { it.id == tid }?.name ?: "Competición Oficial"
+        val tMatches = allMatches.filter { it.tournament_id == tid }
+        val teamsInT = tMatches.flatMap { listOf(it.homeTeam, it.awayTeam) }
+            .filter { it.name.isNotBlank() }
+            .distinctBy { it.name.trim().lowercase() }
+        if (teamsInT.isNotEmpty()) {
+            try {
+                val standings = com.example.worldcup2026.data.util.StandingsCalculator.calculateStandings(
+                    groupTeams = teamsInT,
+                    allMatches = tMatches,
+                    isWorldCup = (tid == 1)
+                )
+                val hIdx = standings.indexOfFirst { it.team.name.trim().equals(homeName.trim(), ignoreCase = true) }
+                if (hIdx >= 0) {
+                    val s = standings[hIdx]
+                    homeStanding = TeamStandingOverview(
+                        position = hIdx + 1,
+                        points = s.pts,
+                        played = s.pj,
+                        goalDifference = s.gd,
+                        group = match.homeTeam.group.takeIf { it.isNotBlank() },
+                        tournamentName = tName
+                    )
+                }
+                val aIdx = standings.indexOfFirst { it.team.name.trim().equals(awayName.trim(), ignoreCase = true) }
+                if (aIdx >= 0) {
+                    val s = standings[aIdx]
+                    awayStanding = TeamStandingOverview(
+                        position = aIdx + 1,
+                        points = s.pts,
+                        played = s.pj,
+                        goalDifference = s.gd,
+                        group = match.awayTeam.group.takeIf { it.isNotBlank() },
+                        tournamentName = tName
+                    )
+                }
+            } catch (_: Exception) {}
         }
     }
 
@@ -2197,7 +2335,17 @@ fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): Smart
         awayGeneralForm = awayGeneral,
         homeVenueForm = homeVenue,
         awayVenueForm = awayVenue,
+        homeGeneralMatches = homeGeneralMatches,
+        awayGeneralMatches = awayGeneralMatches,
+        homeVenueMatches = homeVenueMatches,
+        awayVenueMatches = awayVenueMatches,
+        homeStanding = homeStanding,
+        awayStanding = awayStanding,
         h2hSummary = h2hStr,
+        h2hHomeWins = h2hHomeWins,
+        h2hDraws = h2hDraws,
+        h2hAwayWins = h2hAwayWins,
+        h2hMatches = h2hMatchesList,
         insightText = insight
     )
 }
@@ -2212,6 +2360,7 @@ fun MatchTeamStatsView(
     val analysis = remember(match.id, allMatches.size) {
         computeSmartPredictionAnalysis(match, allMatches)
     }
+    var showH2HDetail by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -2290,79 +2439,380 @@ fun MatchTeamStatsView(
         
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
         
-        // Bloque 3: Racha General y de Condición
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Forma y Rendimiento Reciente", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                Text("← Más reciente", style = MaterialTheme.typography.labelSmall, color = Color(0xFFFFC107), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
+        // Bloque 3: Así llegan en el torneo (Estilo Anulo Mufo)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Así llegan en el torneo", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
 
-            // Local General
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("🏠 ${match.homeTeam.name} (Global): ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(160.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (analysis.homeGeneralForm.isEmpty()) {
-                    Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
-                } else {
-                    analysis.homeGeneralForm.forEach { 
-                        FormCircle(result = it)
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                }
-            }
+            // Tarjeta Local
+            TeamArrivalCard(
+                team = match.homeTeam,
+                standing = analysis.homeStanding,
+                generalMatches = analysis.homeGeneralMatches,
+                venueMatches = analysis.homeVenueMatches,
+                isHomeCondition = true,
+                defaultTournamentName = match.tournament_id?.let { tid -> allTournaments.find { it.id == tid }?.name } ?: "Competición Oficial"
+            )
 
-            // Local en Casa
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("    ↳ En su Estadio: ", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.width(160.dp), maxLines = 1)
-                if (analysis.homeVenueForm.isEmpty()) {
-                    Text("Sin datos en casa", fontSize = 11.sp, color = Color.Gray)
-                } else {
-                    analysis.homeVenueForm.forEach { 
-                        FormCircle(result = it)
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                }
-            }
-
-            // Visitante General
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("✈️ ${match.awayTeam.name} (Global): ", style = MaterialTheme.typography.labelSmall, color = Color.White, modifier = Modifier.width(160.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (analysis.awayGeneralForm.isEmpty()) {
-                    Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
-                } else {
-                    analysis.awayGeneralForm.forEach { 
-                        FormCircle(result = it)
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                }
-            }
-
-            // Visitante Fuera
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("    ↳ Como Visitante: ", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.width(160.dp), maxLines = 1)
-                if (analysis.awayVenueForm.isEmpty()) {
-                    Text("Sin datos fuera", fontSize = 11.sp, color = Color.Gray)
-                } else {
-                    analysis.awayVenueForm.forEach { 
-                        FormCircle(result = it)
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                }
-            }
+            // Tarjeta Visitante
+            TeamArrivalCard(
+                team = match.awayTeam,
+                standing = analysis.awayStanding,
+                generalMatches = analysis.awayGeneralMatches,
+                venueMatches = analysis.awayVenueMatches,
+                isHomeCondition = false,
+                defaultTournamentName = match.tournament_id?.let { tid -> allTournaments.find { it.id == tid }?.name } ?: "Competición Oficial"
+            )
         }
 
         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
 
-        // Bloque 4: H2H Historial Directo
-        Column {
-            Text("Historial Directo (H2H entre sí)", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(analysis.h2hSummary, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
+        // Bloque 4: Enfrentamientos Directos (H2H con 3 columnas y detalle)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Enfrentamientos Directos", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFF161B26),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Resumen 3 Columnas
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Triunfos Local
+                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${analysis.h2hHomeWins}",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF00E676)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Triunfos de\n${match.homeTeam.name}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.75f),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 12.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Empates
+                        Column(modifier = Modifier.weight(0.7f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${analysis.h2hDraws}",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFFC107)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Empates",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.75f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+
+                        // Triunfos Visitante
+                        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${analysis.h2hAwayWins}",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF00E676)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Triunfos de\n${match.awayTeam.name}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.75f),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 12.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                    if (analysis.h2hMatches.isNotEmpty()) {
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    com.example.worldcup2026.data.util.SoundManager.playTic()
+                                    showH2HDetail = !showH2HDetail
+                                }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (showH2HDetail) "Ocultar detalle ∧" else "Ver detalle (${analysis.h2hMatches.size} cruces) ∨",
+                                color = Color(0xFF64B5F6),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        if (showH2HDetail) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                analysis.h2hMatches.forEach { pastMatch ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.White.copy(alpha = 0.04f),
+                                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = pastMatch.tournamentName ?: "Competición Oficial",
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFFFD700).copy(alpha = 0.8f)
+                                                )
+                                                if (!pastMatch.date.isNullOrBlank()) {
+                                                    Text(
+                                                        text = pastMatch.date,
+                                                        fontSize = 9.sp,
+                                                        color = Color.White.copy(alpha = 0.45f)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = pastMatch.homeTeamName,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color.White,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                Text(
+                                                    text = "${pastMatch.homeScore} - ${pastMatch.awayScore}",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFF00E676),
+                                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                                )
+                                                Text(
+                                                    text = pastMatch.awayTeamName,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color.White,
+                                                    textAlign = TextAlign.End,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "Sin enfrentamientos previos registrados este año.",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+fun TeamArrivalCard(
+    team: Team,
+    standing: TeamStandingOverview?,
+    generalMatches: List<FormMatchItem>,
+    venueMatches: List<FormMatchItem>,
+    isHomeCondition: Boolean,
+    defaultTournamentName: String
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF161B26),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Fila Superior: Escudo + Nombre + Subtítulo + Posición
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val logo = team.flagUrl.takeIf { !it.isNullOrBlank() }
+                    ?: com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(team.name)
+                    ?: ""
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(logo)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.08f)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = team.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    val subText = if (standing != null) {
+                        val gPart = if (!standing.group.isNullOrBlank() && standing.group.length <= 4) " · Gr. ${standing.group}" else ""
+                        val gdPart = if (standing.goalDifference > 0) "+${standing.goalDifference}" else "${standing.goalDifference}"
+                        "${standing.tournamentName}$gPart · ${standing.points} pts · ${standing.played} PJ · DIF $gdPart"
+                    } else {
+                        defaultTournamentName
+                    }
+                    Text(
+                        text = subText,
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.65f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (standing != null) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${standing.position}.°",
+                        color = Color(0xFF00E676),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 17.sp
+                    )
+                }
+            }
+
+            // Fila Últimos 5 partidos con indicador L / V
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Últimos 5:",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier.width(72.dp)
+                )
+
+                if (generalMatches.isEmpty()) {
+                    Text("Sin datos previos", fontSize = 11.sp, color = Color.Gray)
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        generalMatches.forEach { mItem ->
+                            FormResultChip(item = mItem)
+                        }
+                    }
+                }
+            }
+
+            // Rendimiento en condición (En su Estadio / De Visitante)
+            if (venueMatches.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val condLabel = if (isHomeCondition) "↳ En su casa:" else "↳ Fuera/Visita:"
+                    Text(
+                        text = condLabel,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.width(72.dp)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        venueMatches.forEach { mItem ->
+                            FormMiniDot(result = mItem.result)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FormResultChip(item: FormMatchItem) {
+    val bg = when(item.result) {
+        "V" -> Color(0xFF2E7D32)
+        "E" -> Color(0xFFF57F17)
+        else -> Color(0xFFC62828)
+    }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(bg),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = item.result,
+                color = Color.White,
+                fontWeight = FontWeight.Black,
+                fontSize = 11.sp
+            )
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = if (item.isHome) "L" else "V",
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (item.isHome) Color(0xFF90CAF9) else Color(0xFFFFCC80)
+        )
+    }
+}
+
+@Composable
+fun FormMiniDot(result: String) {
+    val bg = when(result) {
+        "V" -> Color(0xFF2E7D32)
+        "E" -> Color(0xFFF57F17)
+        else -> Color(0xFFC62828)
+    }
+    Box(
+        modifier = Modifier
+            .size(10.dp)
+            .clip(CircleShape)
+            .background(bg)
+    )
 }
 
 fun computeRealTeamForm(teamName: String, allMatches: List<Match>, venueOnly: Boolean? = null): List<String> {
