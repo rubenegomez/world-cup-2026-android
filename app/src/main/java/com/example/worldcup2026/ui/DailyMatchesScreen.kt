@@ -168,17 +168,7 @@ fun DailyMatchesScreen(
                         !isCancelledOrPostponed && (isLiveRaw || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED"))
                     } else true
                 }
-                .sortedWith(
-                    compareByDescending<Match> { it.status != "Scheduled" || (it.homeScore != null && it.awayScore != null) }
-                        .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
-                )
-                .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
-                .sortedWith(
-                    compareByDescending<Match> { it.homeTeam.name in favTeams || it.awayTeam.name in favTeams }
-                        .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") }
-                        .thenBy { it.status.uppercase() == "FINISHED" }
-                        .thenBy { it.date ?: "9999" }
-                )
+                .sortedWith(compareBy<Match> { it.date ?: "9999" }.thenBy { it.id })
         } else {
             matchesForSelectedDate
         }

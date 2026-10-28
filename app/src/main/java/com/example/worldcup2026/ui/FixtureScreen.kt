@@ -671,7 +671,7 @@ fun MatchCard(
     )
 
     // Cálculo de ganador/clasificado para torneos con eliminación directa (mata-mata)
-    val isKnockout = match.tournament_id in listOf(1, 3, 4, 6, 12, 16, 24) || (match.tournament_id == 5 && (match.matchday ?: 0) >= 15)
+    val isKnockout = match.tournament_id in listOf(1, 3, 4, 6, 12, 16, 24) || (match.tournament_id == 5 && (match.matchday ?: 0) >= 17)
     val isFinished = statusUpper == "FINISHED"
     val homePen = match.homePenalties
     val awayPen = match.awayPenalties
@@ -780,9 +780,11 @@ fun MatchCard(
                             dtStr in "2026-09-23".."2026-09-29" -> "Fecha 11"
                             dtStr in "2026-09-30".."2026-10-06" -> "Fecha 12"
                             dtStr in "2026-10-07".."2026-10-13" -> "Fecha 13"
-                            dtStr in "2026-10-14".."2026-10-20" -> "Fecha 14"
-                            dtStr in "2026-10-21".."2026-10-27" -> "Fecha 15"
-                            else -> "Fecha 11"
+                            dtStr in "2026-10-14".."2026-10-20" -> "Fecha 13"
+                            dtStr in "2026-10-21".."2026-10-27" -> "Fecha 14"
+                            dtStr in "2026-10-28".."2026-11-04" -> "Fecha 15"
+                            dtStr in "2026-11-05".."2026-11-15" -> "Fecha 16"
+                            else -> "Fecha 15"
                         }
                     } else "Fecha 11"
                 }
@@ -897,11 +899,7 @@ fun MatchCard(
                                 maxLines = 1
                             )
                         }
-                        if (onNavigateToTournament != null && match.tournament_id != null) {
-                            IconButton(onClick = { onNavigateToTournament(match.tournament_id) }, modifier = Modifier.size(16.dp).padding(start = 2.dp)) {
-                                Icon(Icons.Default.Info, contentDescription = "Ver torneo", tint = Color(0xFFFFD700).copy(alpha = 0.7f), modifier = Modifier.size(11.dp))
-                            }
-                        }
+
                     } else if (stageLabel.isNotBlank()) {
                         Text(
                             text = stageLabel.uppercase(),
