@@ -60,7 +60,8 @@ fun FixtureScreen(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit = { _, _, _, _, _, _ -> },
     showAds: Boolean = true,
     onToggleComodin: ((Int) -> Unit)? = null,
-    favoriteTeamNames: Set<String> = emptySet()
+    favoriteTeamNames: Set<String> = emptySet(),
+    onTeamUpdated: (() -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val tabs = remember(isWorldCup) {
@@ -135,10 +136,10 @@ fun FixtureScreen(
             modifier = Modifier.weight(1f)
         ) { page ->
             when (page) {
-                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin, favoriteTeamNames)
-                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
+                0 -> DayFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin, favoriteTeamNames, onTeamUpdated = onTeamUpdated)
+                1 -> GroupFilteredFixture(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin, onTeamUpdated = onTeamUpdated)
                 2 -> if (isWorldCup) {
-                    KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin)
+                    KnockoutBracket(matches, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, showAds, onToggleComodin, onTeamUpdated = onTeamUpdated)
                 }
             }
         }
@@ -154,7 +155,8 @@ fun KnockoutBracket(
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean,
-    onToggleComodin: ((Int) -> Unit)? = null
+    onToggleComodin: ((Int) -> Unit)? = null,
+    onTeamUpdated: (() -> Unit)? = null
 ) {
     val rounds = remember { com.example.worldcup2026.data.util.TournamentConfig.KNOCKOUT_ROUNDS.map { it.name } }
     var selectedRound by remember(rounds) { mutableStateOf(rounds.firstOrNull() ?: "") }
@@ -268,7 +270,7 @@ fun KnockoutBracket(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(filteredMatches) { index, match ->
-                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin)
+                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, onTeamUpdated = onTeamUpdated)
                 }
             }
         }
@@ -307,7 +309,8 @@ fun DayFilteredFixture(
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean,
     onToggleComodin: ((Int) -> Unit)? = null,
-    favoriteTeamNames: Set<String> = emptySet()
+    favoriteTeamNames: Set<String> = emptySet(),
+    onTeamUpdated: (() -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val isCupOrFriendly = remember(matches) { 
@@ -542,7 +545,7 @@ fun DayFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, favoriteTeamNames = favoriteTeamNames)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, favoriteTeamNames = favoriteTeamNames, onTeamUpdated = onTeamUpdated)
             }
         }
     }
@@ -557,7 +560,8 @@ fun GroupFilteredFixture(
     onShowVipStats: (Match) -> Unit,
     onPredictionChange: (Int, String?, Int?, Int?, Int?, Int?) -> Unit,
     showAds: Boolean,
-    onToggleComodin: ((Int) -> Unit)? = null
+    onToggleComodin: ((Int) -> Unit)? = null,
+    onTeamUpdated: (() -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
     val groups = matches.filter { if (isWorldCup) it.id <= 72 else true }.map { it.homeTeam.group }.distinct().sorted()
@@ -574,12 +578,12 @@ fun GroupFilteredFixture(
                 FilterChip(
                     selected = selectedGroup == group, 
                     onClick = { selectedGroup = group }, 
-                    label = { Text("GRUPO $group", color = Color.White) },
+                    label = { Text("GRUPO $group", color = if (selectedGroup == group) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        containerColor = Color.White.copy(alpha = 0.1f)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    border = FilterChipDefaults.filterChipBorder(borderColor = Color.White.copy(alpha = 0.2f), enabled = true, selected = selectedGroup == group)
+                    border = FilterChipDefaults.filterChipBorder(borderColor = MaterialTheme.colorScheme.outlineVariant, enabled = true, selected = selectedGroup == group)
                 )
             }
         }
@@ -589,7 +593,7 @@ fun GroupFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, onTeamUpdated = onTeamUpdated)
             }
         }
     }
@@ -689,10 +693,10 @@ fun MatchCard(
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141924).copy(alpha = 0.95f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(
             width = if (isLive) 1.5.dp else if (hasFav) 1.2.dp else 1.dp,
-            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else if (hasFav) Color(0xFFFFD700).copy(alpha = 0.55f) else Color.White.copy(alpha = 0.12f)
+            color = if (isLive) Color.Red.copy(alpha = pulseAlpha) else if (hasFav) Color(0xFFFFD700).copy(alpha = 0.55f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
         )
     ) {
         Column(
@@ -887,7 +891,7 @@ fun MatchCard(
                             Text(
                                 text = " · ${stageLabel.uppercase()}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.55f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 9.sp,
                                 maxLines = 1
@@ -902,7 +906,7 @@ fun MatchCard(
                         Text(
                             text = stageLabel.uppercase(),
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.55f),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                             fontSize = 9.sp,
                             maxLines = 1
@@ -923,8 +927,8 @@ fun MatchCard(
                     if (isAdmin) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Color.White.copy(alpha = 0.06f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                             modifier = Modifier.clickable {
                                 com.example.worldcup2026.data.util.SoundManager.playTic()
                                 showAdminDialog = true
@@ -934,7 +938,7 @@ fun MatchCard(
                                 Icon(
                                     Icons.Default.Settings,
                                     contentDescription = "Ajustar Partido",
-                                    tint = Color.White.copy(alpha = 0.6f),
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                     modifier = Modifier.size(13.dp)
                                 )
                             }
@@ -962,7 +966,7 @@ fun MatchCard(
 
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = if (isComodin) Color(0xFFFFD700) else Color.White.copy(alpha = 0.06f),
+                        color = if (isComodin) Color(0xFFFFD700) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp, 
                             if (isComodin) Color(0xFFFFD700) else Color(0xFFFFD700).copy(alpha = 0.35f)
@@ -1026,7 +1030,7 @@ fun MatchCard(
                                 text = "VS",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
-                                color = Color.White.copy(alpha = 0.2f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                             )
                         }
                         statusUpper == "FINISHED" -> {
@@ -1042,7 +1046,7 @@ fun MatchCard(
                                 text = "VS",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
-                                color = Color.White.copy(alpha = 0.2f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                             )
                         }
                         isLive -> {
@@ -1064,7 +1068,7 @@ fun MatchCard(
                                 text = "VS",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
-                                color = Color.White.copy(alpha = 0.2f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                             )
                         }
                         else -> {
@@ -1076,7 +1080,7 @@ fun MatchCard(
                                 text = "VS",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
-                                color = Color.White.copy(alpha = 0.2f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                             )
                         }
                     }
@@ -1127,7 +1131,7 @@ fun MatchCard(
                                     Text(
                                         text = parsed.detail,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White.copy(alpha = 0.7f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
@@ -1152,7 +1156,7 @@ fun MatchCard(
                                     Text(
                                         text = parsed.detail,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.White.copy(alpha = 0.7f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 11.sp,
                                         textAlign = TextAlign.End,
                                         maxLines = 1,
@@ -1171,7 +1175,7 @@ fun MatchCard(
                     onClick = { onShowVipStats(match) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f), contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1266,7 +1270,7 @@ fun MatchCard(
                         Text(
                             text = match.homeTeam.name,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 12.sp,
                             modifier = Modifier.width(110.dp),
                             maxLines = 1,
@@ -1293,7 +1297,7 @@ fun MatchCard(
                         Text(
                             text = match.awayTeam.name,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 12.sp,
                             modifier = Modifier.width(110.dp),
                             maxLines = 1,
@@ -1316,15 +1320,15 @@ fun MatchCard(
 
             // SECCIÓN PRODE (Predicción)
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(12.dp))
             
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF0D121B))
-                    .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
                     .padding(12.dp)
             ) {
                 Row(
@@ -1338,7 +1342,7 @@ fun MatchCard(
                     ) {
                         Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("PRODE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                        Text("PRODE", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                         
                         if (!matchHasStarted && isDoubleBet(match.predictedWinner, match.predictedHomeScore, match.predictedAwayScore)) {
                             Spacer(modifier = Modifier.width(6.dp))
@@ -1367,7 +1371,7 @@ fun MatchCard(
                                 },
                                 modifier = Modifier.height(28.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
                             ) {
                                 Text("EDITAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
@@ -1401,7 +1405,7 @@ fun MatchCard(
                                 },
                                 modifier = Modifier.height(28.dp),
                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50), contentColor = Color.White)
                             ) {
                                 Text("GUARDAR", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
@@ -1459,7 +1463,7 @@ fun MatchCard(
                                     Icon(
                                         Icons.Default.Info, 
                                         contentDescription = "Estadísticas", 
-                                        tint = if (showTeamStats) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.6f)
+                                        tint = if (showTeamStats) Color(0xFF64B5F6) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                     )
                                 }
                                 IconButton(
@@ -1473,7 +1477,7 @@ fun MatchCard(
                                     Icon(
                                         Icons.Default.HelpOutline, 
                                         contentDescription = "Reglas", 
-                                        tint = if (showGameRules) Color(0xFFFFC107) else Color.White.copy(alpha = 0.6f)
+                                        tint = if (showGameRules) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                     )
                                 }
                             }
@@ -1483,7 +1487,7 @@ fun MatchCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
                                 .padding(horizontal = 8.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
@@ -1492,7 +1496,7 @@ fun MatchCard(
                                 text = "Goles:",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(end = 12.dp)
                             )
                             PredictionInput(
@@ -1503,7 +1507,7 @@ fun MatchCard(
                                     onPredictionChange(match.id, match.predictedWinner, h, a, match.predictedHomePenalties, match.predictedAwayPenalties) 
                                 }
                             )
-                            Text("   -   ", fontWeight = FontWeight.Bold, color = Color.White.copy(alpha = 0.7f))
+                            Text("   -   ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                             PredictionInput(
                                 value = match.predictedAwayScore, 
                                 enabled = isEditingProde,
@@ -1517,7 +1521,7 @@ fun MatchCard(
                     
                     if (showTeamStats) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                         MatchTeamStatsView(
                             match = match,
                             allMatches = allMatches,
@@ -1536,7 +1540,7 @@ fun MatchCard(
                     }
                     if (showGameRules) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                         MatchRulesHelpView()
                     }
                 } else {
@@ -1592,7 +1596,7 @@ fun MatchCard(
                             .fillMaxWidth()
                             .background(
                                 if (pointsData > 0) Color(0xFF4CAF50).copy(alpha = 0.15f)
-                                else Color.White.copy(alpha = 0.05f),
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
                                 RoundedCornerShape(12.dp)
                             )
                             .padding(horizontal = 8.dp, vertical = 8.dp),
@@ -1613,7 +1617,7 @@ fun MatchCard(
                                 text = "Tu Pronóstico: $displayWinner (${match.predictedHomeScore ?: 0}-${match.predictedAwayScore ?: 0})",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f, fill = false).padding(end = 4.dp),
                                 maxLines = 1
                             )
@@ -1645,9 +1649,9 @@ fun MatchCard(
 
             if (showPredictionPenalties) {
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(thickness = 0.5.dp, color = Color.White.copy(alpha = 0.1f))
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("PRONÓSTICO TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = Color.White)
+                Text("PRONÓSTICO TANDA DE PENALES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1796,7 +1800,7 @@ fun TeamMatchInfo(
                     .crossfade(true)
                     .build(),
                 contentDescription = null,
-                modifier = Modifier.size(54.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)),
+                modifier = Modifier.size(54.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
                 contentScale = ContentScale.Crop
             )
             if (isFavorite) {
@@ -1830,12 +1834,12 @@ fun TeamMatchInfo(
                 fontWeight = if (isFavorite || isQualified) FontWeight.Black else FontWeight.ExtraBold, 
                 maxLines = 1, 
                 overflow = TextOverflow.Ellipsis, 
-                color = if (isFavorite) Color(0xFFFFD700) else if (isQualified) Color(0xFF90CAF9) else Color.White
+                color = if (isFavorite) Color(0xFFFFD700) else if (isQualified) Color(0xFF2196F3) else MaterialTheme.colorScheme.onSurface
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
         val displayText = (score?.toString() ?: "0") + (if (penalties != null) " ($penalties)" else "")
-        Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = Color.White)
+        Text(text = displayText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 8.dp), color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -1847,12 +1851,12 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier
             .background(
-                color = Color(0xFF1E2536),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(10.dp)
             )
             .border(
                 width = 1.dp,
-                color = if (value != null) Color(0xFFFFD700).copy(alpha = 0.5f) else Color.White.copy(alpha = 0.18f),
+                color = if (value != null) Color(0xFFFFD700).copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(10.dp)
             )
             .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -1861,7 +1865,7 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
             modifier = Modifier
                 .size(28.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = if (enabled && value != null) 0.08f else 0.02f))
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled && value != null) 0.08f else 0.02f))
                 .clickable(enabled = enabled && value != null) {
                     com.example.worldcup2026.data.util.SoundManager.playTic()
                     if (current > 0) {
@@ -1875,7 +1879,7 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
             Icon(
                 imageVector = Icons.Default.Remove,
                 contentDescription = "Menos",
-                tint = if (enabled && value != null) Color.White else Color.White.copy(alpha = 0.25f),
+                tint = if (enabled && value != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -1891,7 +1895,7 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
                 fontSize = 17.sp,
-                color = if (value != null) Color(0xFFFFD700) else Color.White.copy(alpha = 0.4f),
+                color = if (value != null) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 textAlign = TextAlign.Center
             )
         }
@@ -1900,7 +1904,7 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
             modifier = Modifier
                 .size(28.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = if (enabled) 0.08f else 0.02f))
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 0.08f else 0.02f))
                 .clickable(enabled = enabled && (value == null || current < 20)) {
                     com.example.worldcup2026.data.util.SoundManager.playTic()
                     if (value == null) {
@@ -1914,7 +1918,7 @@ fun PredictionInput(value: Int?, enabled: Boolean = true, onValueChange: (Int?) 
             Icon(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Más",
-                tint = if (enabled && (value == null || current < 20)) Color(0xFFFFD700) else Color.White.copy(alpha = 0.25f),
+                tint = if (enabled && (value == null || current < 20)) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -1931,10 +1935,10 @@ fun PredictionChip(label: String, selected: Boolean, enabled: Boolean = true, on
                 onClick() 
             },
         shape = CircleShape,
-        color = if (selected) Color(0xFFFFD700) else Color(0xFF222938),
+        color = if (selected) Color(0xFFFFD700) else MaterialTheme.colorScheme.surfaceVariant,
         border = androidx.compose.foundation.BorderStroke(
             1.dp, 
-            if (selected) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f)
+            if (selected) Color(0xFFFFD700) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
         ),
         shadowElevation = if (selected) 4.dp else 0.dp
     ) {
@@ -1944,7 +1948,7 @@ fun PredictionChip(label: String, selected: Boolean, enabled: Boolean = true, on
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Black,
                 fontSize = 14.sp,
-                color = if (selected) Color(0xFF10141E) else (if (enabled) Color.White else Color.White.copy(alpha = 0.4f))
+                color = if (selected) Color(0xFF10141E) else (if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
             )
         }
     }
@@ -3162,14 +3166,14 @@ fun AdminMatchDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp),
         title = {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "⚙️ Panel de Control Admin",
                     fontWeight = FontWeight.Black,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 17.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -3194,7 +3198,7 @@ fun AdminMatchDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Text(match.homeTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f), maxLines = 1, fontWeight = FontWeight.Bold)
+                        Text(match.homeTeam.name, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
@@ -3202,22 +3206,22 @@ fun AdminMatchDialog(
                                 if (current != null && current > 0) homeScoreStr = (current - 1).toString()
                                 else homeScoreStr = ""
                             }, modifier = Modifier.size(32.dp)) {
-                                Text("-", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("-", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                             Text(if (homeScoreStr.isEmpty()) "-" else homeScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
                             IconButton(onClick = {
                                 val current = homeScoreStr.toIntOrNull() ?: 0
                                 homeScoreStr = (current + 1).toString()
                             }, modifier = Modifier.size(32.dp)) {
-                                Text("+", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("+", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
 
-                    Text("VS", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color.White.copy(alpha = 0.3f))
+                    Text("VS", fontSize = 13.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                        Text(match.awayTeam.name, fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f), maxLines = 1, fontWeight = FontWeight.Bold)
+                        Text(match.awayTeam.name, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
@@ -3225,14 +3229,14 @@ fun AdminMatchDialog(
                                 if (current != null && current > 0) awayScoreStr = (current - 1).toString()
                                 else awayScoreStr = ""
                             }, modifier = Modifier.size(32.dp)) {
-                                Text("-", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("-", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                             Text(if (awayScoreStr.isEmpty()) "-" else awayScoreStr, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFD700), modifier = Modifier.padding(horizontal = 8.dp))
                             IconButton(onClick = {
                                 val current = awayScoreStr.toIntOrNull() ?: 0
                                 awayScoreStr = (current + 1).toString()
                             }, modifier = Modifier.size(32.dp)) {
-                                Text("+", fontSize = 20.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("+", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -3242,7 +3246,7 @@ fun AdminMatchDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -3254,33 +3258,33 @@ fun AdminMatchDialog(
                     ) {
                         Button(
                             onClick = { editingTeamTarget = match.homeTeam },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A364F)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Editar Local", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text("Editar Local", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
 
                         Button(
                             onClick = { editingTeamTarget = match.awayTeam },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A364F)),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.weight(1f),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(13.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Editar Visita", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text("Editar Visita", fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                     }
                 }
 
                 // Selector de estado
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text("Estado del partido:", fontSize = 11.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
+                    Text("Estado del partido:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(6.dp))
                     
                     val statusOptions = listOf(
@@ -3349,12 +3353,12 @@ fun AdminMatchDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("GUARDAR", fontWeight = FontWeight.Bold)
+                Text("GUARDAR", fontWeight = FontWeight.Bold, color = Color.White)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("CANCELAR", color = Color.White.copy(alpha = 0.7f))
+                Text("CANCELAR", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
         }
     )
@@ -3405,10 +3409,10 @@ fun AdminEditTeamDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         title = {
-            Text("🛡️ Editar Equipo y Escudo", fontWeight = FontWeight.Black, color = Color.White, fontSize = 16.sp)
+            Text("🛡️ Editar Equipo y Escudo", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
         },
         text = {
             Column(
@@ -3420,7 +3424,7 @@ fun AdminEditTeamDialog(
                 Box(
                     modifier = Modifier
                         .size(64.dp)
-                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -3437,14 +3441,14 @@ fun AdminEditTeamDialog(
                             modifier = Modifier.size(56.dp)
                         )
                     } else {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = Color.White.copy(alpha = 0.3f), modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), modifier = Modifier.size(32.dp))
                     }
                 }
 
                 // Botón para elegir archivo de imagen
                 Button(
                     onClick = { imagePickerLauncher.launch("image/*") },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -3460,10 +3464,10 @@ fun AdminEditTeamDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         focusedBorderColor = Color(0xFFFFD700),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     )
                 )
 
@@ -3474,10 +3478,10 @@ fun AdminEditTeamDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         focusedBorderColor = Color(0xFFFFD700),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     )
                 )
             }
@@ -3519,7 +3523,7 @@ fun AdminEditTeamDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("CANCELAR", color = Color.White.copy(alpha = 0.7f))
+                Text("CANCELAR", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             }
         }
     )

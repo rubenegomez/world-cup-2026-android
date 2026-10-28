@@ -56,7 +56,7 @@ fun SettingsContainer(
     Surface(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         shape = RoundedCornerShape(24.dp),
-        color = Color(0xFF1E1E1E)
+        color = MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             if (showTeamsList) {
@@ -89,7 +89,7 @@ fun SettingsDialog(
                 .fillMaxSize()
                 .padding(16.dp),
             shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF1E1E1E)
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
@@ -105,14 +105,14 @@ fun SettingsDialog(
                     Text(
                         text = if (showTeamsList) "Equipos y Selecciones" else "Ajustes",
                         style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Black
                     )
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
-                Divider(color = Color.White.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 8.dp))
+                Divider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
 
                 if (showTeamsList) {
                     TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
@@ -228,7 +228,7 @@ fun SettingsMenuScreen(
                             Text(
                                 text = label,
                                 fontSize = 13.sp,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (themeMode == key) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -263,7 +263,7 @@ fun SettingsMenuScreen(
 
                     AlertDialog(
                         onDismissRequest = { showNotifSettings = false },
-                        title = { Text("Configurar Notificaciones", color = Color.White, fontWeight = FontWeight.Bold) },
+                        title = { Text("Configurar Notificaciones", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
                         text = {
                             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                                 Text("🎯 Alcance de Notificaciones:", color = Color(0xFFFFC107), fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -291,11 +291,11 @@ fun SettingsMenuScreen(
                                             onClick = null
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text(scopeLabel, fontSize = 12.sp, color = Color.White)
+                                        Text(scopeLabel, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
 
-                                Divider(color = Color.White.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 10.dp))
+                                Divider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
 
                                 Text("🔊 Sonido de Notificaciones:", color = Color(0xFFFFC107), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -317,12 +317,12 @@ fun SettingsMenuScreen(
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
-                                        Text(if (notifSilent) "🔕 Notificaciones Silenciosas (Sin Sonido)" else "🔔 Sonido Activado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(if (notifSilent) "Llegan a la barra de estado en silencio, sin silbato ni goool" else "Reproduce silbato y festejo de gol con cada alerta", fontSize = 11.sp, color = Color.White.copy(alpha = 0.65f))
+                                        Text(if (notifSilent) "🔕 Notificaciones Silenciosas (Sin Sonido)" else "🔔 Sonido Activado", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(if (notifSilent) "Llegan a la barra de estado en silencio, sin silbato ni goool" else "Reproduce silbato y festejo de gol con cada alerta", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
 
-                                Divider(color = Color.White.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 10.dp))
+                                Divider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 10.dp))
 
                                 Text("🔔 Tipos de Eventos / Alertas:", color = Color(0xFFFFC107), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -368,7 +368,7 @@ fun SettingsMenuScreen(
                                             colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFFFFC107))
                                         )
                                         Spacer(modifier = Modifier.width(10.dp))
-                                        Text(label, fontSize = 13.sp, color = Color.White)
+                                        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
                             }
@@ -378,7 +378,7 @@ fun SettingsMenuScreen(
                                 Text("Aceptar", color = Color(0xFFFFC107), fontWeight = FontWeight.Bold)
                             }
                         },
-                        containerColor = Color(0xFF1E1E1E)
+                        containerColor = MaterialTheme.colorScheme.surface
                     )
                 }
 
@@ -498,7 +498,7 @@ fun SettingsMenuScreen(
                                 Text(
                                     text = "Actualizaciones Automáticas",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
@@ -678,7 +678,7 @@ fun SettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
         onClick = onClick
     ) {
         Row(
@@ -690,7 +690,7 @@ fun SettingItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -698,13 +698,13 @@ fun SettingItem(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.6f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -743,12 +743,12 @@ fun TeamsListScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
             }
             Text(
                 text = "Equipos y Selecciones",
                 style = MaterialTheme.typography.titleLarge,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -756,7 +756,7 @@ fun TeamsListScreen(
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
-            contentColor = Color.White,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             edgePadding = 0.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -790,7 +790,7 @@ fun TeamsListScreen(
                                 viewModel.toggleFavoriteTournament(t.id)
                             },
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
+                            containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         )
                     ) {
                         Row(
@@ -798,7 +798,7 @@ fun TeamsListScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = t.displayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text(text = t.displayName, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Icon(
                                 imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
                                 contentDescription = "Torneo Favorito",
@@ -886,7 +886,7 @@ fun TeamsListScreen(
                                         viewModel.toggleFavoriteTeam(team.name)
                                     },
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (isFavorite) Color(0xFFFFC107).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f)
+                                    containerColor = if (isFavorite) Color(0xFFFFC107).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                 )
                             ) {
                                 Row(
@@ -903,7 +903,7 @@ fun TeamsListScreen(
                                             )
                                             Spacer(modifier = Modifier.width(12.dp))
                                         }
-                                        Text(text = team.name, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                        Text(text = team.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                     }
                                     Icon(
                                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,

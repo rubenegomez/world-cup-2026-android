@@ -88,16 +88,18 @@ fun DailyMatchesScreen(
     }
 
     val availableMatchdays = remember(tournamentMatches) {
-        tournamentMatches.mapNotNull { it.matchday }.filter { it > 0 }.distinct().sorted()
+        tournamentMatches.mapNotNull { it.matchday ?: if (it.tournament_id == 1 && it.id in 1..72) ((it.id - 1) / 16 + 1) else null }.filter { it > 0 }.distinct().sorted()
     }
 
-    LaunchedEffect(singleSelectedTourneyId, availableMatchdays) {
+    LaunchedEffect(singleSelectedTourneyId, availableMatchdays, date) {
         if (availableMatchdays.isNotEmpty()) {
             val todayStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            val defaultMd = tournamentMatches.filter {
-                val d = it.date ?: ""
-                d.length >= 10 && d.substring(0, 10) >= todayStr
-            }.minByOrNull { it.date ?: "9999" }?.matchday
+            val matchOnDate = tournamentMatches.firstOrNull { it.date?.startsWith(todayStr) == true && (it.matchday ?: 0) > 0 }
+            val defaultMd = matchOnDate?.matchday
+                ?: tournamentMatches.filter {
+                    val d = it.date ?: ""
+                    d.length >= 10 && d.substring(0, 10) >= todayStr
+                }.minByOrNull { it.date ?: "9999" }?.matchday
                 ?: availableMatchdays.lastOrNull()
                 ?: 1
             selectedMatchday = defaultMd
@@ -189,7 +191,7 @@ fun DailyMatchesScreen(
                 showTournamentSelectorDialog = true
             },
             shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.35f)),
             modifier = Modifier
                 .fillMaxWidth()
@@ -235,7 +237,7 @@ fun DailyMatchesScreen(
                         text = currentTourneyName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -283,12 +285,12 @@ fun DailyMatchesScreen(
                         "📅 Por Día (${date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM"))})",
                         fontSize = 11.sp,
                         fontWeight = if (viewMode == 0) FontWeight.Bold else FontWeight.Normal,
-                        color = if (viewMode == 0) Color.Black else Color.White.copy(alpha = 0.8f)
+                        color = if (viewMode == 0) Color.Black else MaterialTheme.colorScheme.onSurface
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Color(0xFFFFD700),
-                    containerColor = Color.White.copy(alpha = 0.08f)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.weight(1f).height(30.dp)
@@ -313,12 +315,12 @@ fun DailyMatchesScreen(
                         "📋 Fecha Completa",
                         fontSize = 11.sp,
                         fontWeight = if (viewMode == 1) FontWeight.Bold else FontWeight.Normal,
-                        color = if (viewMode == 1) Color.Black else Color.White.copy(alpha = 0.8f)
+                        color = if (viewMode == 1) Color.Black else MaterialTheme.colorScheme.onSurface
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = Color(0xFFFFD700),
-                    containerColor = Color.White.copy(alpha = 0.08f)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.weight(1f).height(30.dp)
@@ -335,7 +337,7 @@ fun DailyMatchesScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .background(Color(0xFF0F172A), RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -353,7 +355,7 @@ fun DailyMatchesScreen(
                         Icon(
                             Icons.Default.ChevronLeft,
                             contentDescription = "Fecha Anterior",
-                            tint = if (hasPrev) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f)
+                            tint = if (hasPrev) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                         )
                     }
 
@@ -377,7 +379,7 @@ fun DailyMatchesScreen(
                         Icon(
                             Icons.Default.ChevronRight,
                             contentDescription = "Fecha Siguiente",
-                            tint = if (hasNext) Color(0xFFFFD700) else Color.White.copy(alpha = 0.2f)
+                            tint = if (hasNext) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                         )
                     }
                 }
@@ -452,7 +454,7 @@ fun DailyMatchesScreen(
         Dialog(onDismissRequest = { showTournamentSelectorDialog = false }) {
             Surface(
                 shape = RoundedCornerShape(18.dp),
-                color = Color(0xFF1E1E1E),
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(0.85f)
@@ -471,10 +473,10 @@ fun DailyMatchesScreen(
                             text = "🏆 Seleccionar Torneo",
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         IconButton(onClick = { showTournamentSelectorDialog = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
+                            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
 
@@ -495,7 +497,7 @@ fun DailyMatchesScreen(
                                     showTournamentSelectorDialog = false
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isTodosSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
+                                color = if (isTodosSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isTodosSelected) BorderStroke(1.dp, Color(0xFFFFD700)) else null,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -508,7 +510,7 @@ fun DailyMatchesScreen(
                                     Text(
                                         "Todos los Torneos",
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -526,7 +528,7 @@ fun DailyMatchesScreen(
                                     showTournamentSelectorDialog = false
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isLiveSelected) Color(0xFFE53935).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.05f),
+                                color = if (isLiveSelected) Color(0xFFE53935).copy(alpha = 0.25f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isLiveSelected) BorderStroke(1.dp, Color(0xFFE53935)) else null,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -539,7 +541,7 @@ fun DailyMatchesScreen(
                                     Text(
                                         "Partidos En Vivo",
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -569,7 +571,7 @@ fun DailyMatchesScreen(
                                     showTournamentSelectorDialog = false
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
+                                color = if (isSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 border = if (isSelected) BorderStroke(1.dp, Color(0xFFFFD700)) else null,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -598,7 +600,7 @@ fun DailyMatchesScreen(
                                         Text(
                                             text = name,
                                             fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                            color = Color.White,
+                                            color = MaterialTheme.colorScheme.onSurface,
                                             fontSize = 13.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
@@ -629,7 +631,7 @@ fun DailyMatchesScreen(
                                 text = "OTROS TORNEOS Y PRÓXIMOS",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color.White.copy(alpha = 0.6f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
                             )
                         }
@@ -647,7 +649,7 @@ fun DailyMatchesScreen(
                                     showTournamentSelectorDialog = false
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else Color.White.copy(alpha = 0.03f),
+                                color = if (isSelected) Color(0xFFFFD700).copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                                 border = if (isSelected) BorderStroke(1.dp, Color(0xFFFFD700)) else null,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -676,7 +678,7 @@ fun DailyMatchesScreen(
                                         Text(
                                             text = name,
                                             fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal,
-                                            color = Color.White.copy(alpha = 0.8f),
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                                             fontSize = 13.sp,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis

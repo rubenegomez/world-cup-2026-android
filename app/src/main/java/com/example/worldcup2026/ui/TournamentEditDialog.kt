@@ -65,10 +65,10 @@ fun AdminEditTournamentDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1E1E1E),
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         title = {
-            Text("🏆 Editar Símbolo y Nombre del Torneo", fontWeight = FontWeight.Black, color = Color.White, fontSize = 16.sp)
+            Text("🏆 Editar Símbolo y Nombre del Torneo", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
         },
         text = {
             Column(
@@ -80,7 +80,7 @@ fun AdminEditTournamentDialog(
                 Box(
                     modifier = Modifier
                         .size(64.dp)
-                        .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -104,7 +104,7 @@ fun AdminEditTournamentDialog(
                 // Botón para elegir archivo de imagen
                 Button(
                     onClick = { imagePickerLauncher.launch("image/*") },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -124,10 +124,10 @@ fun AdminEditTournamentDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFFFFD700),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
 
@@ -138,10 +138,10 @@ fun AdminEditTournamentDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFFFFD700),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
             }
@@ -197,7 +197,7 @@ fun AdminEditTournamentDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("CANCELAR", color = Color.White.copy(alpha = 0.7f))
+                Text("CANCELAR", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     )

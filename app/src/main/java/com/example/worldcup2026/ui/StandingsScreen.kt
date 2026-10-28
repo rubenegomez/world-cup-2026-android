@@ -893,7 +893,7 @@ fun AnnualStandingsTable(standings: List<AnnualStandingDto>, descensoStandings: 
                         isLibertadoresPrevia -> Color(0xFF64B5F6)
                         isSudamericana -> Color(0xFFFFB74D)
                         isDescenso -> Color(0xFFE57373)
-                        else -> Color.White
+                        else -> MaterialTheme.colorScheme.onSurface
                     }
                 )
                 
@@ -1479,7 +1479,7 @@ fun TournamentFixtureView(
         }
 
         Surface(
-            color = Color.White.copy(alpha = 0.04f),
+            color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -1505,7 +1505,7 @@ fun TournamentFixtureView(
                     Icon(
                         imageVector = Icons.Default.ChevronLeft,
                         contentDescription = "Fecha anterior",
-                        tint = if (currentIndex > 0) Color.White else Color.White.copy(alpha = 0.2f),
+                        tint = if (currentIndex > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -1522,7 +1522,7 @@ fun TournamentFixtureView(
                     color = when {
                         hasLiveInMatchday -> Color(0xFFE53935)
                         selectedMatchday == defaultMatchday -> Color(0xFFFFD700)
-                        else -> Color.White
+                        else -> MaterialTheme.colorScheme.onSurface
                     }
                 )
 
@@ -1539,7 +1539,7 @@ fun TournamentFixtureView(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Fecha siguiente",
-                        tint = if (currentIndex < matchdaysList.size - 1) Color.White else Color.White.copy(alpha = 0.2f),
+                        tint = if (currentIndex < matchdaysList.size - 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -1579,8 +1579,8 @@ fun FixtureMatchCard(
                 onClick()
             },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161A28)),
-        border = if (isLive) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE53935)) else null
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = if (isLive) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE53935)) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             // Cabecera: Fecha / Estado
@@ -1592,14 +1592,14 @@ fun FixtureMatchCard(
                 Text(
                     text = match.date ?: "",
                     fontSize = 10.sp,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
                 
                 Surface(
                     color = when {
                         isLive -> Color(0xFFE53935).copy(alpha = 0.2f)
-                        isFinished -> Color.White.copy(alpha = 0.08f)
+                        isFinished -> MaterialTheme.colorScheme.surfaceVariant
                         else -> Color(0xFFFFC107).copy(alpha = 0.15f)
                     },
                     shape = RoundedCornerShape(4.dp)
@@ -1614,7 +1614,7 @@ fun FixtureMatchCard(
                         fontWeight = FontWeight.Bold,
                         color = when {
                             isLive -> Color(0xFFE53935)
-                            isFinished -> Color.White.copy(alpha = 0.7f)
+                            isFinished -> MaterialTheme.colorScheme.onSurfaceVariant
                             else -> Color(0xFFFFC107)
                         },
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -1639,7 +1639,7 @@ fun FixtureMatchCard(
                         text = match.homeTeam.name,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.End,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1660,7 +1660,7 @@ fun FixtureMatchCard(
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 10.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -1676,7 +1676,7 @@ fun FixtureMatchCard(
                             text = "vs",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.5f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -1700,7 +1700,7 @@ fun FixtureMatchCard(
                         text = match.awayTeam.name,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Start,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

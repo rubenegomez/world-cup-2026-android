@@ -669,8 +669,8 @@ fun MisLigasTab(
 
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable { onLeagueClick(league) },
-                    colors = CardDefaults.cardColors(containerColor = if (isFinished) Color(0xFF2D2610) else Color(0xFF1E1E1E)),
-                    border = if (isFinished) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)) else null
+                    colors = CardDefaults.cardColors(containerColor = if (isFinished) Color(0xFFFFD700).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface),
+                    border = if (isFinished) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700)) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp).fillMaxWidth(),
@@ -679,7 +679,7 @@ fun MisLigasTab(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(league.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                Text(league.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
                                     color = Color(0xFFFFC107).copy(alpha = 0.2f),
@@ -751,7 +751,7 @@ fun MisLigasTab(
         val scrollState = rememberScrollState()
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
-            title = { Text("Crear Nueva Liga de Prode", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("Crear Nueva Liga de Prode", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier
@@ -772,7 +772,7 @@ fun MisLigasTab(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text("Modalidad del Prode:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Modalidad del Prode:", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             FilterChip(
@@ -806,7 +806,7 @@ fun MisLigasTab(
                     }
 
                     if (selectedMode != "MULTI_TOURNAMENT" && selectedMode != "DAY_MATCHES") {
-                        Text("Seleccionar Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Seleccionar Torneo:", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             tournamentOptions.chunked(2).forEach { rowTournaments ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -821,7 +821,7 @@ fun MisLigasTab(
                             }
                         }
                     } else if (selectedMode == "MULTI_TOURNAMENT") {
-                        Text("Elegir Torneos a incluir:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Elegir Torneos a incluir:", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             tournamentOptions.chunked(2).forEach { rowTournaments ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -858,7 +858,7 @@ fun MisLigasTab(
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Column(modifier = Modifier.padding(8.dp)) {
-                                    Text(tName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Text(tName, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalAlignment = Alignment.CenterVertically,
@@ -895,7 +895,7 @@ fun MisLigasTab(
                             }
                         }
                     } else if (selectedMode == "DAY_MATCHES") {
-                        Text("📅 Elegir Día del Calendario:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("📅 Elegir Día del Calendario:", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Text("Entran automáticamente TODOS los partidos jugados en esta fecha sin importar el torneo.", color = Color.Gray, fontSize = 11.sp)
                         
                         val today = java.time.LocalDate.now()
@@ -957,7 +957,7 @@ fun MisLigasTab(
                                 )
                                 Text(
                                     text = if (includePostponedSwitch) "La liga espera a que se jueguen los partidos reprogramados." else "Los partidos suspendidos/postergados no computan puntos y la fecha cierra a tiempo.",
-                                    color = Color.White.copy(alpha = 0.7f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 10.sp
                                 )
                             }
@@ -989,7 +989,7 @@ fun MisLigasTab(
                         }
 
                         if (selectedMode == "SINGLE_MATCHDAY") {
-                            Text("Elegir Fecha del Torneo:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Elegir Fecha del Torneo:", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 IconButton(onClick = { if (startMatchday > 1) startMatchday-- }) {
                                     Text("◀", color = if (startMatchday > 1) Color.White else Color.Gray, fontSize = 16.sp)
@@ -1000,7 +1000,7 @@ fun MisLigasTab(
                                 }
                             }
                         } else if (selectedMode == "RANGE_MATCHDAYS") {
-                            Text("Rango de Fechas:", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Rango de Fechas:", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text("Desde:", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.width(50.dp))
@@ -1083,15 +1083,15 @@ fun MisLigasTab(
                     Text("Cancelar", color = Color.Gray)
                 }
             },
-            containerColor = Color(0xFF1E1E1E)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     if (leagueToDelete != null) {
         AlertDialog(
             onDismissRequest = { leagueToDelete = null },
-            title = { Text("Eliminar / Salir de Liga", color = Color.White, fontWeight = FontWeight.Bold) },
-            text = { Text("¿Estás seguro de que deseas salir o eliminar la liga '${leagueToDelete?.name}'?", color = Color.White) },
+            title = { Text("Eliminar / Salir de Liga", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) },
+            text = { Text("¿Estás seguro de que deseas salir o eliminar la liga '${leagueToDelete?.name}'?", color = MaterialTheme.colorScheme.onSurface) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -1108,14 +1108,14 @@ fun MisLigasTab(
                     Text("Cancelar", color = Color.Gray)
                 }
             },
-            containerColor = Color(0xFF1E1E1E)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
     if (showJoinDialog) {
         AlertDialog(
             onDismissRequest = { showJoinDialog = false },
-            title = { Text("Unirse a una Liga", color = Color.White) },
+            title = { Text("Unirse a una Liga", color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 OutlinedTextField(
                     value = leagueCodeInput,
@@ -1144,7 +1144,7 @@ fun MisLigasTab(
                     Text("Cancelar", color = Color.Gray)
                 }
             },
-            containerColor = Color(0xFF1E1E1E)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -1256,7 +1256,7 @@ fun MisLigasTab(
                     Text("¡A Jugar! 🚀", color = Color.Black, fontWeight = FontWeight.Bold)
                 }
             },
-            containerColor = Color(0xFF1E1E1E)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }
