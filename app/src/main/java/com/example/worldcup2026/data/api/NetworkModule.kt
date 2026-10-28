@@ -28,6 +28,8 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonDeserializationContext
 
 interface WorldCupApiService {
+    @GET("api/tournaments")
+    suspend fun getTournaments(): List<ApiTournament>
     @GET("api/teams")
     suspend fun getTeams(@Query("tournament_id") tournamentId: Int? = null): List<Team>
 
@@ -101,6 +103,14 @@ data class AdminTournamentEditRequest(
     val logo_url: String? = null,
     val image_base64: String? = null,
     val file_extension: String? = ".png"
+)
+
+data class ApiTournament(
+    val id: Int,
+    val name: String,
+    val type: String,
+    val order: Int = 0,
+    val logo_url: String? = null
 )
 
 data class ScraperStatusItem(

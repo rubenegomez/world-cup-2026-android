@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -618,6 +619,7 @@ fun MatchCard(
     var showTeamStats by remember { mutableStateOf(false) }
     var showGameRules by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
+    var editingTeamTarget by remember { mutableStateOf<Team?>(null) }
 
     val rawStatusUpper = match.status.uppercase()
     val hasFav = match.homeTeam.name in favoriteTeamNames || match.awayTeam.name in favoriteTeamNames
@@ -960,6 +962,17 @@ fun MatchCard(
                                 }
                             )
                         }
+
+                        if (editingTeamTarget != null) {
+                            AdminEditTeamDialog(
+                                team = editingTeamTarget!!,
+                                onDismiss = { editingTeamTarget = null },
+                                onSuccess = {
+                                    editingTeamTarget = null
+                                    onTeamUpdated?.invoke()
+                                }
+                            )
+                        }
                     }
 
                     Surface(
@@ -1010,7 +1023,8 @@ fun MatchCard(
                     score = match.homeScore,
                     penalties = if (hasPenalties) match.homePenalties else null,
                     isFavorite = match.homeTeam.name in favoriteTeamNames,
-                    isQualified = isHomeQualified
+                    isQualified = isHomeQualified,
+                    onEditTeam = { editingTeamTarget = match.homeTeam }
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1089,7 +1103,8 @@ fun MatchCard(
                     score = match.awayScore,
                     penalties = if (hasPenalties) match.awayPenalties else null,
                     isFavorite = match.awayTeam.name in favoriteTeamNames,
-                    isQualified = isAwayQualified
+                    isQualified = isAwayQualified,
+                    onEditTeam = { editingTeamTarget = match.awayTeam }
                 )
             }
  
@@ -1776,17 +1791,30 @@ fun PenaltyCounter(score: Int, onScoreChange: (Int) -> Unit) {
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TeamMatchInfo(
     team: Team, 
     score: Int?, 
     penalties: Int? = null, 
     isFavorite: Boolean = false,
-    isQualified: Boolean = false
+    isQualified: Boolean = false,
+    onEditTeam: (() -> Unit)? = null
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(100.dp)
+        modifier = Modifier
+            .width(100.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .then(
+                if (onEditTeam != null) {
+                    Modifier.combinedClickable(
+                        onClick = { onEditTeam() },
+                        onLongClick = { onEditTeam() }
+                    )
+                } else Modifier
+            )
+            .padding(vertical = 4.dp)
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
             val resolvedLogo = team.flagUrl.takeIf { !it.isNullOrBlank() }

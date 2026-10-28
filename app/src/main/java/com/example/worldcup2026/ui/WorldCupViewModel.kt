@@ -47,6 +47,9 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     private val _liveTournaments = mutableStateOf<Map<Int, Boolean>>(emptyMap())
     val liveTournaments: State<Map<Int, Boolean>> = _liveTournaments
 
+    private val _apiTournaments = mutableStateOf<List<com.example.worldcup2026.data.api.ApiTournament>>(emptyList())
+    val apiTournaments: State<List<com.example.worldcup2026.data.api.ApiTournament>> = _apiTournaments
+
     data class RewardDialogInfo(val round: String, val points: Int, val hours: Int)
     private val _pendingRewardDialog = mutableStateOf<RewardDialogInfo?>(null)
     val pendingRewardDialog: State<RewardDialogInfo?> = _pendingRewardDialog
@@ -100,6 +103,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         val primaryFav = _favoriteTournamentIds.value.firstOrNull() ?: 5
         currentTournamentId.value = primaryFav
         loadData()
+        loadTournaments()
         checkPendingRewardDialog()
         checkClaimableRounds()
         startLiveTournamentsChecker()
@@ -133,6 +137,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                                             val restored = prodeRepo.fetchMyPredictions(repository, getApplication())
                                             if (restored) {
                                                 loadData()
+        loadTournaments()
                                             }
                                             
                                             // Restaurar / sincronizar favoritos con la cuenta en la nube
@@ -361,10 +366,24 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun loadTournaments() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val list = com.example.worldcup2026.data.api.NetworkModule.apiService.getTournaments()
+                if (list.isNotEmpty()) {
+                    _apiTournaments.value = list
+                }
+            } catch (e: Exception) {
+                // Fallback to local
+            }
+        }
+    }
+
     fun setTournament(id: Int) {
         currentTournamentId.value = id
         _uiState.value = WorldCupUiState.Loading
         loadData()
+        loadTournaments()
     }
 
     private fun loadData() {
@@ -918,6 +937,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             AnalyticsManager.logMatchAction("vip_stats_opened", matchId)
             loadData()
+        loadTournaments()
         }
     }
     
