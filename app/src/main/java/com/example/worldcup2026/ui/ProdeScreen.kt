@@ -55,11 +55,11 @@ fun ProdeScreen(
         // Pantalla de Login
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.White)
+                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Prode con Amigos", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text("Prode con Amigos", color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Inicia sesión para competir en ligas privadas.", color = Color.White.copy(alpha = 0.7f))
+                Text("Inicia sesión para competir en ligas privadas.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Button(
@@ -68,7 +68,7 @@ fun ProdeScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Ir a Ajustes para Iniciar Sesión", color = Color.White)
+                    Text("Ir a Ajustes para Iniciar Sesión", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }
@@ -191,9 +191,9 @@ fun ProdeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                     ) {
                         Column(
                             modifier = Modifier
@@ -218,7 +218,7 @@ fun ProdeScreen(
                                         modifier = Modifier
                                             .size(36.dp)
                                             .clip(androidx.compose.foundation.shape.CircleShape)
-                                            .background(Color.White.copy(alpha = 0.1f)),
+                                            .background(MaterialTheme.colorScheme.surfaceVariant),
                                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
@@ -295,12 +295,12 @@ fun ProdeScreen(
                             ) {
                                 Button(
                                     onClick = { showHelpDialog = true },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                                     contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("❓ Ayuda", fontSize = 10.sp, color = Color.White)
+                                    Text("❓ Ayuda", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface)
                                 }
 
                                 Button(
@@ -360,7 +360,7 @@ fun ProdeScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text("🛡️ Modo Sin Anuncios: ", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                Text("$timeStr restantes", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black)
+                                Text("$timeStr restantes", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -368,7 +368,7 @@ fun ProdeScreen(
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = Color.White.copy(alpha = 0.05f),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 3.dp)
@@ -380,7 +380,7 @@ fun ProdeScreen(
                         ) {
                             Text("🛡️ Publicidad Activa", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("· Tus puntos del Prode se acreditan automáticamente tras cada fecha", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                            Text("· Tus puntos del Prode se acreditan automáticamente tras cada fecha", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
                         }
                     }
                 }
@@ -447,9 +447,9 @@ fun ReglasTab() {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("📜 REGLAS OFICIALES DEL PRODE", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -938,7 +938,7 @@ fun MisLigasTab(
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = Color.White.copy(alpha = 0.06f),
-                        border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -1300,7 +1300,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp),
                     border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFFFD700).copy(alpha = 0.3f))
                 ) {
@@ -1324,7 +1324,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
                             globalRanking.getOrNull(1)?.let { second ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("🥈", fontSize = 22.sp)
-                                    Text(second.name.split(" ").firstOrNull() ?: second.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                    Text(second.name.split(" ").firstOrNull() ?: second.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
                                     Text("${second.totalPoints} Pts", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Text("🥇x${second.goldMedals}", color = Color.Gray, fontSize = 10.sp)
                                 }
@@ -1333,7 +1333,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
                             globalRanking.firstOrNull()?.let { first ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("🥇", fontSize = 32.sp)
-                                    Text(first.name.split(" ").firstOrNull() ?: first.name, color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp, maxLines = 1)
+                                    Text(first.name.split(" ").firstOrNull() ?: first.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Black, fontSize = 13.sp, maxLines = 1)
                                     Text("${first.totalPoints} Pts", color = Color(0xFFFFD700), fontSize = 13.sp, fontWeight = FontWeight.Black)
                                     Text("🥇x${first.goldMedals}", color = Color(0xFFFFD700), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -1342,7 +1342,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
                             globalRanking.getOrNull(2)?.let { third ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("🥉", fontSize = 22.sp)
-                                    Text(third.name.split(" ").firstOrNull() ?: third.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
+                                    Text(third.name.split(" ").firstOrNull() ?: third.name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 11.sp, maxLines = 1)
                                     Text("${third.totalPoints} Pts", color = Color(0xFFFFD700), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Text("🥇x${third.goldMedals}", color = Color.Gray, fontSize = 10.sp)
                                 }
@@ -1368,7 +1368,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isMe) Color(0xFF2E7D32).copy(alpha = 0.35f) else Color.White.copy(alpha = 0.05f)
+                        containerColor = if (isMe) Color(0xFF2E7D32).copy(alpha = 0.35f) else MaterialTheme.colorScheme.surface
                     ),
                     shape = RoundedCornerShape(12.dp),
                     border = if (isMe) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4CAF50)) else null
@@ -1388,7 +1388,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
                                     2 -> "🥉"
                                     else -> "#${idx + 1}"
                                 },
-                                color = if (idx < 3) Color(0xFFFFD700) else Color.White.copy(alpha = 0.6f),
+                                color = if (idx < 3) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 modifier = Modifier.width(36.dp)
@@ -1396,7 +1396,7 @@ fun RankingTab(viewModel: ProdeViewModel) {
                             Column {
                                 Text(
                                     text = if (isMe) "${user.name} (Tú)" else user.name,
-                                    color = if (isMe) Color(0xFF81C784) else Color.White,
+                                    color = if (isMe) Color(0xFF81C784) else MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp
                                 )

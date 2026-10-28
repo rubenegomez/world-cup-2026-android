@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Alignment
 import androidx.compose.animation.core.*
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -178,7 +179,9 @@ fun MainScreen(
             )
             
             // Capa de oscurecimiento para legibilidad
-            Box(modifier = Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.82f)))
+            val isDarkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+            val bgOverlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.82f) else MaterialTheme.colorScheme.background.copy(alpha = 0.94f)
+            Box(modifier = Modifier.fillMaxSize().background(bgOverlayColor))
  
             if (uiState is WorldCupUiState.Success && (uiState as WorldCupUiState.Success).champion != null && showCelebration) {
                 // Pantalla de Celebración EXCLUYENTE
@@ -208,7 +211,7 @@ fun MainScreen(
                                         // Siempre mostramos el título general, excepto en vistas anidadas si quisiéramos botón atrás
                                         if (selectedScreen == 4) {
                                             IconButton(onClick = { selectedScreen = 0 }) {
-                                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
                                             }
                                         }
                                         Text(
@@ -248,7 +251,7 @@ fun MainScreen(
                                                 CircularProgressIndicator(
                                                     modifier = Modifier.size(20.dp),
                                                     strokeWidth = 2.dp,
-                                                    color = androidx.compose.ui.graphics.Color.White
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
                                             }
                                         } else {
@@ -301,7 +304,7 @@ fun MainScreen(
                                         label = { Text("Calendario", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
                                     )
 
@@ -315,7 +318,7 @@ fun MainScreen(
                                         label = { Text("Fixture", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
                                     )
 
@@ -329,7 +332,7 @@ fun MainScreen(
                                         label = { Text("Posiciones", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
                                     )
 
@@ -343,7 +346,7 @@ fun MainScreen(
                                         label = { Text("Prode", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
                                     )
                                     NavigationBarItem(
@@ -356,7 +359,7 @@ fun MainScreen(
                                         label = { Text("Acerca de", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedIconColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.6f)
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         )
                                     )
                             }
