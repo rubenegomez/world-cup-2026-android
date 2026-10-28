@@ -83,7 +83,8 @@ fun DailyMatchesScreen(
     // Partidos del torneo individual para matchdays
     val tournamentMatches = remember(matches, singleSelectedTourneyId) {
         if (singleSelectedTourneyId != null) {
-            matches.filter { (it.tournament_id ?: 1) == singleSelectedTourneyId }
+            val list = matches.filter { (it.tournament_id ?: 1) == singleSelectedTourneyId }
+            assignInferredMatchdays(list)
         } else emptyList()
     }
 
@@ -302,8 +303,7 @@ fun DailyMatchesScreen(
                     com.example.worldcup2026.data.util.SoundManager.playTic()
                     if (singleSelectedTourneyId == null) {
                         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                        val autoTourney = matches.firstOrNull { it.date?.startsWith(dateStr) == true && (it.matchday ?: 0) > 0 }?.tournament_id
-                            ?: matches.firstOrNull { (it.matchday ?: 0) > 0 }?.tournament_id
+                        val autoTourney = matches.firstOrNull { it.date?.startsWith(dateStr) == true }?.tournament_id
                             ?: 5
                         selectedTournamentIds = setOf(autoTourney)
                         filterLiveOnly = false
