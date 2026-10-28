@@ -162,25 +162,37 @@ fun AdminEditTournamentDialog(
                             // Guardado local persistente inmediato
                             MasterTeamCatalog.saveCustomTournament(context, tournamentId, finalName, finalLogo)
 
-                            // Sincronización con el backend si hay email de administrador
-                            val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail() ?: ""
-                            if (email.isNotBlank()) {
-                                val req = com.example.worldcup2026.data.api.AdminTournamentEditRequest(
-                                    tournament_id = tournamentId,
-                                    name = finalName,
-                                    logo_url = if (logoUrl.isNotBlank()) logoUrl.trim() else null,
-                                    image_base64 = selectedImageBase64,
-                                    file_extension = ".png"
-                                )
-                                try {
-                                    com.example.worldcup2026.data.api.NetworkModule.apiService.editTournamentAdmin(email, req)
-                                } catch (e: Exception) {
-                                    // Continúa con guardado local aunque el backend no responda
+                            val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()?.takeIf { it.isNotBlank() }
+                                ?: com.example.worldcup2026.data.api.AuthManager.ADMIN_EMAIL
+
+                            var definitiveLogo = finalLogo
+                            var definitiveName = finalName
+
+                            val req = com.example.worldcup2026.data.api.AdminTournamentEditRequest(
+                                tournament_id = tournamentId,
+                                name = finalName,
+                                logo_url = if (logoUrl.isNotBlank()) logoUrl.trim() else null,
+                                image_base64 = selectedImageBase64,
+                                file_extension = ".png"
+                            )
+                            try {
+                                val resp = com.example.worldcup2026.data.api.NetworkModule.apiService.editTournamentAdmin(email, req)
+                                if (resp.isSuccessful) {
+                                    val body = resp.body()
+                                    if (!body?.logo_url.isNullOrBlank()) {
+                                        definitiveLogo = body!!.logo_url
+                                    }
+                                    if (!body?.name.isNullOrBlank()) {
+                                        definitiveName = body!!.name!!
+                                    }
                                 }
+                            } catch (e: Exception) {
+                                // Fallback a guardado local
                             }
 
+                            MasterTeamCatalog.saveCustomTournament(context, tournamentId, definitiveName, definitiveLogo)
                             android.widget.Toast.makeText(context, "Símbolo y nombre del torneo actualizados", android.widget.Toast.LENGTH_SHORT).show()
-                            onSuccess(finalName, finalLogo)
+                            onSuccess(definitiveName, definitiveLogo)
                         } catch (e: Exception) {
                             android.widget.Toast.makeText(context, "Error: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
                         } finally {

@@ -372,6 +372,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                 val list = com.example.worldcup2026.data.api.NetworkModule.apiService.getTournaments()
                 if (list.isNotEmpty()) {
                     _apiTournaments.value = list
+                    com.example.worldcup2026.data.model.MasterTeamCatalog.syncFromApi(list, getApplication())
                 }
             } catch (e: Exception) {
                 // Fallback to local

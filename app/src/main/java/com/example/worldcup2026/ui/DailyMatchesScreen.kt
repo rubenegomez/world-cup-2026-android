@@ -183,88 +183,14 @@ fun DailyMatchesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Selector Superior Unificado de Torneos (En reemplazo de los filtros rápidos anteriores)
-        Card(
-            onClick = {
-                com.example.worldcup2026.data.util.SoundManager.playTic()
-                showTournamentSelectorDialog = true
-            },
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.35f)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 9.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (filterLiveOnly) {
-                        Text("🔴", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                    } else if (!currentTourneyLogo.isNullOrBlank()) {
-                        AsyncImage(
-                            model = currentTourneyLogo,
-                            contentDescription = "Símbolo",
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                    } else if (singleSelectedTourneyId != null) {
-                        Icon(
-                            Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            tint = Color(0xFFFFD700),
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                    } else {
-                        Text("🌐", fontSize = 18.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                    }
-
-                    Text(
-                        text = currentTourneyName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (singleSelectedTourneyId != null) {
-                        IconButton(
-                            onClick = { editingTournamentId = singleSelectedTourneyId },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "Editar Símbolo",
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    Icon(
-                        Icons.Default.ArrowDropDown,
-                        contentDescription = "Cambiar Torneo",
-                        tint = Color(0xFFFFD700)
-                    )
-                }
-            }
-        }
+        // 1. Selector Superior Unificado de Torneos
+        TournamentHeaderButton(
+            selectedTournamentId = singleSelectedTourneyId,
+            filterLiveOnly = filterLiveOnly,
+            onOpenSelector = { showTournamentSelectorDialog = true },
+            onEditTournament = { editingTournamentId = it },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+        )
 
         // 2. Opciones de Modo: Calendario Diario vs Fecha Completa
         Row(
@@ -447,205 +373,33 @@ fun DailyMatchesScreen(
         }
     }
 
-    // Modal Selector de Torneo (Estilo ProdeMaster)
+    // Modal Selector de Torneo Unificado
     if (showTournamentSelectorDialog) {
-        Dialog(onDismissRequest = { showTournamentSelectorDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.85f)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "🏆 Seleccionar Torneo",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        IconButton(onClick = { showTournamentSelectorDialog = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onSurface)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    val gridItems = remember(apiTournamentsList, liveTournamentsMap, customVersionTrigger) {
-                        val result = mutableListOf<SelectorTournamentItem>()
-                        // 1. Todos
-                        result.add(SelectorTournamentItem(id = 0, name = "Todos", isTodos = true))
-                        // 2. En Vivo
-                        val anyLive = liveTournamentsMap.values.any { it }
-                        result.add(SelectorTournamentItem(id = -1, name = "En Vivo", isLive = true, hasLive = anyLive))
-
-                        val registeredIds = mutableSetOf<Int>()
-                        for (apiT in apiTournamentsList) {
-                            registeredIds.add(apiT.id)
-                            val customName = MasterTeamCatalog.getTournamentDisplayName(context, apiT.id)
-                            val customLogo = MasterTeamCatalog.getTournamentLogo(context, apiT.id) ?: apiT.logo_url
-                            val isActive = MasterTeamCatalog.ACTIVE_TOURNAMENT_IDS.contains(apiT.id)
-                            val hasLive = liveTournamentsMap[apiT.id] == true
-                            result.add(
-                                SelectorTournamentItem(
-                                    id = apiT.id,
-                                    name = if (customName.isNotBlank()) customName else apiT.name,
-                                    logoUrl = customLogo,
-                                    hasLive = hasLive,
-                                    isActive = isActive
-                                )
-                            )
-                        }
-
-                        for (masterT in MasterTeamCatalog.MASTER_TOURNAMENTS) {
-                            if (!registeredIds.contains(masterT.id)) {
-                                val customName = MasterTeamCatalog.getTournamentDisplayName(context, masterT.id)
-                                val customLogo = MasterTeamCatalog.getTournamentLogo(context, masterT.id) ?: masterT.logoUrl
-                                val hasLive = liveTournamentsMap[masterT.id] == true
-                                result.add(
-                                    SelectorTournamentItem(
-                                        id = masterT.id,
-                                        name = if (customName.isNotBlank()) customName else masterT.displayName,
-                                        logoUrl = customLogo,
-                                        hasLive = hasLive,
-                                        isActive = masterT.isActive
-                                    )
-                                )
-                            }
-                        }
-
-                        val special = result.filter { it.isTodos || it.isLive }
-                        val active = result.filter { !it.isTodos && !it.isLive && it.isActive }
-                        val inactive = result.filter { !it.isTodos && !it.isLive && !it.isActive }
-                        special + active + inactive
-                    }
-
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(3),
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(vertical = 4.dp)
-                    ) {
-                        items(gridItems, key = { if (it.isTodos) "todos" else if (it.isLive) "live" else "t_${it.id}" }) { item ->
-                            val isSelected = when {
-                                item.isTodos -> !filterLiveOnly && (selectedTournamentIds.contains(0) || selectedTournamentIds.isEmpty())
-                                item.isLive -> filterLiveOnly
-                                else -> !filterLiveOnly && selectedTournamentIds.contains(item.id)
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(
-                                        if (isSelected) Color(0xFFFFD700).copy(alpha = 0.22f)
-                                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    )
-                                    .border(
-                                        width = if (isSelected) 1.5.dp else 0.5.dp,
-                                        color = if (isSelected) Color(0xFFFFD700) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                                        shape = RoundedCornerShape(14.dp)
-                                    )
-                                    .combinedClickable(
-                                        onClick = {
-                                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                                            when {
-                                                item.isTodos -> {
-                                                    filterLiveOnly = false
-                                                    selectedTournamentIds = setOf(0)
-                                                }
-                                                item.isLive -> {
-                                                    filterLiveOnly = true
-                                                    selectedTournamentIds = setOf(0)
-                                                }
-                                                else -> {
-                                                    filterLiveOnly = false
-                                                    selectedTournamentIds = setOf(item.id)
-                                                }
-                                            }
-                                            showTournamentSelectorDialog = false
-                                        },
-                                        onLongClick = {
-                                            if (!item.isTodos && !item.isLive) {
-                                                com.example.worldcup2026.data.util.SoundManager.playTic()
-                                                showTournamentSelectorDialog = false
-                                                editingTournamentId = item.id
-                                            }
-                                        }
-                                    )
-                                    .padding(6.dp)
-                            ) {
-                                if (item.hasLive) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = Color(0xFFE53935),
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .align(Alignment.TopEnd)
-                                    ) {}
-                                }
-
-                                Column(
-                                    modifier = Modifier.fillMaxSize(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    when {
-                                        item.isTodos -> Text("🌐", fontSize = 28.sp)
-                                        item.isLive -> Text("🔴", fontSize = 28.sp)
-                                        !item.logoUrl.isNullOrBlank() -> {
-                                            AsyncImage(
-                                                model = item.logoUrl,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .clip(RoundedCornerShape(6.dp))
-                                            )
-                                        }
-                                        else -> Text("🏆", fontSize = 28.sp)
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-
-                                    val cleanName = item.name.replace(Regex("^[\\p{So}\\p{Sk}\\p{Sm}\\p{Sc}]+\\s*"), "").trim()
-                                    Text(
-                                        text = cleanName,
-                                        fontSize = 10.sp,
-                                        lineHeight = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
-                                        color = if (isSelected) Color(0xFFFFD700) else MaterialTheme.colorScheme.onSurface,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "💡 Tip: Mantené presionado un torneo para editar su nombre o símbolo",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
-                    )
-                }
+        TournamentSelectorModal(
+            selectedTournamentId = singleSelectedTourneyId,
+            filterLiveOnly = filterLiveOnly,
+            includeAllOption = true,
+            includeLiveOption = true,
+            apiTournaments = apiTournamentsList,
+            liveTournamentsMap = liveTournamentsMap,
+            onDismiss = { showTournamentSelectorDialog = false },
+            onSelectTournament = { tId ->
+                filterLiveOnly = false
+                selectedTournamentIds = setOf(tId)
+            },
+            onSelectTodos = {
+                filterLiveOnly = false
+                selectedTournamentIds = setOf(0)
+            },
+            onSelectLiveOnly = {
+                filterLiveOnly = true
+                selectedTournamentIds = setOf(0)
+            },
+            onTournamentUpdated = {
+                customVersionTrigger++
+                viewModel.loadTournaments()
             }
-        }
+        )
     }
 
     // Diálogo de edición de símbolo y nombre del torneo

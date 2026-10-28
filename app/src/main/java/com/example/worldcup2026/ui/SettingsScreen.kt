@@ -8,7 +8,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.collectAsState
@@ -711,6 +715,7 @@ fun SettingItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TeamsListScreen(
     viewModel: WorldCupViewModel,
@@ -721,6 +726,22 @@ fun TeamsListScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var favoriteTournamentId by remember { mutableIntStateOf(sharedPrefs.getInt("favorite_tournament_id", 5)) }
     var updateTrigger by remember { mutableIntStateOf(0) }
+    var editingTournamentId by remember { mutableStateOf<Int?>(null) }
+
+    if (editingTournamentId != null) {
+        val tId = editingTournamentId!!
+        AdminEditTournamentDialog(
+            tournamentId = tId,
+            initialName = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentDisplayName(context, tId),
+            initialLogoUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentLogo(context, tId),
+            onDismiss = { editingTournamentId = null },
+            onSuccess = { _, _ ->
+                editingTournamentId = null
+                updateTrigger++
+                viewModel.loadTournaments()
+            }
+        )
+    }
 
     val uiState = viewModel.uiState.value
     val allTeamsFromVm by viewModel.allTeamsState
@@ -738,7 +759,39 @@ fun TeamsListScreen(
         }
     }
 
-    val tournamentsList = com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS
+    val tournamentsList = remember(viewModel.apiTournaments.value, updateTrigger) {
+        val apiList = viewModel.apiTournaments.value
+        val registeredIds = mutableSetOf<Int>()
+        val result = mutableListOf<com.example.worldcup2026.data.model.MasterTournament>()
+        for (apiT in apiList) {
+            registeredIds.add(apiT.id)
+            val name = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentDisplayName(context, apiT.id)
+            val logo = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentLogo(context, apiT.id) ?: apiT.logo_url
+            result.add(
+                com.example.worldcup2026.data.model.MasterTournament(
+                    id = apiT.id,
+                    name = apiT.name,
+                    displayName = name,
+                    category = apiT.type,
+                    isActive = com.example.worldcup2026.data.model.MasterTeamCatalog.ACTIVE_TOURNAMENT_IDS.contains(apiT.id),
+                    logoUrl = logo
+                )
+            )
+        }
+        for (m in com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS) {
+            if (!registeredIds.contains(m.id)) {
+                val name = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentDisplayName(context, m.id)
+                val logo = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentLogo(context, m.id) ?: m.logoUrl
+                result.add(m.copy(displayName = name, logoUrl = logo))
+            }
+        }
+        val favIds = viewModel.favoriteTournamentIds.value
+        result.sortedWith(
+            compareByDescending<com.example.worldcup2026.data.model.MasterTournament> { it.id in favIds }
+                .thenByDescending { it.isActive }
+                .thenBy { it.displayName }
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
@@ -782,29 +835,83 @@ fun TeamsListScreen(
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(tournamentsList, key = { it.id }) { t ->
                     val isFav = t.id in favIds
+                    val currentLogo = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentLogo(context, t.id) ?: t.logoUrl
+                    val currentName = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentDisplayName(context, t.id)
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp, horizontal = 4.dp)
-                            .clickable {
-                                viewModel.toggleFavoriteTournament(t.id)
-                            },
+                            .combinedClickable(
+                                onClick = {
+                                    viewModel.toggleFavoriteTournament(t.id)
+                                },
+                                onLongClick = {
+                                    editingTournamentId = t.id
+                                }
+                            ),
                         colors = CardDefaults.cardColors(
                             containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         )
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = t.displayName, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Icon(
-                                imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
-                                contentDescription = "Torneo Favorito",
-                                tint = if (isFav) Color(0xFFFFC107) else Color.Gray,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                if (!currentLogo.isNullOrBlank()) {
+                                    coil.compose.AsyncImage(
+                                        model = currentLogo,
+                                        contentDescription = currentName,
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                } else {
+                                    Icon(
+                                        Icons.Default.EmojiEvents,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                }
+
+                                Text(
+                                    text = currentName,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = { editingTournamentId = t.id },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Editar Torneo",
+                                        tint = Color(0xFFFFD700),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                    contentDescription = "Torneo Favorito",
+                                    tint = if (isFav) Color(0xFFFFC107) else Color.Gray,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
                     }
                 }

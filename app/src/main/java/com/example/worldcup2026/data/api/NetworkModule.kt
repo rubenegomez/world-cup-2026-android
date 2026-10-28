@@ -74,13 +74,13 @@ interface WorldCupApiService {
     suspend fun editTournamentAdmin(
         @Query("email") email: String,
         @retrofit2.http.Body req: AdminTournamentEditRequest
-    ): retrofit2.Response<Unit>
+    ): retrofit2.Response<AdminTournamentEditResponse>
 
     @retrofit2.http.POST("api/admin/teams/edit")
     suspend fun editTeamAdmin(
         @Query("email") email: String,
         @retrofit2.http.Body req: AdminTeamEditRequest
-    ): retrofit2.Response<Unit>
+    ): retrofit2.Response<AdminTeamEditResponse>
 
     @retrofit2.http.DELETE("api/admin/matches/{match_id}")
     suspend fun deleteMatchAdmin(
@@ -97,12 +97,28 @@ data class AdminTeamEditRequest(
     val file_extension: String? = ".png"
 )
 
+data class AdminTeamEditResponse(
+    val status: String,
+    val message: String? = null,
+    val team_id: Int? = null,
+    val name: String? = null,
+    val flagUrl: String? = null
+)
+
 data class AdminTournamentEditRequest(
     val tournament_id: Int,
     val name: String? = null,
     val logo_url: String? = null,
     val image_base64: String? = null,
     val file_extension: String? = ".png"
+)
+
+data class AdminTournamentEditResponse(
+    val status: String,
+    val message: String? = null,
+    val tournament_id: Int? = null,
+    val name: String? = null,
+    val logo_url: String? = null
 )
 
 data class ApiTournament(
@@ -305,4 +321,3 @@ object NetworkModule {
             .create(ProdeApiService::class.java)
     }
 }
-

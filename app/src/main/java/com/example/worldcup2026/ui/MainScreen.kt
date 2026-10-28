@@ -448,6 +448,7 @@ fun MainScreen(
                                               matches = state.matches,
                                               initialTournamentId = selectedTournamentForStandings ?: 5,
                                               initialTabName = null,
+                                              viewModel = viewModel,
                                               onNavigateToMatch = { match ->
                                                   try {
                                                       val datePart = match.date?.substringBefore(" ")
@@ -468,6 +469,7 @@ fun MainScreen(
                                               matches = state.matches,
                                               initialTournamentId = selectedTournamentForStandings ?: 5,
                                               initialTabName = "FIXTURE",
+                                              viewModel = viewModel,
                                               onNavigateToMatch = { match ->
                                                   try {
                                                       val datePart = match.date?.substringBefore(" ")

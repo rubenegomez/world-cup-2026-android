@@ -487,20 +487,60 @@ object MasterTeamCatalog {
         return null
     }
 
+    private val dynamicTournamentLogos = java.util.concurrent.ConcurrentHashMap<Int, String>()
+    private val dynamicTournamentNames = java.util.concurrent.ConcurrentHashMap<Int, String>()
+
+    fun syncFromApi(tournaments: List<com.example.worldcup2026.data.api.ApiTournament>, context: android.content.Context? = null) {
+        val prefs = context?.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
+        val editor = prefs?.edit()
+        for (t in tournaments) {
+            if (!t.logo_url.isNullOrBlank()) {
+                dynamicTournamentLogos[t.id] = t.logo_url
+                editor?.putString("server_logo_${t.id}", t.logo_url)
+            }
+            if (t.name.isNotBlank()) {
+                dynamicTournamentNames[t.id] = t.name
+                editor?.putString("server_name_${t.id}", t.name)
+            }
+        }
+        editor?.apply()
+    }
+
     fun getTournamentLogo(context: android.content.Context?, tournamentId: Int): String? {
+        dynamicTournamentLogos[tournamentId]?.let { return it }
+
         if (context != null) {
             val prefs = context.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
             val custom = prefs.getString("custom_logo_$tournamentId", null)
+            if (!custom.isNullOrBlank() && !custom.startsWith("content://")) {
+                dynamicTournamentLogos[tournamentId] = custom
+                return custom
+            }
+            val serverLogo = prefs.getString("server_logo_$tournamentId", null)
+            if (!serverLogo.isNullOrBlank()) {
+                dynamicTournamentLogos[tournamentId] = serverLogo
+                return serverLogo
+            }
             if (!custom.isNullOrBlank()) return custom
         }
         return MASTER_TOURNAMENTS.find { it.id == tournamentId }?.logoUrl
     }
 
     fun getTournamentDisplayName(context: android.content.Context?, tournamentId: Int): String {
+        dynamicTournamentNames[tournamentId]?.let { return it }
+
         if (context != null) {
             val prefs = context.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
             val custom = prefs.getString("custom_name_$tournamentId", null)
-            if (!custom.isNullOrBlank()) return custom
+            if (!custom.isNullOrBlank()) {
+                dynamicTournamentNames[tournamentId] = custom
+                return custom
+            }
+            val serverName = prefs.getString("server_name_$tournamentId", null)
+            if (!serverName.isNullOrBlank()) {
+                dynamicTournamentNames[tournamentId] = serverName
+                return serverName
+            }
         }
         return MASTER_TOURNAMENTS.find { it.id == tournamentId }?.displayName
             ?: MASTER_TOURNAMENTS.find { it.id == tournamentId }?.name
@@ -510,8 +550,16 @@ object MasterTeamCatalog {
     fun saveCustomTournament(context: android.content.Context, tournamentId: Int, name: String?, logoUrl: String?) {
         val prefs = context.getSharedPreferences("tournament_custom_prefs", android.content.Context.MODE_PRIVATE)
         prefs.edit().apply {
-            if (!name.isNullOrBlank()) putString("custom_name_$tournamentId", name.trim())
-            if (!logoUrl.isNullOrBlank()) putString("custom_logo_$tournamentId", logoUrl.trim())
+            if (!name.isNullOrBlank()) {
+                putString("custom_name_$tournamentId", name.trim())
+                putString("server_name_$tournamentId", name.trim())
+                dynamicTournamentNames[tournamentId] = name.trim()
+            }
+            if (!logoUrl.isNullOrBlank()) {
+                putString("custom_logo_$tournamentId", logoUrl.trim())
+                putString("server_logo_$tournamentId", logoUrl.trim())
+                dynamicTournamentLogos[tournamentId] = logoUrl.trim()
+            }
             apply()
         }
     }

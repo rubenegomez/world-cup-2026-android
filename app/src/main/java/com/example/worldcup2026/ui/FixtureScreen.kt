@@ -3148,7 +3148,8 @@ fun AdminMatchDialog(
                         isSubmitting = true
                         coroutineScope.launch {
                             try {
-                                val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail() ?: ""
+                                val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()?.takeIf { it.isNotBlank() }
+                                ?: com.example.worldcup2026.data.api.AuthManager.ADMIN_EMAIL
                                 val response = com.example.worldcup2026.data.api.NetworkModule.apiService.deleteMatchAdmin(match.id, email)
                                 if (response.isSuccessful) {
                                     android.widget.Toast.makeText(context, "Partido eliminado correctamente", android.widget.Toast.LENGTH_SHORT).show()
@@ -3518,7 +3519,8 @@ fun AdminEditTeamDialog(
                     isUploading = true
                     coroutineScope.launch {
                         try {
-                            val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail() ?: ""
+                            val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()?.takeIf { it.isNotBlank() }
+                                ?: com.example.worldcup2026.data.api.AuthManager.ADMIN_EMAIL
                             val req = com.example.worldcup2026.data.api.AdminTeamEditRequest(
                                 team_id = team.id,
                                 name = teamName.trim(),

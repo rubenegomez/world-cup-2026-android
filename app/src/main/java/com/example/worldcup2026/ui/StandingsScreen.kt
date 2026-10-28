@@ -216,6 +216,7 @@ fun StandingsScreen(
     matches: List<Match>,
     initialTournamentId: Int? = null,
     initialTabName: String? = null,
+    viewModel: WorldCupViewModel? = null,
     onNavigateToMatch: (Match) -> Unit = {}
 ) {
     var tournamentId by remember(initialTournamentId) {
@@ -402,38 +403,53 @@ val LIGA_ZONA_B_TEAMS = listOf(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Selector Rápido de Torneos en Juego
-        LazyRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            items(activeTournaments) { t ->
-                val isSelected = t.id == tournamentId
-                FilterChip(
-                    selected = isSelected,
-                    onClick = {
-                        com.example.worldcup2026.data.util.SoundManager.playTic()
-                        tournamentId = t.id
-                        selectedTab = 0
-                    },
-                    label = {
-                        Text(
-                            text = t.displayName,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.85f)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFFFC107),
-                        containerColor = Color.White.copy(alpha = 0.08f)
-                    ),
-                    border = if (isSelected) null else androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f)),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.height(30.dp)
-                )
-            }
+        var showTournamentSelector by remember { mutableStateOf(false) }
+        var editingTournamentId by remember { mutableStateOf<Int?>(null) }
+        var updateTrigger by remember { mutableIntStateOf(0) }
+        val context = LocalContext.current
+
+        if (editingTournamentId != null) {
+            val tId = editingTournamentId!!
+            AdminEditTournamentDialog(
+                tournamentId = tId,
+                initialName = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentDisplayName(context, tId),
+                initialLogoUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentLogo(context, tId),
+                onDismiss = { editingTournamentId = null },
+                onSuccess = { _, _ ->
+                    editingTournamentId = null
+                    updateTrigger++
+                    viewModel?.loadTournaments()
+                }
+            )
         }
+
+        if (showTournamentSelector) {
+            TournamentSelectorModal(
+                selectedTournamentId = tournamentId,
+                filterLiveOnly = false,
+                includeAllOption = false,
+                includeLiveOption = false,
+                apiTournaments = viewModel?.apiTournaments?.value ?: emptyList(),
+                liveTournamentsMap = viewModel?.liveTournaments?.value ?: emptyMap(),
+                onDismiss = { showTournamentSelector = false },
+                onSelectTournament = { newId ->
+                    tournamentId = newId
+                    selectedTab = 0
+                },
+                onTournamentUpdated = {
+                    updateTrigger++
+                    viewModel?.loadTournaments()
+                }
+            )
+        }
+
+        TournamentHeaderButton(
+            selectedTournamentId = tournamentId,
+            filterLiveOnly = false,
+            onOpenSelector = { showTournamentSelector = true },
+            onEditTournament = { editingTournamentId = it },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+        )
 
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
