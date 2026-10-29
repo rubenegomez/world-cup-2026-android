@@ -87,7 +87,47 @@ interface WorldCupApiService {
         @Path("match_id") matchId: Int,
         @Query("email") email: String
     ): retrofit2.Response<Unit>
+
+    @retrofit2.http.GET("api/admin/round/summary")
+    suspend fun getRoundsSummary(
+        @Query("tournament_id") tournamentId: Int,
+        @Query("email") email: String
+    ): TournamentRoundsSummaryResponse
+
+    @retrofit2.http.POST("api/admin/round/reschedule")
+    suspend fun rescheduleRoundAdmin(
+        @Query("email") email: String,
+        @retrofit2.http.Body req: RescheduleRoundRequest
+    ): retrofit2.Response<RescheduleRoundResponse>
 }
+
+data class RescheduleRoundRequest(
+    val tournament_id: Int,
+    val matchday: Int,
+    val days_offset: Int? = 0,
+    val new_date: String? = null,
+    val new_time: String? = null,
+    val is_manual_override: Boolean? = true
+)
+
+data class RescheduleRoundResponse(
+    val status: String,
+    val tournament_id: Int,
+    val matchday: Int,
+    val updated_count: Int
+)
+
+data class RoundSummaryItem(
+    val matchday: Int,
+    val total_matches: Int,
+    val min_date: String?,
+    val max_date: String?
+)
+
+data class TournamentRoundsSummaryResponse(
+    val tournament_id: Int,
+    val rounds: List<RoundSummaryItem>
+)
 
 data class AdminTeamEditRequest(
     val team_id: Int,

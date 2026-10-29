@@ -37,6 +37,7 @@ fun AdminScrapersDialog(
     var statusList by remember { mutableStateOf<List<ScraperStatusItem>>(emptyList()) }
     var runningTournamentId by remember { mutableStateOf<Int?>(null) }
     var feedbackMessage by remember { mutableStateOf<String?>(null) }
+    var showRescheduleDialog by remember { mutableStateOf(false) }
 
     val adminEmail = remember { AuthManager.ADMIN_EMAIL }
 
@@ -128,37 +129,54 @@ fun AdminScrapersDialog(
                     }
                 }
 
-                // Botón Forzar Todos los Scrapers
-                Button(
-                    onClick = {
-                        runningTournamentId = -1
-                        coroutineScope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    NetworkModule.apiService.runScrapersAdmin(adminEmail, null)
-                                }
-                                feedbackMessage = "✅ Sincronización completa solicitada al servidor."
-                                loadStatus()
-                            } catch (e: Exception) {
-                                feedbackMessage = "❌ Error: ${e.message}"
-                            } finally {
-                                runningTournamentId = null
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(42.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
-                    enabled = runningTournamentId == null
+                // Botones de Acción Global
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (runningTournamentId == -1) {
-                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.Black, strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("SINCRONIZANDO SERVIDOR...", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Black)
-                    } else {
-                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.Black, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("FORZAR ESCANEO DE TODOS LOS TORNEOS", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color.Black)
+                    Button(
+                        onClick = {
+                            runningTournamentId = -1
+                            coroutineScope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        NetworkModule.apiService.runScrapersAdmin(adminEmail, null)
+                                    }
+                                    feedbackMessage = "✅ Sincronización completa solicitada al servidor."
+                                    loadStatus()
+                                } catch (e: Exception) {
+                                    feedbackMessage = "❌ Error: ${e.message}"
+                                } finally {
+                                    runningTournamentId = null
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E676)),
+                        enabled = runningTournamentId == null
+                    ) {
+                        if (runningTournamentId == -1) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.Black, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("SINCRONIZANDO...", fontWeight = FontWeight.Black, fontSize = 11.sp, color = Color.Black)
+                        } else {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("ESCANEAR TODOS", fontWeight = FontWeight.Black, fontSize = 11.sp, color = Color.Black)
+                        }
+                    }
+
+                    Button(
+                        onClick = { showRescheduleDialog = true },
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E2638)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E676).copy(alpha = 0.5f))
+                    ) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("REPROGRAMAR", fontWeight = FontWeight.Black, fontSize = 11.sp, color = Color.White)
                     }
                 }
 
@@ -239,6 +257,19 @@ fun AdminScrapersDialog(
                 }
             }
         }
+    }
+
+    if (showRescheduleDialog) {
+        AdminRescheduleDialog(
+            initialTournamentId = 5,
+            initialMatchday = 16,
+            onDismiss = { showRescheduleDialog = false },
+            onSuccess = { count ->
+                showRescheduleDialog = false
+                feedbackMessage = "✅ Fecha 16 reprogramada: $count partidos actualizados."
+                loadStatus()
+            }
+        )
     }
 }
 
