@@ -211,6 +211,42 @@ fun getCanonicalLigaTeam(name: String): Pair<String, String>? {
 
 fun getLigaZona(name: String): String? = getCanonicalLigaTeam(name)?.second ?: LIGA_ZONAS_MAP[name]
 
+val LIGA_ZONA_A_TEAMS = listOf(
+    "Boca Juniors",
+    "Central Córdoba (Santiago del Estero)",
+    "Defensa y Justicia",
+    "Deportivo Riestra",
+    "Estudiantes de La Plata",
+    "Gimnasia y Esgrima (Mendoza)",
+    "Independiente",
+    "Instituto (Córdoba)",
+    "Lanús",
+    "Newell's Old Boys",
+    "Platense",
+    "San Lorenzo",
+    "Talleres (Córdoba)",
+    "Unión (Santa Fe)",
+    "Vélez Sarsfield"
+)
+
+val LIGA_ZONA_B_TEAMS = listOf(
+    "Aldosivi",
+    "Argentinos Juniors",
+    "Atlético Tucumán",
+    "Banfield",
+    "Barracas Central",
+    "Belgrano (Córdoba)",
+    "Estudiantes de Río Cuarto",
+    "Gimnasia La Plata",
+    "Huracán",
+    "Independiente Rivadavia",
+    "Racing Club",
+    "River Plate",
+    "Rosario Central",
+    "Sarmiento (Junín)",
+    "Tigre"
+)
+
 @Composable
 fun StandingsScreen(
     matches: List<Match>,
@@ -268,42 +304,6 @@ fun StandingsScreen(
     var isLoadingAnnual by remember { mutableStateOf(false) }
     var isLoadingDescenso by remember { mutableStateOf(false) }
     var isLoadingGoleadores by remember { mutableStateOf(false) }
-
-val LIGA_ZONA_A_TEAMS = listOf(
-    "Boca Juniors",
-    "Central Córdoba (Santiago del Estero)",
-    "Defensa y Justicia",
-    "Deportivo Riestra",
-    "Estudiantes de La Plata",
-    "Gimnasia y Esgrima (Mendoza)",
-    "Independiente",
-    "Instituto (Córdoba)",
-    "Lanús",
-    "Newell's Old Boys",
-    "Platense",
-    "San Lorenzo",
-    "Talleres (Córdoba)",
-    "Unión (Santa Fe)",
-    "Vélez Sarsfield"
-)
-
-val LIGA_ZONA_B_TEAMS = listOf(
-    "Aldosivi",
-    "Argentinos Juniors",
-    "Atlético Tucumán",
-    "Banfield",
-    "Barracas Central",
-    "Belgrano (Córdoba)",
-    "Estudiantes de Río Cuarto",
-    "Gimnasia La Plata",
-    "Huracán",
-    "Independiente Rivadavia",
-    "Racing Club",
-    "River Plate",
-    "Rosario Central",
-    "Sarmiento (Junín)",
-    "Tigre"
-)
 
     val currentTournamentMatches = remember(matches, tournamentId) {
         matches.filter { it.tournament_id == tournamentId }

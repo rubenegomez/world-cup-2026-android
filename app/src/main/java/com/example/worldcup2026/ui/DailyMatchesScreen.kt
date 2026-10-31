@@ -70,7 +70,7 @@ fun DailyMatchesScreen(
     var viewMode by remember { mutableStateOf(0) }
     var selectedMatchday by remember { mutableStateOf<Int?>(null) }
 
-    val singleSelectedTourneyId = if (!filterLiveOnly && selectedTournamentIds.size == 1 && !selectedTournamentIds.contains(0)) {
+    val singleSelectedTourneyId = if (selectedTournamentIds.size == 1 && !selectedTournamentIds.contains(0)) {
         selectedTournamentIds.first()
     } else null
 
@@ -183,14 +183,73 @@ fun DailyMatchesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 1. Selector Superior Unificado de Torneos
-        TournamentHeaderButton(
-            selectedTournamentId = singleSelectedTourneyId,
-            filterLiveOnly = filterLiveOnly,
-            onOpenSelector = { showTournamentSelectorDialog = true },
-            onEditTournament = { editingTournamentId = it },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-        )
+        // 1. Selector Superior Unificado de Torneos + Botón En Vivo
+        val hasLiveAny = if (singleSelectedTourneyId != null) {
+            liveTournamentsMap[singleSelectedTourneyId] == true
+        } else {
+            liveTournamentsMap.values.any { it }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TournamentHeaderButton(
+                selectedTournamentId = singleSelectedTourneyId,
+                filterLiveOnly = false,
+                onOpenSelector = { showTournamentSelectorDialog = true },
+                onEditTournament = { editingTournamentId = it },
+                modifier = Modifier.weight(1f)
+            )
+
+            Card(
+                modifier = Modifier
+                    .height(48.dp)
+                    .clickable {
+                        com.example.worldcup2026.data.util.SoundManager.playTic()
+                        filterLiveOnly = !filterLiveOnly
+                    },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (filterLiveOnly) Color(0xFFE53935) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    if (filterLiveOnly) Color(0xFFFF5252)
+                    else if (hasLiveAny) Color(0xFFE53935).copy(alpha = 0.8f)
+                    else Color(0xFFFFD700).copy(alpha = 0.4f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (filterLiveOnly) Color.White
+                                else if (hasLiveAny) Color(0xFFE53935)
+                                else Color.Gray.copy(alpha = 0.5f)
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "VIVO",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (filterLiveOnly) Color.White else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
 
         // 2. Opciones de Modo: Calendario Diario vs Fecha Completa
         Row(
@@ -379,22 +438,17 @@ fun DailyMatchesScreen(
             selectedTournamentId = singleSelectedTourneyId,
             filterLiveOnly = filterLiveOnly,
             includeAllOption = true,
-            includeLiveOption = true,
+            includeLiveOption = false,
             apiTournaments = apiTournamentsList,
             liveTournamentsMap = liveTournamentsMap,
             onDismiss = { showTournamentSelectorDialog = false },
             onSelectTournament = { tId ->
-                filterLiveOnly = false
                 selectedTournamentIds = setOf(tId)
             },
             onSelectTodos = {
-                filterLiveOnly = false
                 selectedTournamentIds = setOf(0)
             },
-            onSelectLiveOnly = {
-                filterLiveOnly = true
-                selectedTournamentIds = setOf(0)
-            },
+            onSelectLiveOnly = null,
             onTournamentUpdated = {
                 customVersionTrigger++
                 viewModel.loadTournaments()

@@ -2212,14 +2212,18 @@ fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): Smart
         awayVenueBonus += (if (res == "V") 3.5f else if (res == "E") 1.5f else 0f) // Premia si suma de visitante
     }
 
-    // 3. Historial H2H
-    val h2h = allMatches.filter {
+    // 3. Historial H2H (Partidos finalizados de la base local + catálogo histórico oficial)
+    val localH2H = allMatches.filter {
         val st = it.status.trim().uppercase()
         val isFin = st in listOf("FINISHED", "FINALIZADO", "FT", "FINAL") || it.status.equals("Finished", ignoreCase = true)
         isFin &&
         ((it.homeTeam.name.equals(homeName, ignoreCase = true) && it.awayTeam.name.equals(awayName, ignoreCase = true)) ||
          (it.homeTeam.name.equals(awayName, ignoreCase = true) && it.awayTeam.name.equals(homeName, ignoreCase = true)))
     }
+    val catalogH2H = com.example.worldcup2026.data.model.HistoricalH2HCatalog.getHistoricalMatches(homeName, awayName)
+    val h2h = (localH2H + catalogH2H)
+        .distinctBy { "${it.date?.take(10)}_${it.homeTeam.name}_${it.awayTeam.name}" }
+        .sortedByDescending { it.date ?: "" }
     var h2hHomePts = 0f
     var h2hAwayPts = 0f
     var h2hHomeWins = 0
@@ -2274,32 +2278,70 @@ fun computeSmartPredictionAnalysis(match: Match, allMatches: List<Match>): Smart
             .distinctBy { it.name.trim().lowercase() }
         if (teamsInT.isNotEmpty()) {
             try {
-                val standings = com.example.worldcup2026.data.util.StandingsCalculator.calculateStandings(
-                    groupTeams = teamsInT,
+                // Resolver el grupo o zona de cada equipo respetando el formato del torneo
+                fun resolveTeamGroup(teamName: String, rawGroup: String?): String? {
+                    if (!rawGroup.isNullOrBlank() && rawGroup != "Eliminación" && rawGroup != "TBD" && rawGroup != "Fase de Grupos") {
+                        return rawGroup
+                    }
+                    if (tid == 5) { // Liga Profesional
+                        if (LIGA_ZONA_A_TEAMS.any { it.equals(teamName.trim(), ignoreCase = true) }) return "Zona A"
+                        if (LIGA_ZONA_B_TEAMS.any { it.equals(teamName.trim(), ignoreCase = true) }) return "Zona B"
+                    }
+                    if (tid == 6) { // Primera Nacional
+                        if (PN_ZONA_A_TEAMS.any { it.equals(teamName.trim(), ignoreCase = true) }) return "Zona A"
+                        if (PN_ZONA_B_TEAMS.any { it.equals(teamName.trim(), ignoreCase = true) }) return "Zona B"
+                    }
+                    return rawGroup.takeIf { !it.isNullOrBlank() && it != "Eliminación" && it != "TBD" }
+                }
+
+                val homeGroup = resolveTeamGroup(homeName, match.homeTeam.group)
+                val awayGroup = resolveTeamGroup(awayName, match.awayTeam.group)
+
+                fun getGroupTeams(groupName: String?): List<Team> {
+                    if (groupName.isNullOrBlank()) return teamsInT
+                    val byGroup = teamsInT.filter { t ->
+                        val g = resolveTeamGroup(t.name, t.group)
+                        g.equals(groupName, ignoreCase = true)
+                    }
+                    return if (byGroup.isNotEmpty()) byGroup else teamsInT
+                }
+
+                val homeGroupTeams = getGroupTeams(homeGroup)
+                val homeStandings = com.example.worldcup2026.data.util.StandingsCalculator.calculateStandings(
+                    groupTeams = homeGroupTeams,
                     allMatches = tMatches,
                     isWorldCup = (tid == 1)
                 )
-                val hIdx = standings.indexOfFirst { it.team.name.trim().equals(homeName.trim(), ignoreCase = true) }
+                val hIdx = homeStandings.indexOfFirst { it.team.name.trim().equals(homeName.trim(), ignoreCase = true) }
                 if (hIdx >= 0) {
-                    val s = standings[hIdx]
+                    val s = homeStandings[hIdx]
                     homeStanding = TeamStandingOverview(
                         position = hIdx + 1,
                         points = s.pts,
                         played = s.pj,
                         goalDifference = s.gd,
-                        group = match.homeTeam.group.takeIf { it.isNotBlank() },
+                        group = homeGroup,
                         tournamentName = tName
                     )
                 }
-                val aIdx = standings.indexOfFirst { it.team.name.trim().equals(awayName.trim(), ignoreCase = true) }
+
+                val awayGroupTeams = if (homeGroup != null && awayGroup == homeGroup) homeGroupTeams else getGroupTeams(awayGroup)
+                val awayStandings = if (homeGroup != null && awayGroup == homeGroup) homeStandings else {
+                    com.example.worldcup2026.data.util.StandingsCalculator.calculateStandings(
+                        groupTeams = awayGroupTeams,
+                        allMatches = tMatches,
+                        isWorldCup = (tid == 1)
+                    )
+                }
+                val aIdx = awayStandings.indexOfFirst { it.team.name.trim().equals(awayName.trim(), ignoreCase = true) }
                 if (aIdx >= 0) {
-                    val s = standings[aIdx]
+                    val s = awayStandings[aIdx]
                     awayStanding = TeamStandingOverview(
                         position = aIdx + 1,
                         points = s.pts,
                         played = s.pj,
                         goalDifference = s.gd,
-                        group = match.awayTeam.group.takeIf { it.isNotBlank() },
+                        group = awayGroup,
                         tournamentName = tName
                     )
                 }
@@ -2723,7 +2765,7 @@ fun TeamArrivalCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     val subText = if (standing != null) {
-                        val gPart = if (!standing.group.isNullOrBlank() && standing.group.length <= 4) " · Gr. ${standing.group}" else ""
+                        val gPart = if (!standing.group.isNullOrBlank()) " · ${standing.group}" else ""
                         val gdPart = if (standing.goalDifference > 0) "+${standing.goalDifference}" else "${standing.goalDifference}"
                         "${standing.tournamentName}$gPart · ${standing.points} pts · ${standing.played} PJ · DIF $gdPart"
                     } else {
