@@ -2,6 +2,7 @@ package com.example.worldcup2026.ui
 
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.MasterTeamCatalog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -757,7 +758,13 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // 1. Cancha Horizontal Táctica con Equipos Enfrentados
+                item {
+                    HorizontalPitchTacticsView(match = match)
+                }
+
                 // Tanda de Penales Gráfica si el partido fue a tanda de penales
                 if (match.homePenalties != null && match.awayPenalties != null) {
                     item {
@@ -768,156 +775,117 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                             awayPenalties = match.awayPenalties,
                             takers = detailedPenalties
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
 
-                // Posesión
+                // 2. Estadísticas Avanzadas con Barras Verdes Estilo Anulo Mufo
                 item {
-                    PremiumStatBar(
-                        label = "Posesión del Balón",
-                        homeValue = homePossession,
-                        awayValue = awayPossession,
-                        homeString = "$homePossession%",
-                        awayString = "$awayPossession%"
-                    )
-                }
-
-                // Tiros
-                item {
-                    PremiumStatBar(
-                        label = "Tiros a Puerta",
-                        homeValue = homeShots,
-                        awayValue = awayShots,
-                        homeString = homeShots.toString(),
-                        awayString = awayShots.toString()
-                    )
-                }
-
-                // Córneres
-                item {
-                    val hc = homeCorners.toIntOrNull() ?: 0
-                    val ac = awayCorners.toIntOrNull() ?: 0
-                    PremiumStatBar(
-                        label = "Tiros de Esquina (Corners)",
-                        homeValue = hc,
-                        awayValue = ac,
-                        homeString = homeCorners,
-                        awayString = awayCorners
-                    )
-                }
-
-                // Precisión de Pases
-                item {
-                    val hPct = homePassesPct.replace("%", "").toIntOrNull() ?: 0
-                    val aPct = awayPassesPct.replace("%", "").toIntOrNull() ?: 0
-                    PremiumStatBar(
-                        label = "Precisión de Pase",
-                        homeValue = hPct,
-                        awayValue = aPct,
-                        homeString = homePassesPct,
-                        awayString = awayPassesPct
-                    )
-                }
-
-                // Pases Totales
-                item {
-                    val hpCount = homePasses.substringBefore("/").toIntOrNull() ?: 0
-                    val apCount = awayPasses.substringBefore("/").toIntOrNull() ?: 0
-                    PremiumStatBar(
-                        label = "Pases Completados",
-                        homeValue = hpCount,
-                        awayValue = apCount,
-                        homeString = homePasses,
-                        awayString = awayPasses
-                    )
-                }
-
-                // Tarjetas y Faltas
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF141A24)),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
                     ) {
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.03f))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "FALTAS",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 10.sp,
-                                    color = Color.White.copy(alpha = 0.4f)
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(homeFouls, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
-                                    Text("-", color = Color.White.copy(alpha = 0.3f))
-                                    Text(awayFouls, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
-                                }
-                            }
-                        }
+                            Text(
+                                text = "ESTADÍSTICAS DEL PARTIDO",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp,
+                                color = Color(0xFFFFD700),
+                                letterSpacing = 0.5.sp,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
 
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.03f))
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "TARJETAS",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 10.sp,
-                                    color = Color.White.copy(alpha = 0.4f)
+                            // Posesión
+                            AnuloMufoStatBar(
+                                label = "Posesión",
+                                homeVal = homePossession,
+                                awayVal = awayPossession,
+                                homeStr = "$homePossession%",
+                                awayStr = "$awayPossession%",
+                                isPercentage = true
+                            )
+
+                            // Remates al arco
+                            AnuloMufoStatBar(
+                                label = "Remates al arco",
+                                homeVal = homeShots,
+                                awayVal = awayShots
+                            )
+
+                            // Atajadas
+                            val hs = homeSaves.toIntOrNull() ?: 1
+                            val as_ = awaySaves.toIntOrNull() ?: 1
+                            AnuloMufoStatBar(
+                                label = "Atajadas",
+                                homeVal = hs,
+                                awayVal = as_,
+                                homeStr = homeSaves,
+                                awayStr = awaySaves
+                            )
+
+                            // Pases
+                            val hpCount = homePasses.substringBefore("/").toIntOrNull() ?: 0
+                            val apCount = awayPasses.substringBefore("/").toIntOrNull() ?: 0
+                            AnuloMufoStatBar(
+                                label = "Pases precisos",
+                                homeVal = hpCount,
+                                awayVal = apCount,
+                                homeStr = homePasses,
+                                awayStr = awayPasses
+                            )
+
+                            // Córners
+                            val hc = homeCorners.toIntOrNull() ?: 0
+                            val ac = awayCorners.toIntOrNull() ?: 0
+                            AnuloMufoStatBar(
+                                label = "Córners",
+                                homeVal = hc,
+                                awayVal = ac,
+                                homeStr = homeCorners,
+                                awayStr = awayCorners
+                            )
+
+                            // Faltas
+                            val hf = homeFouls.toIntOrNull() ?: 0
+                            val af = awayFouls.toIntOrNull() ?: 0
+                            AnuloMufoStatBar(
+                                label = "Faltas",
+                                homeVal = hf,
+                                awayVal = af,
+                                homeStr = homeFouls,
+                                awayStr = awayFouls
+                            )
+
+                            // Amarillas
+                            val hy = homeYellow.toIntOrNull() ?: 0
+                            val ay = awayYellow.toIntOrNull() ?: 0
+                            if (hy > 0 || ay > 0) {
+                                AnuloMufoStatBar(
+                                    label = "Tarjetas Amarillas",
+                                    homeVal = hy,
+                                    awayVal = ay,
+                                    homeStr = homeYellow,
+                                    awayStr = awayYellow
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    // Local Cards
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if ((homeYellow.toIntOrNull() ?: 0) > 0) {
-                                            Box(modifier = Modifier.size(width = 8.dp, height = 12.dp).background(Color(0xFFFFD700), shape = RoundedCornerShape(1.dp)))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(homeYellow, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
-                                        }
-                                        if ((homeRed.toIntOrNull() ?: 0) > 0) {
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Box(modifier = Modifier.size(width = 8.dp, height = 12.dp).background(Color(0xFFE53935), shape = RoundedCornerShape(1.dp)))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(homeRed, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
-                                        }
-                                    }
-                                    Text("  -  ", color = Color.White.copy(alpha = 0.3f))
-                                    // Away Cards
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if ((awayYellow.toIntOrNull() ?: 0) > 0) {
-                                            Box(modifier = Modifier.size(width = 8.dp, height = 12.dp).background(Color(0xFFFFD700), shape = RoundedCornerShape(1.dp)))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(awayYellow, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
-                                        }
-                                        if ((awayRed.toIntOrNull() ?: 0) > 0) {
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Box(modifier = Modifier.size(width = 8.dp, height = 12.dp).background(Color(0xFFE53935), shape = RoundedCornerShape(1.dp)))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(awayRed, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
-                                        }
-                                    }
-                                }
+                            }
+
+                            // Rojas
+                            val hr = homeRed.toIntOrNull() ?: 0
+                            val ar = awayRed.toIntOrNull() ?: 0
+                            if (hr > 0 || ar > 0) {
+                                AnuloMufoStatBar(
+                                    label = "Tarjetas Rojas",
+                                    homeVal = hr,
+                                    awayVal = ar,
+                                    homeStr = homeRed,
+                                    awayStr = awayRed
+                                )
                             }
                         }
                     }
@@ -1137,6 +1105,26 @@ fun MatchTimelineView(match: Match) {
 
 @Composable
 fun TimelineEventRow(event: ParsedEvent) {
+    val isSubstitution = event.emoji == "🔄" || event.detail.contains("🟢") || event.detail.contains("🔴")
+    val (inPlayer, outPlayer) = remember(event.detail) {
+        if (isSubstitution) {
+            when {
+                event.detail.contains("🟢") && event.detail.contains("🔴") -> {
+                    val pIn = event.detail.substringAfter("🟢").substringBefore("🔴").trim()
+                    val pOut = event.detail.substringAfter("🔴").trim()
+                    pIn to pOut
+                }
+                event.detail.contains(" por ", ignoreCase = true) -> {
+                    val parts = event.detail.split("(?i) por ".toRegex())
+                    val pIn = parts.getOrNull(0)?.trim() ?: ""
+                    val pOut = parts.getOrNull(1)?.trim() ?: ""
+                    pIn to pOut
+                }
+                else -> "" to ""
+            }
+        } else "" to ""
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1149,22 +1137,30 @@ fun TimelineEventRow(event: ParsedEvent) {
             contentAlignment = Alignment.CenterEnd
         ) {
             if (event.isHome) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Text(
-                        text = event.detail,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        textAlign = TextAlign.End
+                if (isSubstitution && (inPlayer.isNotEmpty() || outPlayer.isNotEmpty())) {
+                    SubstitutionBadgesRow(
+                        playerIn = inPlayer.ifEmpty { "Entra" },
+                        playerOut = outPlayer.ifEmpty { "Sale" },
+                        isHome = true
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (event.emoji.isNotEmpty()) event.emoji else "⚽",
-                        fontSize = 14.sp
-                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            text = event.detail,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.End
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (event.emoji.isNotEmpty()) event.emoji else "⚽",
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }
@@ -1200,22 +1196,30 @@ fun TimelineEventRow(event: ParsedEvent) {
             contentAlignment = Alignment.CenterStart
         ) {
             if (!event.isHome) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Text(
-                        text = if (event.emoji.isNotEmpty()) event.emoji else "⚽",
-                        fontSize = 14.sp
+                if (isSubstitution && (inPlayer.isNotEmpty() || outPlayer.isNotEmpty())) {
+                    SubstitutionBadgesRow(
+                        playerIn = inPlayer.ifEmpty { "Entra" },
+                        playerOut = outPlayer.ifEmpty { "Sale" },
+                        isHome = false
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = event.detail,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        textAlign = TextAlign.Start
-                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = if (event.emoji.isNotEmpty()) event.emoji else "⚽",
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = event.detail,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Start
+                        )
+                    }
                 }
             }
         }
