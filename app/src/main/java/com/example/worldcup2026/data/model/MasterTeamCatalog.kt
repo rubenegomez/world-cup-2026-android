@@ -29,10 +29,11 @@ object MasterTeamCatalog {
         MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2281.png"),
         MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ B Metropolitana", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/79.png"),
         MasterTournament(10, "Primera C", "🏟️ Primera C", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/80.png"),
-        MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = true),
+        MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = false),
         MasterTournament(14, "Amistosos FIFA", "🇦🇷 Amistosos FIFA", "Selecciones", isActive = true),
         MasterTournament(30, "Juegos ODESUR", "🏅 Juegos ODESUR", "Selecciones", isActive = true),
-        MasterTournament(31, "Messi Cup", "🏆 Messi Cup", "Juveniles", isActive = true),
+        MasterTournament(31, "La Liga", "🇪🇸 La Liga (España)", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/15.png"),
+        MasterTournament(9, "Brasileirão", "🇧🇷 Brasileirão", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/85.png"),
 
         // NO EN JUEGO
         MasterTournament(1, "Campeonato Mundial De Fútbol", "🌍 Campeonato Mundial De Fútbol", "Selecciones", isActive = false),

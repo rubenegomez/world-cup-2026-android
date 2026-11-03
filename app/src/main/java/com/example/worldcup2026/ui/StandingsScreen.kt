@@ -284,7 +284,7 @@ fun StandingsScreen(
         TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES", "FIXTURE")
         TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
-        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL", "COPAS Y FINALES", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES", "FIXTURE")
@@ -479,8 +479,8 @@ fun StandingsScreen(
         val filteredMatches = remember(matches, tournamentFormat, tournamentId) {
             if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL) {
                 matches.filter { match ->
-                    (match.tournament_id == null || match.tournament_id == 5) &&
-                    isClausuraMatch(match.date)
+                    (match.tournament_id == null || match.tournament_id in listOf(5, 25, 26, 27, 28, 29)) &&
+                    (isClausuraMatch(match.date) || (match.tournament_id ?: 5) != 5)
                 }
             } else {
                 matches.filter { match -> match.tournament_id == null || match.tournament_id == tournamentId }
@@ -539,6 +539,14 @@ fun StandingsScreen(
                             Text("Fase eliminatoria no disponible para este formato", color = Color.Gray)
                         }
                     }
+                }
+                "COPAS Y FINALES" -> {
+                    LigaCopasYFinalesView(
+                        matches = matches,
+                        teamsByGroup = teamsByGroup,
+                        annualStandings = annualStandings ?: emptyList(),
+                        onMatchClick = onNavigateToMatch
+                    )
                 }
                 "MEJORES TERCEROS" -> {
                     val thirdPlaceTeams = remember(teamsByGroup, matches) {
@@ -2074,6 +2082,307 @@ fun PlayoffCard(
                         color = Color(0xFFFFD54F)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun LigaCopasYFinalesView(
+    matches: List<Match>,
+    teamsByGroup: Map<String, List<Team>>,
+    annualStandings: List<AnnualStandingDto>,
+    onMatchClick: (Match) -> Unit = {}
+) {
+    val allTeams = remember(teamsByGroup) {
+        (teamsByGroup["Zona A"].orEmpty() + teamsByGroup["Zona B"].orEmpty()).distinctBy { it.name.trim().lowercase() }
+    }
+    
+    val belgranoTeam = remember(allTeams) {
+        allTeams.find { it.name.contains("Belgrano", ignoreCase = true) }
+            ?: Team(id = 8304, name = "Belgrano (Córdoba)", flagUrl = "https://a.espncdn.com/i/teamlogos/soccer/500/4.png", group = "Zona B")
+    }
+
+    val bestAnnualTeam = remember(annualStandings, allTeams) {
+        val topDto = annualStandings.firstOrNull()
+        if (topDto != null) {
+            allTeams.find { it.name.contains(topDto.team_name, ignoreCase = true) }
+                ?: Team(id = topDto.team_id, name = topDto.team_name, flagUrl = topDto.logo_url, group = "Zona A")
+        } else {
+            allTeams.find { it.name.contains("Boca", ignoreCase = true) }
+                ?: Team(id = 8305, name = "Boca Juniors", flagUrl = "https://a.espncdn.com/i/teamlogos/soccer/500/5.png", group = "Zona A")
+        }
+    }
+
+    fun findCopaMatch(keywords: List<String>, tIds: List<Int>): Match? {
+        return matches.firstOrNull { m ->
+            (m.tournament_id in tIds) || keywords.any { kw ->
+                (m.stadium?.contains(kw, ignoreCase = true) == true) ||
+                (m.city?.contains(kw, ignoreCase = true) == true)
+            }
+        }
+    }
+
+    val trofeoCampeonesMatch = remember(matches) { findCopaMatch(listOf("Trofeo de Campeones", "Campeones"), listOf(25, 28)) }
+    val supercopaIntMatch = remember(matches) { findCopaMatch(listOf("Supercopa Internacional"), listOf(27)) }
+    val supercopaArgMatch = remember(matches) { findCopaMatch(listOf("Supercopa Argentina"), listOf(26)) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "🏆 COPAS Y FINALES NACIONALES",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD54F)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Todos los títulos y supercopas oficiales que entrega la Liga Profesional al culminar la temporada regular.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
+            }
+        }
+
+        // 1. Trofeo de Campeones
+        item {
+            CopaFinalCard(
+                title = "TROFEO DE CAMPEONES",
+                subTitle = "Campeón Apertura vs. Campeón Clausura",
+                team1 = belgranoTeam,
+                team1Seed = "Campeón Torneo Apertura",
+                team2 = null,
+                team2Seed = "Campeón Torneo Clausura (A definir)",
+                venue = "Estadio Madre de Ciudades (Santiago del Estero)",
+                officialBadge = "Título Oficial de Liga",
+                match = trofeoCampeonesMatch,
+                onClick = { if (trofeoCampeonesMatch != null) onMatchClick(trofeoCampeonesMatch) }
+            )
+        }
+
+        // 2. Supercopa Internacional
+        item {
+            CopaFinalCard(
+                title = "SUPERCOPA INTERNACIONAL",
+                subTitle = "Ganador Trofeo de Campeones vs. 1.° Tabla Anual",
+                team1 = bestAnnualTeam,
+                team1Seed = "1.° Puesto Tabla Anual Acumulada",
+                team2 = null,
+                team2Seed = "Campeón Trofeo de Campeones",
+                venue = "Estadio Internacional / Neutral",
+                officialBadge = "Clasifica por Tabla Anual",
+                match = supercopaIntMatch,
+                onClick = { if (supercopaIntMatch != null) onMatchClick(supercopaIntMatch) }
+            )
+        }
+
+        // 3. Supercopa Argentina
+        item {
+            CopaFinalCard(
+                title = "SUPERCOPA ARGENTINA",
+                subTitle = "Campeón de Liga vs. Campeón Copa Argentina",
+                team1 = null,
+                team1Seed = "Campeón de Liga / Trofeo",
+                team2 = null,
+                team2Seed = "Campeón Copa Argentina",
+                venue = "Sede Neutral (Ambas Hinchadas)",
+                officialBadge = "Copa Nacional Oficial AFA",
+                match = supercopaArgMatch,
+                onClick = { if (supercopaArgMatch != null) onMatchClick(supercopaArgMatch) }
+            )
+        }
+
+        // 4. Recopa de Campeones / Trofeo de Liga
+        item {
+            CopaFinalCard(
+                title = "RECOPA DE CAMPEONES / TROFEO DE LIGA",
+                subTitle = "Cruces y desempates clasificatorios de temporada",
+                team1 = null,
+                team1Seed = "Finalista / Ganador Clasificatorio",
+                team2 = null,
+                team2Seed = "Finalista de Temporada",
+                venue = "Sede Neutral Designada por AFA",
+                officialBadge = "Desempates AFA",
+                match = null,
+                onClick = {}
+            )
+        }
+    }
+}
+
+@Composable
+fun CopaFinalCard(
+    title: String,
+    subTitle: String,
+    team1: Team?,
+    team1Seed: String,
+    team2: Team?,
+    team2Seed: String,
+    venue: String,
+    officialBadge: String,
+    match: Match? = null,
+    onClick: () -> Unit = {}
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = match != null, onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD54F)
+                )
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFF00B0FF).copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = officialBadge,
+                        color = Color(0xFF00B0FF),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Text(
+                text = subTitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.outline,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
+            )
+
+            // Equipo 1
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!team1?.flagUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(team1?.flagUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.size(26.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = team1?.name ?: team1Seed,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = team1Seed,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                val score1 = match?.homeScore?.toString() ?: "-"
+                Text(
+                    text = score1,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            // Equipo 2
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!team2?.flagUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(team2?.flagUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.size(26.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = team2?.name ?: team2Seed,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = team2Seed,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                val score2 = match?.awayScore?.toString() ?: "-"
+                Text(
+                    text = score2,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Sede / Estadio
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "🏟️ $venue",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                val statusText = when {
+                    match?.status?.equals("Finished", ignoreCase = true) == true -> "FINALIZADO"
+                    match?.status?.contains("Live", ignoreCase = true) == true -> "EN VIVO"
+                    else -> "PROGRAMADA"
+                }
+                Text(
+                    text = statusText,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (statusText == "EN VIVO") Color(0xFF00E676) else Color.White.copy(alpha = 0.6f)
+                )
             }
         }
     }
