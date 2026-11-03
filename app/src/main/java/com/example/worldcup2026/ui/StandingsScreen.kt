@@ -284,7 +284,7 @@ fun StandingsScreen(
         TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES", "FIXTURE")
         TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
-        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL", "COPAS Y FINALES", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES", "FIXTURE")
@@ -492,6 +492,10 @@ fun StandingsScreen(
                 "FIXTURE" -> {
                     TournamentFixtureView(
                         matches = filteredMatches,
+                        isLigaProfesional = tournamentFormat == TournamentFormat.LIGA_PROFESIONAL,
+                        teamsByGroup = teamsByGroup,
+                        annualStandings = annualStandings ?: emptyList(),
+                        allMatches = currentTournamentMatches,
                         onMatchClick = onNavigateToMatch
                     )
                 }
@@ -813,6 +817,86 @@ fun getTeamRecentForm(teamName: String, matches: List<Match>): List<Char> {
     }
 }
 
+
+data class AperturaFixedRow(
+    val pos: Int,
+    val name: String,
+    val pts: Int
+)
+
+val APERTURA_ZONA_A_DATA = listOf(
+    AperturaFixedRow(1, "Estudiantes de La Plata", 31),
+    AperturaFixedRow(2, "Boca Juniors", 30),
+    AperturaFixedRow(3, "Vélez Sarsfield", 28),
+    AperturaFixedRow(4, "Talleres de Córdoba", 26),
+    AperturaFixedRow(5, "Independiente", 24),
+    AperturaFixedRow(6, "Lanús", 24),
+    AperturaFixedRow(7, "San Lorenzo", 22),
+    AperturaFixedRow(8, "Unión de Santa Fe", 21),
+    AperturaFixedRow(9, "Instituto", 21),
+    AperturaFixedRow(10, "Defensa y Justicia", 19),
+    AperturaFixedRow(11, "Gimnasia de Mendoza", 19),
+    AperturaFixedRow(12, "Platense", 16),
+    AperturaFixedRow(13, "Central Córdoba SdE", 16),
+    AperturaFixedRow(14, "Newell's Old Boys", 15),
+    AperturaFixedRow(15, "Deportivo Riestra", 11)
+)
+
+val APERTURA_ZONA_B_DATA = listOf(
+    AperturaFixedRow(1, "Independiente Rivadavia", 34),
+    AperturaFixedRow(2, "River Plate", 29),
+    AperturaFixedRow(3, "Argentinos Juniors", 29),
+    AperturaFixedRow(4, "Rosario Central", 28),
+    AperturaFixedRow(5, "Belgrano", 26),
+    AperturaFixedRow(6, "Gimnasia La Plata", 26),
+    AperturaFixedRow(7, "Huracán", 22),
+    AperturaFixedRow(8, "Racing Club", 21),
+    AperturaFixedRow(9, "Barracas Central", 21),
+    AperturaFixedRow(10, "Tigre", 20),
+    AperturaFixedRow(11, "Sarmiento Junín", 19),
+    AperturaFixedRow(12, "Banfield", 18),
+    AperturaFixedRow(13, "Atlético Tucumán", 14),
+    AperturaFixedRow(14, "Aldosivi", 8),
+    AperturaFixedRow(15, "Estudiantes RC", 5)
+)
+
+fun getAperturaPoints(teamName: String): Int {
+    val norm = teamName.lowercase().trim()
+    return when {
+        norm.contains("estudiantes") && norm.contains("plata") -> 31
+        norm.contains("estudiantes") && (norm.contains("cuarto") || norm.contains("rc") || norm.contains("río")) -> 5
+        norm.contains("boca") -> 30
+        norm.contains("velez") || norm.contains("vélez") -> 28
+        norm.contains("talleres") -> 26
+        norm.contains("independiente rivadavia") -> 34
+        norm.contains("independiente") -> 24
+        norm.contains("lanus") || norm.contains("lanús") -> 24
+        norm.contains("san lorenzo") -> 22
+        norm.contains("union") || norm.contains("unión") -> 21
+        norm.contains("instituto") -> 21
+        norm.contains("defensa") -> 19
+        norm.contains("mendoza") -> 19
+        norm.contains("platense") -> 16
+        norm.contains("central c") || norm.contains("sde") || norm.contains("santiago") -> 16
+        norm.contains("newell") -> 15
+        norm.contains("riestra") -> 11
+        norm.contains("river") -> 29
+        norm.contains("argentinos") -> 29
+        norm.contains("rosario") -> 28
+        norm.contains("belgrano") -> 26
+        norm.contains("gimnasia") && norm.contains("plata") -> 26
+        norm.contains("hurac") -> 22
+        norm.contains("racing") -> 21
+        norm.contains("barracas") -> 21
+        norm.contains("tigre") -> 20
+        norm.contains("sarmiento") -> 19
+        norm.contains("banfield") -> 18
+        norm.contains("tucum") -> 14
+        norm.contains("aldosivi") -> 8
+        else -> 0
+    }
+}
+
 @Composable
 fun AnnualStandingsTable(
     standings: List<AnnualStandingDto>, 
@@ -824,6 +908,27 @@ fun AnnualStandingsTable(
             Text("No hay datos de la Tabla Anual disponibles aún.", color = Color.Gray, fontSize = 13.sp)
         }
         return
+    }
+
+    val adjustedStandings = remember(standings) {
+        val maxPts = standings.maxOfOrNull { it.pts } ?: 0
+        if (maxPts < 45) {
+            standings.map { dto ->
+                val apPts = getAperturaPoints(dto.team_name)
+                dto.copy(
+                    pts = dto.pts + apPts,
+                    pj = dto.pj + 14
+                )
+            }.sortedWith(
+                compareByDescending<AnnualStandingDto> { it.pts }
+                    .thenByDescending { it.dg }
+                    .thenByDescending { it.gf }
+            ).mapIndexed { idx, item ->
+                item.copy(pos = idx + 1)
+            }
+        } else {
+            standings
+        }
     }
 
     Column(
@@ -876,7 +981,7 @@ fun AnnualStandingsTable(
 
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
-                standings.forEachIndexed { index, dto ->
+                adjustedStandings.forEachIndexed { index, dto ->
                     val pos = index + 1
                     
                     // Franjas de clasificación reglamentarias oficiales (borde izquierdo)
@@ -1490,13 +1595,13 @@ fun LigaZonasFullView(
             )
         }
 
-        // En la parte inferior: Torneo Apertura
+        // En la parte inferior: Torneo Apertura (Puntajes Oficiales)
         item {
             LigaZonaCard(
                 title = "Apertura · Zona A",
                 isEnCurso = false,
                 teams = zonaATeams,
-                matches = matchesApertura
+                fixedRows = APERTURA_ZONA_A_DATA
             )
         }
         item {
@@ -1504,7 +1609,7 @@ fun LigaZonasFullView(
                 title = "Apertura · Zona B",
                 isEnCurso = false,
                 teams = zonaBTeams,
-                matches = matchesApertura
+                fixedRows = APERTURA_ZONA_B_DATA
             )
         }
     }
@@ -1515,10 +1620,29 @@ fun LigaZonaCard(
     title: String,
     isEnCurso: Boolean,
     teams: List<Team>,
-    matches: List<Match>
+    matches: List<Match> = emptyList(),
+    fixedRows: List<AperturaFixedRow>? = null
 ) {
-    val standings = remember(teams, matches) {
-        StandingsCalculator.calculateStandings(teams, matches, isWorldCup = false)
+    val standings = remember(teams, matches, fixedRows) {
+        if (fixedRows != null) {
+            fixedRows.map { row ->
+                val teamMatch = teams.find { it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
+                    ?: Team(id = 9000 + row.pos, name = row.name, flagUrl = "", group = "")
+                com.example.worldcup2026.data.util.TeamStats(
+                    team = teamMatch,
+                    pj = 14,
+                    g = 0,
+                    e = 0,
+                    p = 0,
+                    gf = 0,
+                    ga = 0,
+                    gd = 0,
+                    pts = row.pts
+                )
+            }
+        } else {
+            StandingsCalculator.calculateStandings(teams, matches, isWorldCup = false)
+        }
     }
 
     Column(
@@ -2465,6 +2589,10 @@ fun assignInferredMatchdays(matches: List<Match>): List<Match> {
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
+    isLigaProfesional: Boolean = false,
+    teamsByGroup: Map<String, List<Team>> = emptyMap(),
+    annualStandings: List<AnnualStandingDto> = emptyList(),
+    allMatches: List<Match> = emptyList(),
     onMatchClick: (Match) -> Unit = {}
 ) {
     if (matches.isEmpty()) {
@@ -2489,6 +2617,17 @@ fun TournamentFixtureView(
     }
 
     val matchdaysList = remember(matchdaysGrouped) { matchdaysGrouped.keys.toList() }
+    val knockoutTabs = remember(isLigaProfesional) {
+        if (isLigaProfesional) {
+            listOf(
+                101 to "OCTAVOS",
+                102 to "CUARTOS",
+                103 to "SEMIFINAL",
+                104 to "FINAL",
+                105 to "COPAS Y FINALES"
+            )
+        } else emptyList()
+    }
     
     // Auto-detectar la fecha actual o próxima más relevante según fecha real de calendario
     val defaultMatchday = remember(processedMatches, matchdaysList) {
@@ -2579,102 +2718,152 @@ fun TournamentFixtureView(
                         modifier = Modifier.height(28.dp)
                     )
                 }
+
+                if (knockoutTabs.isNotEmpty()) {
+                    items(knockoutTabs) { (code, label) ->
+                        val isSelected = selectedMatchday == code
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                selectedMatchday = code
+                            },
+                            label = {
+                                Text(
+                                    text = label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
+                                    color = if (isSelected) Color.Black else Color(0xFF00E5FF)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF00E5FF),
+                                containerColor = Color(0xFF00E5FF).copy(alpha = 0.12f)
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
+                }
             }
         }
 
-        // Barra de navegación de Fecha y estado
-        val currentIndex = matchdaysList.indexOf(selectedMatchday)
-        val matchesForSelectedMatchday = remember(processedMatches, selectedMatchday, matchdaysGrouped) {
-            (matchdaysGrouped[selectedMatchday] ?: processedMatches).sortedBy { it.date ?: "" }
-        }
+        if (selectedMatchday in 101..104) {
+            val rondaName = when (selectedMatchday) {
+                101 -> "OCTAVOS"
+                102 -> "CUARTOS"
+                103 -> "SEMIFINAL"
+                104 -> "FINAL"
+                else -> "OCTAVOS"
+            }
+            LigaPlayoffsView(
+                ronda = rondaName,
+                teamsByGroup = teamsByGroup,
+                matches = allMatches,
+                onMatchClick = onMatchClick
+            )
+        } else if (selectedMatchday == 105) {
+            LigaCopasYFinalesView(
+                matches = allMatches,
+                teamsByGroup = teamsByGroup,
+                annualStandings = annualStandings,
+                onMatchClick = onMatchClick
+            )
+        } else {
+            // Barra de navegación de Fecha y estado
+            val currentIndex = matchdaysList.indexOf(selectedMatchday)
+            val matchesForSelectedMatchday = remember(processedMatches, selectedMatchday, matchdaysGrouped) {
+                (matchdaysGrouped[selectedMatchday] ?: processedMatches).sortedBy { it.date ?: "" }
+            }
 
-        val hasLiveInMatchday = matchesForSelectedMatchday.any { 
-            it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA", "PAUSE") 
-        }
-        val allFinished = matchesForSelectedMatchday.all { 
-            it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
-        }
+            val hasLiveInMatchday = matchesForSelectedMatchday.any { 
+                it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA", "PAUSE") 
+            }
+            val allFinished = matchesForSelectedMatchday.all { 
+                it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
+            }
 
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Row(
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(8.dp)
             ) {
-                IconButton(
-                    onClick = {
-                        if (currentIndex > 0) {
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            selectedMatchday = matchdaysList[currentIndex - 1]
-                        }
-                    },
-                    enabled = currentIndex > 0,
-                    modifier = Modifier.size(28.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronLeft,
-                        contentDescription = "Fecha anterior",
-                        tint = if (currentIndex > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                Text(
-                    text = when {
-                        hasLiveInMatchday -> "🔴 FECHA $selectedMatchday · EN JUEGO"
-                        allFinished -> "🏁 FECHA $selectedMatchday · FINALIZADA"
-                        selectedMatchday == defaultMatchday -> "⭐ FECHA $selectedMatchday · ACTUAL"
-                        else -> "FECHA $selectedMatchday"
-                    },
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 12.sp,
-                    color = when {
-                        hasLiveInMatchday -> Color(0xFFE53935)
-                        selectedMatchday == defaultMatchday -> Color(0xFFFFD700)
-                        else -> MaterialTheme.colorScheme.onSurface
+                    IconButton(
+                        onClick = {
+                            if (currentIndex > 0) {
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                selectedMatchday = matchdaysList[currentIndex - 1]
+                            }
+                        },
+                        enabled = currentIndex > 0,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronLeft,
+                            contentDescription = "Fecha anterior",
+                            tint = if (currentIndex > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
-                )
 
-                IconButton(
-                    onClick = {
-                        if (currentIndex < matchdaysList.size - 1) {
-                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                            selectedMatchday = matchdaysList[currentIndex + 1]
+                    Text(
+                        text = when {
+                            hasLiveInMatchday -> "🔴 FECHA $selectedMatchday · EN JUEGO"
+                            allFinished -> "🏁 FECHA $selectedMatchday · FINALIZADA"
+                            selectedMatchday == defaultMatchday -> "⭐ FECHA $selectedMatchday · ACTUAL"
+                            else -> "FECHA $selectedMatchday"
+                        },
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 12.sp,
+                        color = when {
+                            hasLiveInMatchday -> Color(0xFFE53935)
+                            selectedMatchday == defaultMatchday -> Color(0xFFFFD700)
+                            else -> MaterialTheme.colorScheme.onSurface
                         }
-                    },
-                    enabled = currentIndex < matchdaysList.size - 1,
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Fecha siguiente",
-                        tint = if (currentIndex < matchdaysList.size - 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                        modifier = Modifier.size(20.dp)
                     )
+
+                    IconButton(
+                        onClick = {
+                            if (currentIndex < matchdaysList.size - 1) {
+                                com.example.worldcup2026.data.util.SoundManager.playTic()
+                                selectedMatchday = matchdaysList[currentIndex + 1]
+                            }
+                        },
+                        enabled = currentIndex < matchdaysList.size - 1,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Fecha siguiente",
+                            tint = if (currentIndex < matchdaysList.size - 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
-        }
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(matchesForSelectedMatchday) { match ->
-                FixtureMatchCard(
-                    match = match,
-                    onClick = { onMatchClick(match) }
-                )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(matchesForSelectedMatchday) { match ->
+                    FixtureMatchCard(
+                        match = match,
+                        onClick = { onMatchClick(match) }
+                    )
+                }
             }
         }
     }
