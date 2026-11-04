@@ -61,10 +61,31 @@ enum class TournamentFormat {
 typealias TournamentKind = TournamentFormat
 
 val PN_ZONA_A_TEAMS = listOf(
+    "Agropecuario",
+    "Almagro",
+    "Atlanta",
+    "Atletico Rafaela",
+    "Chacarita Juniors",
+    "Colegiales",
+    "Deportivo Maipú",
+    "Gimnasia y Esgrima (Jujuy)",
+    "Gimnasia y Tiro (Salta)",
+    "Güemes",
+    "Midland",
+    "Nueva Chicago",
+    "Patronato",
+    "Quilmes",
+    "San Martín (San Juan)",
+    "San Martín (Tucumán)",
+    "Temperley",
+    "Tristán Suárez"
+)
+
+val PN_ZONA_B_TEAMS = listOf(
     "Acassuso",
     "All Boys",
     "Almirante Brown",
-    "Central Norte (Salta)",
+    "Central Norte",
     "Chaco For Ever",
     "Ciudad de Bolívar",
     "Colón (Santa Fe)",
@@ -79,27 +100,6 @@ val PN_ZONA_A_TEAMS = listOf(
     "Racing (Córdoba)",
     "San Miguel",
     "San Telmo"
-)
-
-val PN_ZONA_B_TEAMS = listOf(
-    "Agropecuario",
-    "Almagro",
-    "Atlanta",
-    "Atlético de Rafaela",
-    "Chacarita Juniors",
-    "Colegiales",
-    "Deportivo Maipú",
-    "Gimnasia y Esgrima (Jujuy)",
-    "Gimnasia y Tiro (Salta)",
-    "Güemes (Santiago del Estero)",
-    "Midland",
-    "Nueva Chicago",
-    "Patronato",
-    "Quilmes",
-    "San Martín (San Juan)",
-    "San Martín (Tucumán)",
-    "Temperley",
-    "Tristán Suárez"
 )
 
 val LIGA_ZONAS_MAP = mapOf(
@@ -338,11 +338,22 @@ fun StandingsScreen(
             }
             TournamentFormat.PRIMERA_NACIONAL -> {
                 val teamsMap = rawTeams.associateBy { it.name.trim().lowercase() }
+                val catalogTeams = com.example.worldcup2026.data.model.MasterTeamCatalog.PRIMERA_NACIONAL
                 val zonaATeams = PN_ZONA_A_TEAMS.map { name ->
-                    teamsMap[name.lowercase()] ?: rawTeams.find { it.name.contains(name, ignoreCase = true) } ?: Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona A", players = emptyList())
+                    teamsMap[name.lowercase()] 
+                        ?: rawTeams.find { it.name.contains(name, ignoreCase = true) }
+                        ?: catalogTeams.find { it.name.contains(name, ignoreCase = true) }?.let {
+                            Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = it.flagUrl, group = "Zona A", players = emptyList())
+                        }
+                        ?: Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona A", players = emptyList())
                 }
                 val zonaBTeams = PN_ZONA_B_TEAMS.map { name ->
-                    teamsMap[name.lowercase()] ?: rawTeams.find { it.name.contains(name, ignoreCase = true) } ?: Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona B", players = emptyList())
+                    teamsMap[name.lowercase()] 
+                        ?: rawTeams.find { it.name.contains(name, ignoreCase = true) }
+                        ?: catalogTeams.find { it.name.contains(name, ignoreCase = true) }?.let {
+                            Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = it.flagUrl, group = "Zona B", players = emptyList())
+                        }
+                        ?: Team(id = 8500 + Math.abs(name.hashCode() % 1000), name = name, flagUrl = "", group = "Zona B", players = emptyList())
                 }
                 mapOf(
                     "Zona A" to zonaATeams,
@@ -509,6 +520,8 @@ fun StandingsScreen(
                         val filterGroup = when (currentTabTitle) {
                             "ZONA A" -> "Zona A"
                             "ZONA B" -> "Zona B"
+                            "TABLA GENERAL" -> "Tabla General"
+                            "TABLA ÚNICA" -> "Tabla Única"
                             else -> null
                         }
                         val displayGroups = if (filterGroup != null) {
@@ -664,10 +677,11 @@ fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: I
             7       -> Color(0xFFFFB300) // Repechaje
             else    -> Color.Transparent
         }
-        TournamentFormat.PRIMERA_NACIONAL -> when (position) {
-            1       -> Color(0xFF4CAF50) // Final 1º Ascenso
-            in 2..8 -> Color(0xFF2196F3) // Reducido 2º Ascenso
-            else    -> Color.Transparent
+        TournamentFormat.PRIMERA_NACIONAL -> when {
+            totalTeams <= 18 && position == 1 -> Color(0xFF4CAF50) // Final 1º Ascenso
+            totalTeams <= 18 && position in 2..8 -> Color(0xFF2196F3) // Reducido 2º Ascenso
+            totalTeams <= 18 && position == totalTeams -> Color(0xFFF44336) // Descenso directo
+            else -> Color.Transparent
         }
         TournamentFormat.PRIMERA_B -> when (position) {
             1       -> Color(0xFF4CAF50) // Campeón Ascenso Directo
@@ -694,6 +708,61 @@ fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: I
     }
 }
 
+data class PrimeraNacionalFixedRow(
+    val pos: Int,
+    val name: String,
+    val pj: Int,
+    val g: Int,
+    val e: Int,
+    val p: Int,
+    val gf: Int,
+    val ga: Int,
+    val gd: Int,
+    val pts: Int
+)
+
+val PN_ZONA_A_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Tristán Suárez", 36, 16, 16, 4, 34, 16, 18, 64),
+    PrimeraNacionalFixedRow(2, "Atlanta", 36, 19, 5, 12, 42, 34, 8, 62),
+    PrimeraNacionalFixedRow(3, "Temperley", 36, 16, 13, 7, 43, 31, 12, 61),
+    PrimeraNacionalFixedRow(4, "Gimnasia y Esgrima (Jujuy)", 36, 16, 10, 10, 53, 49, 4, 58),
+    PrimeraNacionalFixedRow(5, "Midland", 36, 15, 10, 11, 43, 29, 14, 55),
+    PrimeraNacionalFixedRow(6, "Deportivo Maipú", 36, 14, 10, 12, 43, 34, 9, 52),
+    PrimeraNacionalFixedRow(7, "Colegiales", 36, 14, 10, 12, 36, 32, 4, 52),
+    PrimeraNacionalFixedRow(8, "Gimnasia y Tiro (Salta)", 36, 14, 10, 12, 37, 35, 2, 52),
+    PrimeraNacionalFixedRow(9, "San Martín (San Juan)", 36, 13, 12, 11, 42, 36, 6, 51),
+    PrimeraNacionalFixedRow(10, "San Martín (Tucumán)", 36, 11, 14, 11, 39, 37, 2, 47),
+    PrimeraNacionalFixedRow(11, "Atletico Rafaela", 36, 12, 11, 13, 29, 35, -6, 47),
+    PrimeraNacionalFixedRow(12, "Agropecuario", 36, 12, 10, 14, 31, 39, -8, 46),
+    PrimeraNacionalFixedRow(13, "Quilmes", 36, 12, 9, 15, 33, 30, 3, 45),
+    PrimeraNacionalFixedRow(14, "Chacarita Juniors", 36, 12, 6, 18, 29, 35, -6, 42),
+    PrimeraNacionalFixedRow(15, "Almagro", 36, 11, 9, 16, 33, 44, -11, 42),
+    PrimeraNacionalFixedRow(16, "Patronato", 36, 7, 17, 12, 29, 35, -6, 38),
+    PrimeraNacionalFixedRow(17, "Nueva Chicago", 36, 9, 10, 17, 25, 36, -11, 37),
+    PrimeraNacionalFixedRow(18, "Güemes", 36, 6, 9, 21, 28, 62, -34, 27)
+)
+
+val PN_ZONA_B_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Godoy Cruz Antonio Tomba", 36, 19, 9, 8, 53, 33, 20, 66),
+    PrimeraNacionalFixedRow(2, "Ferro Carril Oeste", 36, 19, 9, 8, 38, 31, 7, 66),
+    PrimeraNacionalFixedRow(3, "Deportivo Morón", 36, 18, 7, 11, 53, 37, 16, 61),
+    PrimeraNacionalFixedRow(4, "Deportivo Madryn", 36, 16, 12, 8, 52, 31, 21, 60),
+    PrimeraNacionalFixedRow(5, "Colón (Santa Fe)", 36, 16, 12, 8, 45, 27, 18, 60),
+    PrimeraNacionalFixedRow(6, "Almirante Brown", 36, 13, 12, 11, 30, 26, 4, 51),
+    PrimeraNacionalFixedRow(7, "Ciudad de Bolívar", 36, 13, 12, 11, 30, 33, -3, 51),
+    PrimeraNacionalFixedRow(8, "Estudiantes (Buenos Aires)", 36, 13, 10, 13, 35, 35, 0, 49),
+    PrimeraNacionalFixedRow(9, "Chaco For Ever", 36, 12, 10, 14, 39, 37, 2, 46),
+    PrimeraNacionalFixedRow(10, "Los Andes", 36, 9, 16, 11, 27, 26, 1, 43),
+    PrimeraNacionalFixedRow(11, "All Boys", 36, 8, 17, 11, 22, 30, -8, 41),
+    PrimeraNacionalFixedRow(12, "San Telmo", 36, 10, 11, 15, 30, 41, -11, 41),
+    PrimeraNacionalFixedRow(13, "Mitre (Santiago del Estero)", 36, 8, 16, 12, 31, 42, -11, 40),
+    PrimeraNacionalFixedRow(14, "Racing (Córdoba)", 36, 10, 10, 16, 32, 45, -13, 40),
+    PrimeraNacionalFixedRow(15, "Defensores de Belgrano", 36, 8, 15, 13, 25, 34, -9, 39),
+    PrimeraNacionalFixedRow(16, "Central Norte", 36, 7, 17, 12, 23, 32, -9, 38),
+    PrimeraNacionalFixedRow(17, "Acassuso", 36, 8, 11, 17, 25, 35, -10, 35),
+    PrimeraNacionalFixedRow(18, "San Miguel", 36, 6, 15, 15, 27, 42, -15, 33)
+)
+
 @Composable
 fun GroupStandingsTable(
     groupName: String, 
@@ -702,7 +771,45 @@ fun GroupStandingsTable(
     tournamentFormat: TournamentFormat = TournamentFormat.WORLD_CUP
 ) {
     val isWorldCup = tournamentFormat == TournamentFormat.WORLD_CUP
-    val standings = StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+    val standings = remember(groupName, teams, matches, tournamentFormat) {
+        if (tournamentFormat == TournamentFormat.PRIMERA_NACIONAL) {
+            val fixedList = when {
+                groupName.equals("Zona A", ignoreCase = true) -> PN_ZONA_A_DATA
+                groupName.equals("Zona B", ignoreCase = true) -> PN_ZONA_B_DATA
+                groupName.equals("Tabla General", ignoreCase = true) -> (PN_ZONA_A_DATA + PN_ZONA_B_DATA).sortedWith(
+                    compareByDescending<PrimeraNacionalFixedRow> { it.pts }
+                        .thenByDescending { it.gd }
+                        .thenByDescending { it.gf }
+                )
+                else -> null
+            }
+            if (fixedList != null) {
+                val catalogTeams = com.example.worldcup2026.data.model.MasterTeamCatalog.PRIMERA_NACIONAL
+                fixedList.map { row ->
+                    val matchedTeam = teams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
+                        ?: catalogTeams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }?.let {
+                            Team(id = 8500 + Math.abs(it.name.hashCode() % 1000), name = it.name, flagUrl = it.flagUrl, group = groupName, players = emptyList())
+                        }
+                        ?: Team(id = 8500 + Math.abs(row.name.hashCode() % 1000), name = row.name, flagUrl = "", group = groupName, players = emptyList())
+                    TeamStats(
+                        team = matchedTeam,
+                        pj = row.pj,
+                        g = row.g,
+                        e = row.e,
+                        p = row.p,
+                        gf = row.gf,
+                        ga = row.ga,
+                        gd = row.gd,
+                        pts = row.pts
+                    )
+                }
+            } else {
+                StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+            }
+        } else {
+            StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+        }
+    }
     val title = if (groupName.startsWith("Zona") || groupName.startsWith("Tabla")) groupName else "Grupo $groupName"
 
     Column(
@@ -791,6 +898,57 @@ fun GroupStandingsTable(
             }
             if (index < standings.size - 1) {
                 HorizontalDivider(thickness = 0.2.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            }
+        }
+
+        if (tournamentFormat == TournamentFormat.PRIMERA_NACIONAL) {
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(8.dp))
+            if (groupName.equals("Tabla General", ignoreCase = true)) {
+                Text(
+                    text = "Tabla acumulada de ambas zonas (36 fechas). Los ascensos y descensos se definen por las posiciones en cada zona.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.65f),
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFF4CAF50), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "1.°: Final por el 1.º Ascenso (Campeón)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFF2196F3), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "2.°-8.°: Clasifica al Reducido (2.º Ascenso)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFFF44336), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "18.°: Descenso de categoría",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
             }
         }
     }
