@@ -102,6 +102,55 @@ val PN_ZONA_B_TEAMS = listOf(
     "San Telmo"
 )
 
+val TFA_CAMPEONATO_A_TEAMS = listOf(
+    "Ciudad de Bolívar",
+    "Ramón Santamarina",
+    "Villa Mitre",
+    "Argentino (Monte Maíz)",
+    "Kimberley",
+    "Gutiérrez SC",
+    "Deportivo Camioneros",
+    "Germinal (Rawson)",
+    "Olimpo"
+)
+
+val TFA_CAMPEONATO_B_TEAMS = listOf(
+    "Central Norte",
+    "Sarmiento (La Banda)",
+    "San Martín (Formosa)",
+    "Sportivo Belgrano",
+    "Sportivo Las Parejas",
+    "Sol de América (Formosa)",
+    "Atenas (Río Cuarto)",
+    "Defensores de Belgrano (Villa Ramallo)",
+    "9 de Julio (Rafaela)"
+)
+
+val TFA_REVALIDA_A_TEAMS = listOf(
+    "Deportivo Rincón",
+    "Juventud Unida Universitario",
+    "Ferro Carril Oeste (General Pico)",
+    "Cipolletti",
+    "Sportivo Estudiantes (San Luis)",
+    "Huracán Las Heras",
+    "San Martín (Mendoza)",
+    "Sol de Mayo",
+    "Círculo Deportivo"
+)
+
+val TFA_REVALIDA_B_TEAMS = listOf(
+    "Douglas Haig",
+    "Boca Unidos",
+    "Independiente (Chivilcoy)",
+    "Sarmiento (Resistencia)",
+    "Gimnasia y Esgrima (Concepción del Uruguay)",
+    "El Linqueño",
+    "Crucero del Norte",
+    "Juventud Antoniana",
+    "Unión (Sunchales)",
+    "Defensores de Pronunciamiento"
+)
+
 val LIGA_ZONAS_MAP = mapOf(
     // ZONA A (15 equipos)
     "Gimnasia y Esgrima (Mendoza)" to "Zona A",
@@ -286,7 +335,7 @@ fun StandingsScreen(
         TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES", "FIXTURE")
-        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("TABLA GENERAL", "GOLEADORES", "FIXTURE")
+        TournamentFormat.TORNEO_FEDERAL_A       -> listOf("CAMPEONATO A", "CAMPEONATO B", "REVÁLIDA A", "REVÁLIDA B", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "GOLEADORES", "FIXTURE")
         TournamentFormat.COPA_DIRECTA,
@@ -362,8 +411,24 @@ fun StandingsScreen(
                 )
             }
             TournamentFormat.TORNEO_FEDERAL_A -> {
+                val teamsMap = rawTeams.associateBy { it.name.trim().lowercase() }
+                fun buildTfaTeams(names: List<String>, grp: String) = names.map { name ->
+                    teamsMap[name.lowercase()]
+                        ?: rawTeams.find { it.name.contains(name, ignoreCase = true) }
+                        ?: Team(
+                            id = 8600 + Math.abs(name.hashCode() % 1000),
+                            name = name,
+                            flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(name) ?: "",
+                            group = grp,
+                            players = emptyList()
+                        )
+                }
+
                 mapOf(
-                    "Tabla General" to rawTeams
+                    "Campeonato A" to buildTfaTeams(TFA_CAMPEONATO_A_TEAMS, "Campeonato A"),
+                    "Campeonato B" to buildTfaTeams(TFA_CAMPEONATO_B_TEAMS, "Campeonato B"),
+                    "Reválida A" to buildTfaTeams(TFA_REVALIDA_A_TEAMS, "Reválida A"),
+                    "Reválida B" to buildTfaTeams(TFA_REVALIDA_B_TEAMS, "Reválida B")
                 )
             }
             else -> {
@@ -510,7 +575,7 @@ fun StandingsScreen(
                         onMatchClick = onNavigateToMatch
                     )
                 }
-                "GRUPOS", "ZONAS", "ZONA A", "ZONA B", "TABLA GENERAL", "TABLA ÚNICA" -> {
+                "GRUPOS", "ZONAS", "ZONA A", "ZONA B", "TABLA GENERAL", "TABLA ÚNICA", "CAMPEONATO A", "CAMPEONATO B", "REVÁLIDA A", "REVÁLIDA B" -> {
                     if (tournamentFormat == TournamentFormat.LIGA_PROFESIONAL && currentTabTitle == "ZONAS") {
                         LigaZonasFullView(
                             teamsByGroup = teamsByGroup,
@@ -522,6 +587,10 @@ fun StandingsScreen(
                             "ZONA B" -> "Zona B"
                             "TABLA GENERAL" -> "Tabla General"
                             "TABLA ÚNICA" -> "Tabla Única"
+                            "CAMPEONATO A" -> "Campeonato A"
+                            "CAMPEONATO B" -> "Campeonato B"
+                            "REVÁLIDA A" -> "Reválida A"
+                            "REVÁLIDA B" -> "Reválida B"
                             else -> null
                         }
                         val displayGroups = if (filterGroup != null) {
@@ -660,7 +729,7 @@ fun StandingsScreen(
     }
 }
 
-fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: Int): Color {
+fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: Int, groupName: String = ""): Color {
     return when (format) {
         TournamentFormat.LIBERTADORES -> when (position) {
             1, 2 -> Color(0xFF4CAF50) // Octavos Libertadores
@@ -681,6 +750,18 @@ fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: I
             totalTeams <= 18 && position == 1 -> Color(0xFF4CAF50) // Final 1º Ascenso
             totalTeams <= 18 && position in 2..8 -> Color(0xFF2196F3) // Reducido 2º Ascenso
             totalTeams <= 18 && position == totalTeams -> Color(0xFFF44336) // Descenso directo
+            else -> Color.Transparent
+        }
+        TournamentFormat.TORNEO_FEDERAL_A -> when {
+            groupName.contains("Campeonato", ignoreCase = true) -> when (position) {
+                in 1..2 -> Color(0xFF4CAF50) // Semifinales 1.º Ascenso
+                else    -> Color(0xFF2196F3) // Pasan a Fase Reválida
+            }
+            groupName.contains("Reválida", ignoreCase = true) || groupName.contains("Revalida", ignoreCase = true) -> when {
+                position in 1..6 -> Color(0xFF2196F3) // Clasifica a Playoffs (2.º Ascenso)
+                position >= totalTeams - 1 -> Color(0xFFF44336) // Descenso al Torneo Regional
+                else -> Color.Transparent
+            }
             else -> Color.Transparent
         }
         TournamentFormat.PRIMERA_B -> when (position) {
@@ -763,6 +844,55 @@ val PN_ZONA_B_DATA = listOf(
     PrimeraNacionalFixedRow(18, "San Miguel", 36, 6, 15, 15, 27, 42, -15, 33)
 )
 
+val TFA_CAMPEONATO_A_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Ciudad de Bolívar", 8, 5, 2, 1, 8, 4, 4, 17),
+    PrimeraNacionalFixedRow(2, "Ramón Santamarina", 8, 4, 2, 2, 11, 6, 5, 14),
+    PrimeraNacionalFixedRow(3, "Villa Mitre", 8, 4, 2, 2, 9, 9, 0, 14),
+    PrimeraNacionalFixedRow(4, "Argentino (Monte Maíz)", 8, 4, 1, 3, 13, 10, 3, 13),
+    PrimeraNacionalFixedRow(5, "Kimberley", 8, 3, 3, 2, 12, 10, 2, 12),
+    PrimeraNacionalFixedRow(6, "Gutiérrez SC", 8, 1, 5, 2, 8, 12, -4, 8),
+    PrimeraNacionalFixedRow(7, "Deportivo Camioneros", 8, 2, 2, 4, 8, 12, -4, 8),
+    PrimeraNacionalFixedRow(8, "Germinal (Rawson)", 8, 2, 1, 5, 7, 9, -2, 7),
+    PrimeraNacionalFixedRow(9, "Olimpo", 8, 1, 2, 5, 4, 8, -4, 5)
+)
+
+val TFA_CAMPEONATO_B_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Central Norte", 8, 6, 0, 2, 13, 6, 7, 18),
+    PrimeraNacionalFixedRow(2, "Sarmiento (La Banda)", 8, 5, 2, 1, 5, 2, 3, 17),
+    PrimeraNacionalFixedRow(3, "San Martín (Formosa)", 8, 4, 3, 1, 9, 6, 3, 15),
+    PrimeraNacionalFixedRow(4, "Sportivo Belgrano", 8, 4, 2, 2, 7, 5, 2, 14),
+    PrimeraNacionalFixedRow(5, "Sportivo Las Parejas", 8, 3, 0, 5, 8, 12, -4, 9),
+    PrimeraNacionalFixedRow(6, "Sol de América (Formosa)", 8, 2, 2, 4, 6, 7, -1, 8),
+    PrimeraNacionalFixedRow(7, "Atenas (Río Cuarto)", 8, 2, 2, 4, 5, 8, -3, 8),
+    PrimeraNacionalFixedRow(8, "Defensores de Belgrano (Villa Ramallo)", 8, 0, 5, 3, 3, 6, -3, 5),
+    PrimeraNacionalFixedRow(9, "9 de Julio (Rafaela)", 8, 1, 2, 5, 3, 7, -4, 5)
+)
+
+val TFA_REVALIDA_A_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Deportivo Rincón", 8, 6, 1, 1, 10, 1, 9, 19),
+    PrimeraNacionalFixedRow(2, "Juventud Unida Universitario", 8, 3, 3, 2, 10, 6, 4, 12),
+    PrimeraNacionalFixedRow(3, "Ferro Carril Oeste (General Pico)", 8, 3, 3, 2, 9, 6, 3, 12),
+    PrimeraNacionalFixedRow(4, "Cipolletti", 8, 2, 6, 0, 4, 2, 2, 12),
+    PrimeraNacionalFixedRow(5, "Sportivo Estudiantes (San Luis)", 8, 3, 3, 2, 10, 10, 0, 12),
+    PrimeraNacionalFixedRow(6, "Huracán Las Heras", 8, 3, 2, 3, 5, 8, -3, 11),
+    PrimeraNacionalFixedRow(7, "San Martín (Mendoza)", 8, 1, 3, 4, 8, 11, -3, 6),
+    PrimeraNacionalFixedRow(8, "Sol de Mayo", 8, 1, 3, 4, 7, 14, -7, 6),
+    PrimeraNacionalFixedRow(9, "Círculo Deportivo", 8, 1, 2, 5, 6, 11, -5, 5)
+)
+
+val TFA_REVALIDA_B_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Douglas Haig", 9, 5, 4, 0, 14, 7, 7, 19),
+    PrimeraNacionalFixedRow(2, "Boca Unidos", 9, 5, 3, 1, 12, 9, 3, 18),
+    PrimeraNacionalFixedRow(3, "Independiente (Chivilcoy)", 9, 4, 4, 1, 17, 10, 7, 16),
+    PrimeraNacionalFixedRow(4, "Sarmiento (Resistencia)", 9, 3, 4, 2, 6, 6, 0, 13),
+    PrimeraNacionalFixedRow(5, "Gimnasia y Esgrima (Concepción del Uruguay)", 9, 4, 0, 5, 9, 8, 1, 12),
+    PrimeraNacionalFixedRow(6, "El Linqueño", 9, 2, 4, 3, 5, 8, -3, 10),
+    PrimeraNacionalFixedRow(7, "Crucero del Norte", 9, 2, 3, 4, 4, 11, -7, 9),
+    PrimeraNacionalFixedRow(8, "Juventud Antoniana", 9, 2, 2, 5, 6, 10, -4, 8),
+    PrimeraNacionalFixedRow(9, "Unión (Sunchales)", 9, 1, 4, 4, 11, 11, 0, 7),
+    PrimeraNacionalFixedRow(10, "Defensores de Pronunciamiento", 9, 1, 4, 4, 6, 10, -4, 7)
+)
+
 @Composable
 fun GroupStandingsTable(
     groupName: String, 
@@ -806,11 +936,44 @@ fun GroupStandingsTable(
             } else {
                 StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
             }
+        } else if (tournamentFormat == TournamentFormat.TORNEO_FEDERAL_A) {
+            val fixedList = when {
+                groupName.contains("Campeonato A", ignoreCase = true) -> TFA_CAMPEONATO_A_DATA
+                groupName.contains("Campeonato B", ignoreCase = true) -> TFA_CAMPEONATO_B_DATA
+                groupName.contains("Reválida A", ignoreCase = true) || groupName.contains("Revalida A", ignoreCase = true) -> TFA_REVALIDA_A_DATA
+                groupName.contains("Reválida B", ignoreCase = true) || groupName.contains("Revalida B", ignoreCase = true) -> TFA_REVALIDA_B_DATA
+                else -> null
+            }
+            if (fixedList != null) {
+                fixedList.map { row ->
+                    val matchedTeam = teams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
+                        ?: Team(
+                            id = 8600 + Math.abs(row.name.hashCode() % 1000),
+                            name = row.name,
+                            flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                            group = groupName,
+                            players = emptyList()
+                        )
+                    TeamStats(
+                        team = matchedTeam,
+                        pj = row.pj,
+                        g = row.g,
+                        e = row.e,
+                        p = row.p,
+                        gf = row.gf,
+                        ga = row.ga,
+                        gd = row.gd,
+                        pts = row.pts
+                    )
+                }
+            } else {
+                StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+            }
         } else {
             StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
         }
     }
-    val title = if (groupName.startsWith("Zona") || groupName.startsWith("Tabla")) groupName else "Grupo $groupName"
+    val title = if (groupName.startsWith("Zona") || groupName.startsWith("Tabla") || groupName.startsWith("Campeonato") || groupName.startsWith("Reválida")) groupName else "Grupo $groupName"
 
     Column(
         modifier = Modifier
@@ -848,7 +1011,7 @@ fun GroupStandingsTable(
         standings.forEachIndexed { index, stats ->
             val pos = index + 1
             val totalTeams = standings.size
-            val rowBgColor = getQualificationColor(tournamentFormat, pos, totalTeams)
+            val rowBgColor = getQualificationColor(tournamentFormat, pos, totalTeams, groupName)
 
             Row(
                 modifier = Modifier
@@ -943,6 +1106,65 @@ fun GroupStandingsTable(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "18.°: Descenso de categoría",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        if (tournamentFormat == TournamentFormat.TORNEO_FEDERAL_A) {
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(8.dp))
+            if (groupName.contains("Campeonato", ignoreCase = true)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFF4CAF50), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "1.°-2.°: Clasifica a Semifinales por el 1.º Ascenso",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFF2196F3), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "3.°-9.°: Pasan a disputar la Fase Reválida",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFF2196F3), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "1.°-6.°: Clasifica a Playoffs (2.º Ascenso)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 11.sp
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(9.dp).background(Color(0xFFF44336), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Zona de Descenso al Torneo Regional Amateur",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 11.sp
