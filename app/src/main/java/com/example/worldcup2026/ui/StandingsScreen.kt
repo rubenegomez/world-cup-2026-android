@@ -431,6 +431,21 @@ fun StandingsScreen(
                     "Reválida B" to buildTfaTeams(TFA_REVALIDA_B_TEAMS, "Reválida B")
                 )
             }
+            TournamentFormat.PRIMERA_B -> {
+                val teamsMap = rawTeams.associateBy { it.name.trim().lowercase() }
+                val pbTeams = PB_METRO_DATA.map { row ->
+                    teamsMap[row.name.lowercase()]
+                        ?: rawTeams.find { it.name.contains(row.name, ignoreCase = true) }
+                        ?: Team(
+                            id = 8700 + Math.abs(row.name.hashCode() % 1000),
+                            name = row.name,
+                            flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                            group = "Tabla General",
+                            players = emptyList()
+                        )
+                }
+                mapOf("Tabla General" to pbTeams)
+            }
             else -> {
                 val grouped = rawTeams
                     .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
@@ -893,6 +908,31 @@ val TFA_REVALIDA_B_DATA = listOf(
     PrimeraNacionalFixedRow(10, "Defensores de Pronunciamiento", 9, 1, 4, 4, 6, 10, -4, 7)
 )
 
+val PB_METRO_DATA = listOf(
+    PrimeraNacionalFixedRow(1, "Colegiales", 42, 26, 8, 8, 59, 25, 34, 86),
+    PrimeraNacionalFixedRow(2, "Argentino de Quilmes", 42, 21, 17, 4, 52, 21, 31, 80),
+    PrimeraNacionalFixedRow(3, "Deportivo Armenio", 42, 22, 12, 8, 63, 34, 29, 78),
+    PrimeraNacionalFixedRow(4, "Ferrocarril Midland", 42, 18, 15, 9, 53, 32, 21, 69),
+    PrimeraNacionalFixedRow(5, "Los Andes", 42, 19, 10, 13, 45, 37, 8, 67),
+    PrimeraNacionalFixedRow(6, "Excursionistas", 42, 16, 16, 10, 64, 46, 18, 64),
+    PrimeraNacionalFixedRow(7, "Dock Sud", 42, 17, 11, 14, 51, 44, 7, 62),
+    PrimeraNacionalFixedRow(8, "Argentino de Merlo", 42, 17, 11, 14, 47, 44, 3, 62),
+    PrimeraNacionalFixedRow(9, "Deportivo Merlo", 42, 16, 14, 12, 36, 34, 2, 62),
+    PrimeraNacionalFixedRow(10, "Flandria", 42, 16, 12, 14, 37, 37, 0, 60),
+    PrimeraNacionalFixedRow(11, "Comunicaciones", 42, 14, 15, 13, 47, 38, 9, 57),
+    PrimeraNacionalFixedRow(12, "UAI Urquiza", 42, 12, 14, 16, 43, 56, -13, 50),
+    PrimeraNacionalFixedRow(13, "Liniers", 42, 12, 13, 17, 32, 34, -2, 49),
+    PrimeraNacionalFixedRow(14, "Fénix", 42, 10, 17, 15, 33, 42, -9, 47),
+    PrimeraNacionalFixedRow(15, "Villa Dálmine", 42, 10, 17, 15, 22, 32, -10, 47),
+    PrimeraNacionalFixedRow(16, "Acassuso", 42, 11, 13, 18, 31, 49, -18, 46),
+    PrimeraNacionalFixedRow(17, "San Martín (Burzaco)", 42, 11, 12, 19, 29, 43, -14, 45),
+    PrimeraNacionalFixedRow(18, "Sacachispas", 42, 12, 9, 21, 27, 57, -30, 45),
+    PrimeraNacionalFixedRow(19, "Sportivo Italiano", 42, 8, 19, 15, 38, 48, -10, 43),
+    PrimeraNacionalFixedRow(20, "Deportivo Laferrere", 42, 8, 19, 15, 37, 55, -18, 43),
+    PrimeraNacionalFixedRow(21, "Villa San Carlos", 42, 8, 14, 20, 33, 46, -13, 38),
+    PrimeraNacionalFixedRow(22, "Cañuelas", 42, 9, 10, 23, 30, 55, -25, 37)
+)
+
 @Composable
 fun GroupStandingsTable(
     groupName: String, 
@@ -968,6 +1008,28 @@ fun GroupStandingsTable(
                 }
             } else {
                 StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+            }
+        } else if (tournamentFormat == TournamentFormat.PRIMERA_B) {
+            PB_METRO_DATA.map { row ->
+                val matchedTeam = teams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
+                    ?: Team(
+                        id = 8700 + Math.abs(row.name.hashCode() % 1000),
+                        name = row.name,
+                        flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                        group = groupName,
+                        players = emptyList()
+                    )
+                TeamStats(
+                    team = matchedTeam,
+                    pj = row.pj,
+                    g = row.g,
+                    e = row.e,
+                    p = row.p,
+                    gf = row.gf,
+                    ga = row.ga,
+                    gd = row.gd,
+                    pts = row.pts
+                )
             }
         } else {
             StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
@@ -1170,6 +1232,47 @@ fun GroupStandingsTable(
                             fontSize = 11.sp
                         )
                     }
+                }
+            }
+        }
+
+        if (tournamentFormat == TournamentFormat.PRIMERA_B) {
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFF4CAF50), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "1.°: Campeón (Ascenso Directo a Primera Nacional)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFF2196F3), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "2.°-9.°: Clasifica al Torneo Reducido (2.º Ascenso)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFFF44336), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "21.°-22.°: Descenso a Primera C Metropolitana",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
                 }
             }
         }
