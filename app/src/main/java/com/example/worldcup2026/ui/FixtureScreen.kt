@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.worldcup2026.data.model.Match
+import com.example.worldcup2026.data.model.*
 import com.example.worldcup2026.data.model.Team
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -1020,7 +1020,7 @@ fun MatchCard(
 
                 TeamMatchInfo(
                     team = match.homeTeam,
-                    score = match.homeScore,
+                    score = match.getDisplayHomeScore(),
                     penalties = if (hasPenalties) match.homePenalties else null,
                     isFavorite = match.homeTeam.name in favoriteTeamNames,
                     isQualified = isHomeQualified,
@@ -1100,7 +1100,7 @@ fun MatchCard(
                 
                 TeamMatchInfo(
                     team = match.awayTeam,
-                    score = match.awayScore,
+                    score = match.getDisplayAwayScore(),
                     penalties = if (hasPenalties) match.awayPenalties else null,
                     isFavorite = match.awayTeam.name in favoriteTeamNames,
                     isQualified = isAwayQualified,

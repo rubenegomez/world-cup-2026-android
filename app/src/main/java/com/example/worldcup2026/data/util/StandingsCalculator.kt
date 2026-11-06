@@ -1,6 +1,6 @@
 package com.example.worldcup2026.data.util
 
-import com.example.worldcup2026.data.model.Match
+import com.example.worldcup2026.data.model.*
 import com.example.worldcup2026.data.model.Team
 
 data class TeamStats(
@@ -62,12 +62,13 @@ object StandingsCalculator {
                     return@forEach
                 }
 
-                val hScore = match.homeScore
-                val aScore = match.awayScore
+                val hScore = match.getDisplayHomeScore()
+                val aScore = match.getDisplayAwayScore()
                 
                 if (hScore != null && aScore != null) {
                     pj++
-                    val (teamScore, opponentScore) = if (isHome) hScore to aScore else aScore to hScore
+                    val teamScore: Int = if (isHome) hScore else aScore
+                    val opponentScore: Int = if (isHome) aScore else hScore
                     
                     gf += teamScore
                     ga += opponentScore

@@ -134,8 +134,8 @@ class WorldCupRepository(private val matchDao: MatchDao) {
         val saved = savedEntities.find { it.id == baseMatch.id }
         if (saved != null) {
             // Si el remoto tiene score, preferimos SIEMPRE el remoto. Si no, usamos el local guardado.
-            val homeScore = baseMatch.homeScore ?: saved.homeScore
-            val awayScore = baseMatch.awayScore ?: saved.awayScore
+            val homeScore = baseMatch.getDisplayHomeScore() ?: saved.homeScore
+            val awayScore = baseMatch.getDisplayAwayScore() ?: saved.awayScore
             val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
             val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
             

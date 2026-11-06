@@ -54,3 +54,66 @@ data class Match(
     val clock: String? = null,
     val is_featured: Boolean = false
 )
+
+
+fun Match.getDisplayHomeScore(): Int? {
+    val base = homeScore
+    val eventGoals = countGoalsFromEvents(isHome = true)
+    return if (base == null) {
+        if (status.equals("Scheduled", ignoreCase = true)) null else eventGoals.takeIf { it > 0 }
+    } else {
+        maxOf(base, eventGoals)
+    }
+}
+
+fun Match.getDisplayAwayScore(): Int? {
+    val base = awayScore
+    val eventGoals = countGoalsFromEvents(isHome = false)
+    return if (base == null) {
+        if (status.equals("Scheduled", ignoreCase = true)) null else eventGoals.takeIf { it > 0 }
+    } else {
+        maxOf(base, eventGoals)
+    }
+}
+
+fun Match.countGoalsFromEvents(isHome: Boolean): Int {
+    val targetTeam = if (isHome) homeTeam.name.lowercase().trim() else awayTeam.name.lowercase().trim()
+    var count = 0
+    if (scorers.isNotEmpty()) {
+        scorers.forEach { s ->
+            val sLow = s.lowercase()
+            if ((sLow.contains("⚽") || sLow.contains("gol")) &&
+                !sLow.contains("anulado") && !sLow.contains("disallowed") && !sLow.contains("var")
+            ) {
+                val colonIdx = s.indexOf(':')
+                val teamPart = if (colonIdx != -1) s.substring(0, colonIdx).lowercase() else sLow
+                if (teamPart.contains(targetTeam) || targetTeam.contains(teamPart.replace("⚽", "").trim())) {
+                    count++
+                }
+            }
+        }
+        if (count > 0) return count
+    }
+    if (events.isNotEmpty()) {
+        events.forEach { ev ->
+            val evLow = ev.lowercase()
+            if ((evLow.contains("⚽") || evLow.contains("gol")) &&
+                !evLow.contains("anulado") && !evLow.contains("disallowed") && !evLow.contains("var") &&
+                !evLow.contains("tanda de penales") && !evLow.contains("[penales]")
+            ) {
+                val colonIdx = ev.indexOf(':')
+                val endBracket = ev.indexOf(']')
+                val teamPart = if (endBracket != -1 && colonIdx != -1 && colonIdx > endBracket) {
+                    ev.substring(endBracket + 1, colonIdx).lowercase().trim()
+                } else if (colonIdx != -1) {
+                    ev.substring(0, colonIdx).lowercase().trim()
+                } else ""
+
+                if (teamPart.isNotEmpty() && (teamPart.contains(targetTeam) || targetTeam.contains(teamPart))) {
+                    count++
+                }
+            }
+        }
+    }
+    return count
+}

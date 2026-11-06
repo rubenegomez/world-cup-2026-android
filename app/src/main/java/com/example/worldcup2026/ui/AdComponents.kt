@@ -1153,7 +1153,8 @@ fun TimelineEventRow(event: ParsedEvent) {
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            textAlign = TextAlign.End
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -1217,7 +1218,8 @@ fun TimelineEventRow(event: ParsedEvent) {
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            textAlign = TextAlign.Start
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                     }
                 }
@@ -1236,10 +1238,18 @@ data class ParsedEvent(
 
 fun parseEventString(eventStr: String, homeTeamName: String): ParsedEvent {
     try {
-        val emojiMatch = if (eventStr.isNotEmpty()) {
-            val firstCodePoint = eventStr.codePointAt(0)
-            String(Character.toChars(firstCodePoint))
-        } else ""
+        val trimmed = eventStr.trim()
+        val emojiMatch = when {
+            trimmed.contains("⚽") -> "⚽"
+            trimmed.contains("🟨") -> "🟨"
+            trimmed.contains("🟥") -> "🟥"
+            trimmed.contains("🔄") -> "🔄"
+            trimmed.isNotEmpty() -> {
+                val firstCodePoint = trimmed.codePointAt(0)
+                String(Character.toChars(firstCodePoint))
+            }
+            else -> ""
+        }
         val startBracket = eventStr.indexOf('[')
         val endBracket = eventStr.indexOf(']')
         val minute = if (startBracket != -1 && endBracket != -1) {
