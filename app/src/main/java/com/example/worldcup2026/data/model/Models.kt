@@ -1,4 +1,4 @@
-package com.example.worldcup2026.data.model
+﻿package com.example.worldcup2026.data.model
 
 data class Team(
     val id: Int,
@@ -59,21 +59,37 @@ data class Match(
 fun Match.getDisplayHomeScore(): Int? {
     val base = homeScore
     val eventGoals = countGoalsFromEvents(isHome = true)
-    return if (base == null) {
-        if (status.equals("Scheduled", ignoreCase = true)) null else eventGoals.takeIf { it > 0 }
-    } else {
-        maxOf(base, eventGoals)
+    val otherEventGoals = countGoalsFromEvents(isHome = false)
+    val hasClockOrLive = !clock.isNullOrBlank() || status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "1T", "2T", "ET", "PENALES", "FINISHED", "FINALIZADO", "FT")
+
+    if (base != null) {
+        return maxOf(base, eventGoals)
     }
+    if (eventGoals > 0) {
+        return eventGoals
+    }
+    if (otherEventGoals > 0 || hasClockOrLive) {
+        return 0
+    }
+    return if (status.equals("Scheduled", ignoreCase = true)) null else 0
 }
 
 fun Match.getDisplayAwayScore(): Int? {
     val base = awayScore
     val eventGoals = countGoalsFromEvents(isHome = false)
-    return if (base == null) {
-        if (status.equals("Scheduled", ignoreCase = true)) null else eventGoals.takeIf { it > 0 }
-    } else {
-        maxOf(base, eventGoals)
+    val otherEventGoals = countGoalsFromEvents(isHome = true)
+    val hasClockOrLive = !clock.isNullOrBlank() || status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "1T", "2T", "ET", "PENALES", "FINISHED", "FINALIZADO", "FT")
+
+    if (base != null) {
+        return maxOf(base, eventGoals)
     }
+    if (eventGoals > 0) {
+        return eventGoals
+    }
+    if (otherEventGoals > 0 || hasClockOrLive) {
+        return 0
+    }
+    return if (status.equals("Scheduled", ignoreCase = true)) null else 0
 }
 
 fun Match.countGoalsFromEvents(isHome: Boolean): Int {

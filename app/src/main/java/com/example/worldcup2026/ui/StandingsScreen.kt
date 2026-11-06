@@ -1,4 +1,4 @@
-package com.example.worldcup2026.ui
+﻿package com.example.worldcup2026.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn

@@ -376,7 +376,7 @@ fun TournamentSelectorModal(
                             val isExpanded = expandedCategories[categoryDef.key] ?: true
 
                             // Encabezado de Categoría (Acordeón)
-                            item(key = "header_") {
+                            item(key = "header_" + categoryDef.key) {
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
