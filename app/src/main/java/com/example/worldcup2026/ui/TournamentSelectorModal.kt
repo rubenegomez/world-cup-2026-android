@@ -436,7 +436,7 @@ fun TournamentSelectorModal(
                             if (isExpanded) {
                                 val chunks = tourneys.chunked(3)
                                 chunks.forEachIndexed { chunkIndex, rowItems ->
-                                    item(key = "row__") {
+                                    item(key = "row_" + categoryDef.key + "_" + chunkIndex) {
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -533,7 +533,7 @@ fun TournamentSelectorModal(
 
                                             // Rellenar celdas vacías si la fila tiene menos de 3
                                             for (i in 0 until (3 - rowItems.size)) {
-                                                Spacer(modifier = Modifier.weight(1f))
+                                                Spacer(modifier = Modifier.weight(1f).aspectRatio(1f))
                                             }
                                         }
                                     }
