@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.kapt")
@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.worldcup2026"
         minSdk = 24
         targetSdk = 34
-        versionCode = 83
-        versionName = "1.9.0"
+        versionCode = 84
+        versionName = "1.9.1"
 
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

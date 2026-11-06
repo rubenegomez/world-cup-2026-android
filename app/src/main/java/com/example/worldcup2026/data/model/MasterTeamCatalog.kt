@@ -1,4 +1,4 @@
-package com.example.worldcup2026.data.model
+﻿package com.example.worldcup2026.data.model
 
 data class MasterTeam(
     val name: String,
@@ -18,39 +18,33 @@ data class MasterTournament(
 
 object MasterTeamCatalog {
 
-    // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (En juego primero, no en juego al final)
+    // 0. LISTA CANÓNICA OFICIAL DE TORNEOS (Categorizados en AFA, CONMEBOL, FIFA, OTROS TORNEOS)
     val MASTER_TOURNAMENTS = listOf(
-        // EN JUEGO
-        MasterTournament(3, "Copa Conmebol Libertadores", "🏆 Copa Conmebol Libertadores", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2683.png"),
-        MasterTournament(4, "Copa Conmebol Sudamericana", "🏆 Copa Conmebol Sudamericana", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2684.png"),
-        MasterTournament(5, "Torneo Clausura Liga Profesional", "🏆 Torneo Clausura Liga Profesional", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1.png"),
-        MasterTournament(6, "Copa Argentina", "🇦🇷 Copa Argentina", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1884.png"),
-        MasterTournament(7, "Torneo Primera Nacional", "⚽ Torneo Primera Nacional", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/78.png"),
-        MasterTournament(15, "Torneo Federal A", "🏔️ Torneo Federal A", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2281.png"),
-        MasterTournament(8, "Torneo Clausura B Metropolitana", "🏟️ B Metropolitana", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/79.png"),
-        MasterTournament(10, "Primera C", "🏟️ Primera C", "Nacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/80.png"),
-        MasterTournament(27, "Supercopa Internacional", "🌐 Supercopa Internacional", "Nacional", isActive = false),
-        MasterTournament(14, "Amistosos FIFA", "🇦🇷 Amistosos FIFA", "Selecciones", isActive = true),
-        MasterTournament(30, "Juegos ODESUR", "🏅 Juegos ODESUR", "Selecciones", isActive = true),
-        MasterTournament(31, "La Liga", "🇪🇸 La Liga (España)", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/15.png"),
-        MasterTournament(9, "Brasileirão", "🇧🇷 Brasileirão", "Internacional", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/85.png"),
+        // AFA
+        MasterTournament(6, "Copa Argentina", "Copa Argentina", "AFA", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1884.png"),
+        MasterTournament(5, "Liga Profesional", "LPF", "AFA", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1.png"),
+        MasterTournament(7, "Torneo Primera Nacional", "Primera Nacional", "AFA", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/78.png"),
+        MasterTournament(15, "Torneo Federal A", "Federal A", "AFA", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2281.png"),
+        MasterTournament(8, "Primera B Metropolitana", "Primera B Metro", "AFA", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/79.png"),
+        MasterTournament(19, "Amistosos AFA", "Amistosos AFA", "AFA", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/1.png"),
 
-        // NO EN JUEGO
-        MasterTournament(1, "Campeonato Mundial De Fútbol", "🌍 Campeonato Mundial De Fútbol", "Selecciones", isActive = false),
-        MasterTournament(12, "Finalísima", "👑 Finalísima", "Selecciones", isActive = false),
-        MasterTournament(24, "Copa América", "🌎 Copa América", "Selecciones", isActive = false),
-        MasterTournament(2, "Eliminatorias Sudamericanas", "🌎 Eliminatorias Sudamericanas", "Selecciones", isActive = false),
-        MasterTournament(22, "Copa Mundial De Clubes", "🌐 Copa Mundial De Clubes", "Internacional", isActive = false),
-        MasterTournament(23, "Copa Intercontinental", "🌐 Copa Intercontinental", "Internacional", isActive = false),
-        MasterTournament(32, "Mundial Sub-20", "🌍 Mundial Sub-20", "Juveniles", isActive = false),
-        MasterTournament(17, "Torneo Apertura Liga Profesional", "🏆 Apertura Liga Profesional (Concluido)", "Nacional", isActive = false),
-        MasterTournament(18, "Torneo Apertura B Metropolitana", "🏟️ Apertura B Metro (Concluido)", "Nacional", isActive = false),
-        MasterTournament(21, "Amistosos Conmebol", "🤝 Amistosos Conmebol", "Internacional", isActive = false),
-        MasterTournament(19, "Amistosos AFA", "🇦🇷 Amistosos AFA", "Nacional", isActive = false),
-        MasterTournament(25, "Trofeo de Campeones", "🏆 Trofeo de Campeones", "Nacional", isActive = false),
-        MasterTournament(26, "Supercopa Argentina", "🇦🇷 Supercopa Argentina", "Nacional", isActive = false),
-        MasterTournament(28, "Trofeo de Liga", "🏆 Trofeo de Liga", "Nacional", isActive = false),
-        MasterTournament(29, "Recopa de Campeones", "👑 Recopa de Campeones", "Nacional", isActive = false)
+        // CONMEBOL
+        MasterTournament(24, "Copa América", "Copa América", "CONMEBOL", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png"),
+        MasterTournament(2, "Eliminatorias Sudamericanas", "Eliminatorias", "CONMEBOL", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png"),
+        MasterTournament(3, "Copa Conmebol Libertadores", "Libertadores", "CONMEBOL", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2683.png"),
+        MasterTournament(4, "Copa Conmebol Sudamericana", "Sudamericana", "CONMEBOL", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2684.png"),
+        MasterTournament(21, "Amistosos Conmebol", "Amistosos Conmebol", "CONMEBOL", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png"),
+
+        // FIFA
+        MasterTournament(1, "Campeonato Mundial De Fútbol", "Mundial 2026", "FIFA", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png"),
+        MasterTournament(12, "Finalísima", "Finalísima", "FIFA", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png"),
+        MasterTournament(22, "Campeonato Mundial de Clubes", "Mundial Clubes", "FIFA", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png"),
+        MasterTournament(23, "Copa Intercontinental", "Intercontinental", "FIFA", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png"),
+        MasterTournament(14, "Amistosos FIFA", "Amistosos FIFA", "FIFA", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png"),
+
+        // OTROS TORNEOS
+        MasterTournament(9, "Brasileirão", "Brasileirão", "OTROS TORNEOS", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/85.png"),
+        MasterTournament(31, "La Liga", "La Liga", "OTROS TORNEOS", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/15.png")
     )
 
     val ACTIVE_TOURNAMENTS = MASTER_TOURNAMENTS.filter { it.isActive }
