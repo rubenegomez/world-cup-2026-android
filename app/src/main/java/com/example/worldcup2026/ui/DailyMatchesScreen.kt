@@ -39,6 +39,7 @@ import coil.compose.AsyncImage
 import com.example.worldcup2026.ui.allTournaments
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.MasterTeamCatalog
+import com.example.worldcup2026.data.model.isMatchLive
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -118,12 +119,16 @@ fun DailyMatchesScreen(
         }
     }
 
-    // Partidos para la fecha seleccionada en el calendario
+    // Partidos para la fecha seleccionada en el calendario o en vivo global
     val matchesForSelectedDate = remember(matches, date, filterLiveOnly, selectedTournamentIds, favTournaments, favTeams) {
         val dateStr = date.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
         matches
             .filter { match ->
-                match.date?.startsWith(dateStr) == true
+                if (filterLiveOnly) {
+                    match.isMatchLive()
+                } else {
+                    match.date?.startsWith(dateStr) == true
+                }
             }
             .filter { match ->
                 val mId = match.tournament_id ?: 1
@@ -133,49 +138,22 @@ fun DailyMatchesScreen(
                     selectedTournamentIds.contains(mId)
                 }
             }
-            .filter { match ->
-                val rawStatus = match.status.uppercase()
-                val isCancelledOrPostponed = rawStatus.contains("POSTP") || rawStatus.contains("SUSPEND") || rawStatus.contains("CANC")
-                val isLiveRaw = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
-                val isTimePassed = try {
-                    val rawDate = match.date ?: ""
-                    if (rawDate.length >= 16) {
-                        val dt = if (rawDate.contains("T")) java.time.LocalDateTime.parse(rawDate.take(19))
-                                 else java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-                        val now = java.time.LocalDateTime.now()
-                        dt.isBefore(now) && dt.plusMinutes(135).isAfter(now) && rawStatus != "FINISHED" && !isCancelledOrPostponed
-                    } else false
-                } catch (e: Exception) { false }
-                
-                val isLive = !isCancelledOrPostponed && (isLiveRaw || isTimePassed || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED"))
-                if (filterLiveOnly) isLive else true
-            }
             .sortedWith(
-                compareByDescending<Match> { it.status != "Scheduled" || (it.homeScore != null && it.awayScore != null) }
-                    .thenByDescending { (it.homeScore ?: -1) + (it.awayScore ?: -1) }
-            )
-            .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
-            .sortedWith(
-                compareByDescending<Match> { it.homeTeam.name in favTeams || it.awayTeam.name in favTeams }
-                    .thenByDescending { it.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE") || (it.homeScore != null && it.awayScore != null && it.status.uppercase() != "FINISHED") }
-                    .thenBy { it.status.uppercase() == "FINISHED" }
+                compareByDescending<Match> { it.isMatchLive() }
+                    .thenByDescending { it.homeTeam.name in favTeams || it.awayTeam.name in favTeams }
+                    .thenBy { it.status.uppercase() in listOf("FINISHED", "FINALIZADO", "FT") }
                     .thenBy { it.date?.substringAfter(" ", "00:00") ?: "00:00" }
             )
+            .distinctBy { "${normalizeTeamName(it.homeTeam.name).lowercase()}_vs_${normalizeTeamName(it.awayTeam.name).lowercase()}" }
     }
 
     // Partidos que se van a mostrar en pantalla (Diario vs Fecha Completa)
     val displayedMatches = remember(matchesForSelectedDate, viewMode, singleSelectedTourneyId, selectedMatchday, tournamentMatches, filterLiveOnly, favTeams) {
-        if (viewMode == 1 && singleSelectedTourneyId != null && selectedMatchday != null) {
+        if (filterLiveOnly) {
+            matchesForSelectedDate
+        } else if (viewMode == 1 && singleSelectedTourneyId != null && selectedMatchday != null) {
             tournamentMatches
                 .filter { it.matchday == selectedMatchday }
-                .filter { match ->
-                    if (filterLiveOnly) {
-                        val rawStatus = match.status.uppercase()
-                        val isCancelledOrPostponed = rawStatus.contains("POSTP") || rawStatus.contains("SUSPEND") || rawStatus.contains("CANC")
-                        val isLiveRaw = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
-                        !isCancelledOrPostponed && (isLiveRaw || (match.homeScore != null && match.awayScore != null && rawStatus != "FINISHED"))
-                    } else true
-                }
                 .sortedWith(compareBy<Match> { it.date ?: "9999" }.thenBy { it.id })
         } else {
             matchesForSelectedDate
@@ -185,9 +163,9 @@ fun DailyMatchesScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         // 1. Selector Superior Unificado de Torneos + Botón En Vivo
         val hasLiveAny = if (singleSelectedTourneyId != null) {
-            liveTournamentsMap[singleSelectedTourneyId] == true
+            matches.any { (it.tournament_id ?: 1) == singleSelectedTourneyId && it.isMatchLive() } || liveTournamentsMap[singleSelectedTourneyId] == true
         } else {
-            liveTournamentsMap.values.any { it }
+            matches.any { it.isMatchLive() } || liveTournamentsMap.values.any { it }
         }
 
         Row(
@@ -438,17 +416,21 @@ fun DailyMatchesScreen(
             selectedTournamentId = singleSelectedTourneyId,
             filterLiveOnly = filterLiveOnly,
             includeAllOption = true,
-            includeLiveOption = false,
+            includeLiveOption = true,
             apiTournaments = apiTournamentsList,
             liveTournamentsMap = liveTournamentsMap,
             onDismiss = { showTournamentSelectorDialog = false },
             onSelectTournament = { tId ->
                 selectedTournamentIds = setOf(tId)
+                filterLiveOnly = false
             },
             onSelectTodos = {
                 selectedTournamentIds = setOf(0)
+                filterLiveOnly = false
             },
-            onSelectLiveOnly = null,
+            onSelectLiveOnly = {
+                filterLiveOnly = true
+            },
             onTournamentUpdated = {
                 customVersionTrigger++
                 viewModel.loadTournaments()

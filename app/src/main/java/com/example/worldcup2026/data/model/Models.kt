@@ -1,4 +1,4 @@
-﻿package com.example.worldcup2026.data.model
+package com.example.worldcup2026.data.model
 
 data class Team(
     val id: Int,
@@ -132,4 +132,33 @@ fun Match.countGoalsFromEvents(isHome: Boolean): Int {
         }
     }
     return count
+}
+
+fun Match.isMatchLive(): Boolean {
+    val rawStatus = status.uppercase().trim()
+    val isCancelledOrPostponed = rawStatus.contains("POSTP") || rawStatus.contains("SUSPEND") || rawStatus.contains("CANC")
+    if (isCancelledOrPostponed) return false
+
+    val isFinished = rawStatus in listOf("FINISHED", "FINALIZADO", "FT", "FINAL", "TERMINADO")
+    if (isFinished) return false
+
+    val isLiveStatus = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "EN VIVO", "1T", "2T", "ET", "PENALES") ||
+            rawStatus.contains("LIVE") || rawStatus.contains("VIVO")
+    if (isLiveStatus) return true
+
+    if (!clock.isNullOrBlank()) return true
+
+    if (scorers.isNotEmpty() || events.isNotEmpty()) return true
+
+    if (homeScore != null && awayScore != null) return true
+
+    return try {
+        val rawDate = date ?: ""
+        if (rawDate.length >= 16) {
+            val dt = if (rawDate.contains("T")) java.time.LocalDateTime.parse(rawDate.take(19))
+                     else java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            val now = java.time.LocalDateTime.now()
+            dt.isBefore(now) && dt.plusMinutes(135).isAfter(now)
+        } else false
+    } catch (e: Exception) { false }
 }

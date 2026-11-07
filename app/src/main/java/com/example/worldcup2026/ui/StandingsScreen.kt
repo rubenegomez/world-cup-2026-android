@@ -1,4 +1,4 @@
-﻿package com.example.worldcup2026.ui
+package com.example.worldcup2026.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -38,6 +38,7 @@ import com.example.worldcup2026.data.api.DescensoStandingDto
 import com.example.worldcup2026.data.api.GoleadorDto
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
+import com.example.worldcup2026.data.model.isMatchLive
 import com.example.worldcup2026.data.util.StandingsCalculator
 import com.example.worldcup2026.data.util.TeamStats
 import kotlinx.coroutines.launch
@@ -3357,7 +3358,7 @@ fun FixtureMatchCard(
     match: Match,
     onClick: () -> Unit = {}
 ) {
-    val isLive = match.status.uppercase() in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE")
+    val isLive = match.isMatchLive()
     val isFinished = match.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO")
 
     Card(
