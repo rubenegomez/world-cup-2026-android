@@ -139,26 +139,29 @@ fun Match.isMatchLive(): Boolean {
     val isCancelledOrPostponed = rawStatus.contains("POSTP") || rawStatus.contains("SUSPEND") || rawStatus.contains("CANC")
     if (isCancelledOrPostponed) return false
 
-    val isFinished = rawStatus in listOf("FINISHED", "FINALIZADO", "FT", "FINAL", "TERMINADO")
-    if (isFinished) return false
+    if (rawStatus in listOf("FINISHED", "FINALIZADO", "FT", "FINAL", "TERMINADO")) return false
 
-    val isLiveStatus = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "EN VIVO", "1T", "2T", "ET", "PENALES") ||
+    val isExplicitLive = rawStatus in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "EN VIVO", "1T", "2T", "ET", "PENALES") ||
             rawStatus.contains("LIVE") || rawStatus.contains("VIVO")
-    if (isLiveStatus) return true
 
-    if (!clock.isNullOrBlank()) return true
-
-    if (scorers.isNotEmpty() || events.isNotEmpty()) return true
-
-    if (homeScore != null && awayScore != null) return true
-
-    return try {
+    val parsedStartDate: java.time.LocalDateTime? = try {
         val rawDate = date ?: ""
         if (rawDate.length >= 16) {
-            val dt = if (rawDate.contains("T")) java.time.LocalDateTime.parse(rawDate.take(19))
-                     else java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
-            val now = java.time.LocalDateTime.now()
-            dt.isBefore(now) && dt.plusMinutes(135).isAfter(now)
-        } else false
-    } catch (e: Exception) { false }
+            if (rawDate.contains("T")) java.time.LocalDateTime.parse(rawDate.take(19))
+            else java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+        } else null
+    } catch (e: Exception) { null }
+
+    val now = java.time.LocalDateTime.now()
+    val isMatchFinishedByTime = parsedStartDate != null && parsedStartDate.plusMinutes(135).isBefore(now)
+    if (isMatchFinishedByTime) {
+        return isExplicitLive
+    }
+
+    val isMatchStartedByTime = parsedStartDate != null && parsedStartDate.isBefore(now)
+    if (isExplicitLive) return true
+    if (!clock.isNullOrBlank()) return true
+    if (isMatchStartedByTime) return true
+
+    return false
 }
