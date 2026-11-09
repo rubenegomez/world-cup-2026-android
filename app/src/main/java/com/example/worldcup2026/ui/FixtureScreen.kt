@@ -325,7 +325,8 @@ fun DayFilteredFixture(
     val defaultMatchday = remember(matchdays, matches) {
         val active = matches.firstOrNull { 
             val st = it.status.uppercase()
-            (st == "LIVE" || st == "SCHEDULED" || st == "HALFTIME") && it.matchday != null && it.matchday > 0 
+            val hasScores = it.homeScore != null && it.awayScore != null
+            (st == "LIVE" || (st == "SCHEDULED" && !hasScores) || st == "HALFTIME") && it.matchday != null && it.matchday > 0 
         }?.matchday
         active ?: matchdays.lastOrNull()
     }
@@ -646,6 +647,8 @@ fun MatchCard(
         parsedStartDate != null && parsedStartDate.plusMinutes(135).isBefore(java.time.LocalDateTime.now())
     }
 
+    val hasScores = match.homeScore != null && match.awayScore != null
+
     // Estado respetando la base de datos o dinámico
     val statusUpper = remember(rawStatusUpper, isMatchStartedByTime, isMatchFinishedByTime, match.homeScore, match.awayScore) {
         when {
@@ -654,6 +657,7 @@ fun MatchCard(
             rawStatusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "EN VIVO", "1T", "2T", "ET", "PENALES") -> "LIVE"
             isMatchFinishedByTime -> "FINISHED"
             isMatchStartedByTime -> "LIVE"
+            hasScores -> "FINISHED"
             else -> "SCHEDULED"
         }
     }
