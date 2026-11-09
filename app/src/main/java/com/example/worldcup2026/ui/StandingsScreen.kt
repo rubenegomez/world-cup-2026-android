@@ -2330,32 +2330,62 @@ fun LigaPlayoffsView(
     val b7 = standingsB.getOrNull(6)?.team
     val b8 = standingsB.getOrNull(7)?.team
 
+    // Función auxiliar para comparar equipos sin confundir nombres similares
+    fun isSamePlayoffTeam(candidate: Team, matchTeam: Team?): Boolean {
+        if (matchTeam == null) return false
+        if (candidate.id > 0 && matchTeam.id > 0 && candidate.id == matchTeam.id) return true
+        val c = normalizeTeamName(candidate.name).lowercase().trim()
+        val m = normalizeTeamName(matchTeam.name).lowercase().trim()
+        if (c == m) return true
+
+        // Desambiguar Independiente vs Independiente Rivadavia
+        val cRivadavia = c.contains("rivadavia")
+        val mRivadavia = m.contains("rivadavia")
+        if (cRivadavia != mRivadavia) return false
+
+        // Desambiguar Central Córdoba vs Rosario Central vs Barracas Central
+        val cCordoba = c.contains("cordoba") || c.contains("córdoba")
+        val mCordoba = m.contains("cordoba") || m.contains("córdoba")
+        if (cCordoba != mCordoba) return false
+
+        val cRosario = c.contains("rosario")
+        val mRosario = m.contains("rosario")
+        if (cRosario != mRosario) return false
+
+        val cBarracas = c.contains("barracas")
+        val mBarracas = m.contains("barracas")
+        if (cBarracas != mBarracas) return false
+
+        return c.contains(m) || m.contains(c)
+    }
+
     // Función auxiliar para buscar partido disputado o ganador
     fun resolveMatch(team1: Team?, team2: Team?): Pair<Match?, Team?> {
         if (team1 == null || team2 == null) return null to null
-        val t1Name = normalizeTeamName(team1.name).lowercase()
-        val t2Name = normalizeTeamName(team2.name).lowercase()
         val m = matches.firstOrNull { match ->
-            val h = normalizeTeamName(match.homeTeam?.name ?: "").lowercase()
-            val a = normalizeTeamName(match.awayTeam?.name ?: "").lowercase()
-            ((h.contains(t1Name) && a.contains(t2Name)) || (h.contains(t2Name) && a.contains(t1Name))) &&
-            ((match.matchday ?: 0) > 16 || match.id > 300 || match.status.contains("Playoff", ignoreCase = true))
+            val isRegularSeason = (match.matchday ?: 0) in 1..16
+            val isPlayoff = !isRegularSeason && (
+                (match.matchday ?: 0) > 16 || match.status.contains("Playoff", ignoreCase = true)
+            )
+            val teamsMatch = (isSamePlayoffTeam(team1, match.homeTeam) && isSamePlayoffTeam(team2, match.awayTeam)) ||
+                             (isSamePlayoffTeam(team2, match.homeTeam) && isSamePlayoffTeam(team1, match.awayTeam))
+            teamsMatch && isPlayoff
         }
         var winner: Team? = null
         if (m != null && (m.status.equals("Finished", ignoreCase = true) || m.status.contains("Termin", ignoreCase = true))) {
             val hScore = m.homeScore ?: 0
             val aScore = m.awayScore ?: 0
             if (hScore > aScore) {
-                winner = if (normalizeTeamName(m.homeTeam?.name ?: "").lowercase().contains(t1Name)) team1 else team2
+                winner = if (isSamePlayoffTeam(team1, match.homeTeam)) team1 else team2
             } else if (aScore > hScore) {
-                winner = if (normalizeTeamName(m.awayTeam?.name ?: "").lowercase().contains(t1Name)) team1 else team2
+                winner = if (isSamePlayoffTeam(team1, match.awayTeam)) team1 else team2
             } else {
                 val hPen = m.homePenalties ?: 0
                 val aPen = m.awayPenalties ?: 0
                 if (hPen > aPen) {
-                    winner = if (normalizeTeamName(m.homeTeam?.name ?: "").lowercase().contains(t1Name)) team1 else team2
+                    winner = if (isSamePlayoffTeam(team1, match.homeTeam)) team1 else team2
                 } else if (aPen > hPen) {
-                    winner = if (normalizeTeamName(m.awayTeam?.name ?: "").lowercase().contains(t1Name)) team1 else team2
+                    winner = if (isSamePlayoffTeam(team1, match.awayTeam)) team1 else team2
                 }
             }
         }
