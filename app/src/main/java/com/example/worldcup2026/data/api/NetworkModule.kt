@@ -99,7 +99,29 @@ interface WorldCupApiService {
         @Query("email") email: String,
         @retrofit2.http.Body req: RescheduleRoundRequest
     ): retrofit2.Response<RescheduleRoundResponse>
+
+    @retrofit2.http.POST("api/admin/match/reschedule")
+    suspend fun rescheduleMatchAdmin(
+        @Query("email") email: String,
+        @retrofit2.http.Body req: RescheduleMatchRequest
+    ): retrofit2.Response<RescheduleMatchResponse>
 }
+
+data class RescheduleMatchRequest(
+    val match_id: Int,
+    val days_offset: Int? = 0,
+    val new_date: String? = null,
+    val new_time: String? = null,
+    val is_manual_override: Boolean? = true
+)
+
+data class RescheduleMatchResponse(
+    val status: String,
+    val match_id: Int,
+    val old_date: String?,
+    val new_date: String?,
+    val is_manual_override: Boolean?
+)
 
 data class RescheduleRoundRequest(
     val tournament_id: Int,
