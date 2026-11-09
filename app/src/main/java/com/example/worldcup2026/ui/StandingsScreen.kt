@@ -2376,16 +2376,16 @@ fun LigaPlayoffsView(
             val hScore = m.homeScore ?: 0
             val aScore = m.awayScore ?: 0
             if (hScore > aScore) {
-                winner = if (isSamePlayoffTeam(team1, match.homeTeam)) team1 else team2
+                winner = if (isSamePlayoffTeam(team1, m.homeTeam)) team1 else team2
             } else if (aScore > hScore) {
-                winner = if (isSamePlayoffTeam(team1, match.awayTeam)) team1 else team2
+                winner = if (isSamePlayoffTeam(team1, m.awayTeam)) team1 else team2
             } else {
                 val hPen = m.homePenalties ?: 0
                 val aPen = m.awayPenalties ?: 0
                 if (hPen > aPen) {
-                    winner = if (isSamePlayoffTeam(team1, match.homeTeam)) team1 else team2
+                    winner = if (isSamePlayoffTeam(team1, m.homeTeam)) team1 else team2
                 } else if (aPen > hPen) {
-                    winner = if (isSamePlayoffTeam(team1, match.awayTeam)) team1 else team2
+                    winner = if (isSamePlayoffTeam(team1, m.awayTeam)) team1 else team2
                 }
             }
         }
