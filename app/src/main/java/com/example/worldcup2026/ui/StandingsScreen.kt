@@ -582,7 +582,7 @@ fun StandingsScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when (currentTabTitle) {
-                "FIXTURE" -> {
+                "FIXTURE", "LLAVE ELIMINATORIA" -> {
                     TournamentFixtureView(
                         matches = filteredMatches,
                         isLigaProfesional = tournamentFormat == TournamentFormat.LIGA_PROFESIONAL,
@@ -3103,6 +3103,16 @@ fun assignInferredMatchdays(matches: List<Match>): List<Match> {
     return result
 }
 
+fun getCopaArgentinaStageName(md: Int): String = when (md) {
+    1 -> "32avos de Final"
+    2 -> "16avos de Final"
+    3 -> "Octavos de Final"
+    4 -> "Cuartos de Final"
+    5 -> "Semifinal"
+    6 -> "Final"
+    else -> "Fase $md"
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -3123,6 +3133,10 @@ fun TournamentFixtureView(
         return
     }
 
+    val isCopaArgentina = remember(matches) {
+        matches.isNotEmpty() && matches.all { (it.tournament_id ?: 6) == 6 }
+    }
+
     // Procesamos e inferimos las fechas reales de los partidos
     val processedMatches = remember(matches) {
         assignInferredMatchdays(matches)
@@ -3133,7 +3147,9 @@ fun TournamentFixtureView(
         processedMatches.groupBy { it.matchday ?: 1 }.toSortedMap()
     }
 
-    val matchdaysList = remember(matchdaysGrouped) { matchdaysGrouped.keys.toList() }
+    val matchdaysList = remember(matchdaysGrouped, isCopaArgentina) {
+        if (isCopaArgentina) listOf(1, 2, 3, 4, 5, 6) else matchdaysGrouped.keys.toList()
+    }
     val knockoutTabs = remember(isLigaProfesional) {
         if (isLigaProfesional) {
             listOf(
@@ -3221,7 +3237,7 @@ fun TournamentFixtureView(
                         },
                         label = {
                             Text(
-                                text = "Fecha $md",
+                                text = if (isCopaArgentina) getCopaArgentinaStageName(md) else "Fecha $md",
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal,
                                 color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f)
@@ -3289,16 +3305,18 @@ fun TournamentFixtureView(
         } else {
             // Barra de navegación de Fecha y estado
             val currentIndex = matchdaysList.indexOf(selectedMatchday)
-            val matchesForSelectedMatchday = remember(processedMatches, selectedMatchday, matchdaysGrouped) {
-                (matchdaysGrouped[selectedMatchday] ?: processedMatches).sortedBy { it.date ?: "" }
+            val matchesForSelectedMatchday = remember(processedMatches, selectedMatchday, matchdaysGrouped, isCopaArgentina) {
+                val baseList = matchdaysGrouped[selectedMatchday] ?: if (isCopaArgentina) emptyList() else processedMatches
+                baseList.sortedBy { it.date ?: "" }
             }
 
             val hasLiveInMatchday = matchesForSelectedMatchday.any { 
                 it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA", "PAUSE") 
             }
-            val allFinished = matchesForSelectedMatchday.all { 
+            val allFinished = matchesForSelectedMatchday.isNotEmpty() && matchesForSelectedMatchday.all { 
                 !it.isFutureMatch() && it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
             }
+            val stageBaseTitle = if (isCopaArgentina) getCopaArgentinaStageName(selectedMatchday).uppercase() else "FECHA $selectedMatchday"
 
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
@@ -3334,10 +3352,10 @@ fun TournamentFixtureView(
 
                     Text(
                         text = when {
-                            hasLiveInMatchday -> "🔴 FECHA $selectedMatchday · EN JUEGO"
-                            allFinished -> "🏁 FECHA $selectedMatchday · FINALIZADA"
-                            selectedMatchday == defaultMatchday -> "⭐ FECHA $selectedMatchday · ACTUAL"
-                            else -> "FECHA $selectedMatchday"
+                            hasLiveInMatchday -> "🔴 $stageBaseTitle · EN JUEGO"
+                            allFinished -> "🏁 $stageBaseTitle · FINALIZADA"
+                            selectedMatchday == defaultMatchday -> "⭐ $stageBaseTitle · ACTUAL"
+                            else -> stageBaseTitle
                         },
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 12.sp,
@@ -3368,18 +3386,36 @@ fun TournamentFixtureView(
                 }
             }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(matchesForSelectedMatchday) { match ->
-                    FixtureMatchCard(
-                        match = match,
-                        onClick = { onMatchClick(match) }
+            if (matchesForSelectedMatchday.isEmpty() && isCopaArgentina) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    CopaFinalCard(
+                        title = "GRAN FINAL · COPA ARGENTINA 2026",
+                        subTitle = "Definición a partido único en sede neutral",
+                        team1 = matches.flatMap { listOf(it.homeTeam, it.awayTeam) }.find { it.name.contains("Platense", ignoreCase = true) },
+                        team1Seed = "Ganador Semifinal 1 (Platense)",
+                        team2 = null,
+                        team2Seed = "Ganador Semifinal 2 (Banfield vs. Boca Juniors)",
+                        venue = "Sede Neutral (A confirmar - 2 de diciembre)",
+                        officialBadge = "Final Copa Argentina"
                     )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(matchesForSelectedMatchday) { match ->
+                        FixtureMatchCard(
+                            match = match,
+                            onClick = { onMatchClick(match) }
+                        )
+                    }
                 }
             }
         }

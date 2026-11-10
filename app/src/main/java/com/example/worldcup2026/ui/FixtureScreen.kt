@@ -314,11 +314,15 @@ fun DayFilteredFixture(
     onTeamUpdated: (() -> Unit)? = null
 ) {
     val isWorldCup = remember(matches) { matches.any { it.id <= 104 } }
-    val isCupOrFriendly = remember(matches) { 
-        matches.any { it.tournament_id in listOf(3, 4, 6, 14, 27) } 
+    val isCopaArgentinaOnly = remember(matches) {
+        matches.isNotEmpty() && matches.all { it.tournament_id == 6 }
     }
-    val matchdays = remember(matches, isCupOrFriendly) {
-        if (isCupOrFriendly) emptyList()
+    val isCupOrFriendly = remember(matches, isCopaArgentinaOnly) { 
+        !isCopaArgentinaOnly && matches.any { it.tournament_id in listOf(3, 4, 6, 14, 27) } 
+    }
+    val matchdays = remember(matches, isCupOrFriendly, isCopaArgentinaOnly) {
+        if (isCopaArgentinaOnly) listOf(1, 2, 3, 4, 5, 6)
+        else if (isCupOrFriendly) emptyList()
         else matches.mapNotNull { it.matchday }.filter { it > 0 }.distinct().sorted()
     }
     
@@ -487,8 +491,9 @@ fun DayFilteredFixture(
                             selectedMatchday = mDay 
                         },
                         label = { 
+                            val chipLabel = if (isCopaArgentinaOnly) getCopaArgentinaStageName(mDay) else "Fecha $mDay"
                             Text(
-                                text = "Fecha $mDay" + (if (hasLive) " 🔴" else ""), 
+                                text = chipLabel + (if (hasLive) " 🔴" else ""), 
                                 fontSize = 11.sp, 
                                 fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
                                 color = if (isSelected) Color(0xFF10141E) else Color.White
