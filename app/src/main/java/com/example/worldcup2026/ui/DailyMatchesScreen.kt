@@ -419,6 +419,8 @@ fun DailyMatchesScreen(
             includeLiveOption = true,
             apiTournaments = apiTournamentsList,
             liveTournamentsMap = liveTournamentsMap,
+            favoriteTournamentIds = favTournaments,
+            onToggleFavorite = { tId -> viewModel.toggleFavoriteTournament(tId) },
             onDismiss = { showTournamentSelectorDialog = false },
             onSelectTournament = { tId ->
                 selectedTournamentIds = setOf(tId)

@@ -308,8 +308,10 @@ fun StandingsScreen(
     viewModel: WorldCupViewModel? = null,
     onNavigateToMatch: (Match) -> Unit = {}
 ) {
-    var tournamentId by remember(initialTournamentId) {
-        mutableStateOf(initialTournamentId ?: 5)
+    val favTourneys = viewModel?.favoriteTournamentIds?.value ?: emptySet()
+    var tournamentId by remember(initialTournamentId, favTourneys) {
+        val defaultId = initialTournamentId ?: favTourneys.firstOrNull() ?: 5
+        mutableStateOf(defaultId)
     }
 
     val tournamentFormat = remember(tournamentId) {
@@ -559,6 +561,8 @@ fun StandingsScreen(
                 includeLiveOption = false,
                 apiTournaments = viewModel?.apiTournaments?.value ?: emptyList(),
                 liveTournamentsMap = viewModel?.liveTournaments?.value ?: emptyMap(),
+                favoriteTournamentIds = viewModel?.favoriteTournamentIds?.value ?: emptySet(),
+                onToggleFavorite = { tId -> viewModel?.toggleFavoriteTournament(tId) },
                 onDismiss = { showTournamentSelector = false },
                 onSelectTournament = { newId ->
                     val wasFixture = currentTabTitle == "FIXTURE" || initialTabName == "FIXTURE"
