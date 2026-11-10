@@ -317,6 +317,9 @@ fun DayFilteredFixture(
     val isCopaArgentinaOnly = remember(matches) {
         matches.isNotEmpty() && matches.all { it.tournament_id == 6 }
     }
+    val isFederalAOnly = remember(matches) {
+        matches.isNotEmpty() && matches.all { it.tournament_id == 15 }
+    }
     val isCupOrFriendly = remember(matches, isCopaArgentinaOnly) { 
         !isCopaArgentinaOnly && matches.any { it.tournament_id in listOf(3, 4, 6, 14, 27) } 
     }
@@ -491,7 +494,11 @@ fun DayFilteredFixture(
                             selectedMatchday = mDay 
                         },
                         label = { 
-                            val chipLabel = if (isCopaArgentinaOnly) getCopaArgentinaStageName(mDay) else "Fecha $mDay"
+                            val chipLabel = when {
+                                isCopaArgentinaOnly -> getCopaArgentinaStageName(mDay)
+                                isFederalAOnly -> getFederalAStageName(mDay)
+                                else -> "Fecha $mDay"
+                            }
                             Text(
                                 text = chipLabel + (if (hasLive) " 🔴" else ""), 
                                 fontSize = 11.sp, 

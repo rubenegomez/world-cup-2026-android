@@ -105,52 +105,52 @@ val PN_ZONA_B_TEAMS = listOf(
 )
 
 val TFA_CAMPEONATO_A_TEAMS = listOf(
-    "Ciudad de Bolívar",
-    "Ramón Santamarina",
-    "Villa Mitre",
-    "Argentino (Monte Maíz)",
-    "Kimberley",
-    "Gutiérrez SC",
-    "Deportivo Camioneros",
-    "Germinal (Rawson)",
-    "Olimpo"
+    "San Martín (Formosa)",
+    "Gimnasia y Esgrima (Chivilcoy)",
+    "Sol de América (Formosa)",
+    "Defensores de Belgrano (Villa Ramallo)",
+    "Douglas Haig",
+    "9 de Julio (Rafaela)",
+    "Bartolomé Mitre (Posadas)",
+    "Sarmiento (La Banda)",
+    "Sportivo Belgrano"
 )
 
 val TFA_CAMPEONATO_B_TEAMS = listOf(
-    "Central Norte",
-    "Sarmiento (La Banda)",
-    "San Martín (Formosa)",
-    "Sportivo Belgrano",
-    "Sportivo Las Parejas",
-    "Sol de América (Formosa)",
+    "Alvarado",
+    "Cipolletti",
+    "Olimpo",
     "Atenas (Río Cuarto)",
-    "Defensores de Belgrano (Villa Ramallo)",
-    "9 de Julio (Rafaela)"
+    "Kimberley (Mar del Plata)",
+    "Argentino (Monte Maíz)",
+    "Villa Mitre",
+    "Huracán Las Heras",
+    "Juventud Antoniana"
 )
 
 val TFA_REVALIDA_A_TEAMS = listOf(
-    "Deportivo Rincón",
-    "Juventud Unida Universitario",
-    "Ferro Carril Oeste (General Pico)",
-    "Cipolletti",
-    "Sportivo Estudiantes (San Luis)",
-    "Huracán Las Heras",
-    "San Martín (Mendoza)",
-    "Sol de Mayo",
-    "Círculo Deportivo"
+    "Boca Unidos",
+    "Gimnasia y Esgrima (Concepción del Uruguay)",
+    "El Linqueño",
+    "Sportivo Las Parejas",
+    "Defensores de Vilelas",
+    "Independiente (Chivilcoy)",
+    "Atlético Escobar",
+    "Sarmiento (Resistencia)",
+    "Tucumán Central"
 )
 
 val TFA_REVALIDA_B_TEAMS = listOf(
-    "Douglas Haig",
-    "Boca Unidos",
-    "Independiente (Chivilcoy)",
-    "Sarmiento (Resistencia)",
-    "Gimnasia y Esgrima (Concepción del Uruguay)",
-    "El Linqueño",
-    "Crucero del Norte",
-    "Juventud Antoniana",
-    "Unión (Sunchales)",
-    "Defensores de Pronunciamiento"
+    "Costa Brava (General Pico)",
+    "San Martín (Mendoza)",
+    "Deportivo Rincón",
+    "Fundación Amigos por el Deporte",
+    "Juventud Unida Universitario",
+    "Germinal (Rawson)",
+    "Guillermo Brown (Puerto Madryn)",
+    "Círculo Deportivo",
+    "Sol de Mayo (Viedma)",
+    "Ramón Santamarina"
 )
 
 val LIGA_ZONAS_MAP = mapOf(
@@ -782,7 +782,7 @@ fun getQualificationColor(format: TournamentFormat, position: Int, totalTeams: I
         }
         TournamentFormat.TORNEO_FEDERAL_A -> when {
             groupName.contains("Campeonato", ignoreCase = true) -> when (position) {
-                in 1..2 -> Color(0xFF4CAF50) // Semifinales 1.º Ascenso
+                in 1..4 -> Color(0xFF4CAF50) // Cuartos de Final 1.º Ascenso
                 else    -> Color(0xFF2196F3) // Pasan a Fase Reválida
             }
             groupName.contains("Reválida", ignoreCase = true) || groupName.contains("Revalida", ignoreCase = true) -> when {
@@ -873,52 +873,52 @@ val PN_ZONA_B_DATA = listOf(
 )
 
 val TFA_CAMPEONATO_A_DATA = listOf(
-    PrimeraNacionalFixedRow(1, "Ciudad de Bolívar", 8, 5, 2, 1, 8, 4, 4, 17),
-    PrimeraNacionalFixedRow(2, "Ramón Santamarina", 8, 4, 2, 2, 11, 6, 5, 14),
-    PrimeraNacionalFixedRow(3, "Villa Mitre", 8, 4, 2, 2, 9, 9, 0, 14),
-    PrimeraNacionalFixedRow(4, "Argentino (Monte Maíz)", 8, 4, 1, 3, 13, 10, 3, 13),
-    PrimeraNacionalFixedRow(5, "Kimberley", 8, 3, 3, 2, 12, 10, 2, 12),
-    PrimeraNacionalFixedRow(6, "Gutiérrez SC", 8, 1, 5, 2, 8, 12, -4, 8),
-    PrimeraNacionalFixedRow(7, "Deportivo Camioneros", 8, 2, 2, 4, 8, 12, -4, 8),
-    PrimeraNacionalFixedRow(8, "Germinal (Rawson)", 8, 2, 1, 5, 7, 9, -2, 7),
-    PrimeraNacionalFixedRow(9, "Olimpo", 8, 1, 2, 5, 4, 8, -4, 5)
+    PrimeraNacionalFixedRow(1, "San Martín (Formosa)", 8, 5, 2, 1, 14, 5, 9, 17),
+    PrimeraNacionalFixedRow(2, "Gimnasia y Esgrima (Chivilcoy)", 8, 4, 3, 1, 6, 2, 4, 15),
+    PrimeraNacionalFixedRow(3, "Sol de América (Formosa)", 8, 4, 2, 2, 9, 7, 2, 14),
+    PrimeraNacionalFixedRow(4, "Defensores de Belgrano (Villa Ramallo)", 8, 4, 1, 3, 6, 3, 3, 13),
+    PrimeraNacionalFixedRow(5, "Douglas Haig", 8, 3, 3, 2, 12, 7, 5, 12),
+    PrimeraNacionalFixedRow(6, "9 de Julio (Rafaela)", 8, 3, 3, 2, 9, 6, 3, 12),
+    PrimeraNacionalFixedRow(7, "Bartolomé Mitre (Posadas)", 8, 1, 2, 5, 3, 10, -7, 5),
+    PrimeraNacionalFixedRow(8, "Sarmiento (La Banda)", 8, 1, 2, 5, 6, 14, -8, 5),
+    PrimeraNacionalFixedRow(9, "Sportivo Belgrano", 8, 1, 2, 5, 3, 14, -11, 5)
 )
 
 val TFA_CAMPEONATO_B_DATA = listOf(
-    PrimeraNacionalFixedRow(1, "Central Norte", 8, 6, 0, 2, 13, 6, 7, 18),
-    PrimeraNacionalFixedRow(2, "Sarmiento (La Banda)", 8, 5, 2, 1, 5, 2, 3, 17),
-    PrimeraNacionalFixedRow(3, "San Martín (Formosa)", 8, 4, 3, 1, 9, 6, 3, 15),
-    PrimeraNacionalFixedRow(4, "Sportivo Belgrano", 8, 4, 2, 2, 7, 5, 2, 14),
-    PrimeraNacionalFixedRow(5, "Sportivo Las Parejas", 8, 3, 0, 5, 8, 12, -4, 9),
-    PrimeraNacionalFixedRow(6, "Sol de América (Formosa)", 8, 2, 2, 4, 6, 7, -1, 8),
-    PrimeraNacionalFixedRow(7, "Atenas (Río Cuarto)", 8, 2, 2, 4, 5, 8, -3, 8),
-    PrimeraNacionalFixedRow(8, "Defensores de Belgrano (Villa Ramallo)", 8, 0, 5, 3, 3, 6, -3, 5),
-    PrimeraNacionalFixedRow(9, "9 de Julio (Rafaela)", 8, 1, 2, 5, 3, 7, -4, 5)
+    PrimeraNacionalFixedRow(1, "Alvarado", 8, 4, 3, 1, 10, 5, 5, 15),
+    PrimeraNacionalFixedRow(2, "Cipolletti", 8, 4, 3, 1, 10, 7, 3, 15),
+    PrimeraNacionalFixedRow(3, "Olimpo", 8, 3, 4, 1, 7, 4, 3, 13),
+    PrimeraNacionalFixedRow(4, "Atenas (Río Cuarto)", 8, 4, 1, 3, 12, 10, 2, 13),
+    PrimeraNacionalFixedRow(5, "Kimberley (Mar del Plata)", 8, 3, 2, 3, 8, 6, 2, 11),
+    PrimeraNacionalFixedRow(6, "Argentino (Monte Maíz)", 8, 3, 2, 3, 7, 7, 0, 11),
+    PrimeraNacionalFixedRow(7, "Villa Mitre", 8, 2, 4, 2, 5, 4, 1, 10),
+    PrimeraNacionalFixedRow(8, "Huracán Las Heras", 8, 2, 1, 5, 3, 8, -5, 7),
+    PrimeraNacionalFixedRow(9, "Juventud Antoniana", 8, 0, 2, 6, 1, 12, -11, 2)
 )
 
 val TFA_REVALIDA_A_DATA = listOf(
-    PrimeraNacionalFixedRow(1, "Deportivo Rincón", 8, 6, 1, 1, 10, 1, 9, 19),
-    PrimeraNacionalFixedRow(2, "Juventud Unida Universitario", 8, 3, 3, 2, 10, 6, 4, 12),
-    PrimeraNacionalFixedRow(3, "Ferro Carril Oeste (General Pico)", 8, 3, 3, 2, 9, 6, 3, 12),
-    PrimeraNacionalFixedRow(4, "Cipolletti", 8, 2, 6, 0, 4, 2, 2, 12),
-    PrimeraNacionalFixedRow(5, "Sportivo Estudiantes (San Luis)", 8, 3, 3, 2, 10, 10, 0, 12),
-    PrimeraNacionalFixedRow(6, "Huracán Las Heras", 8, 3, 2, 3, 5, 8, -3, 11),
-    PrimeraNacionalFixedRow(7, "San Martín (Mendoza)", 8, 1, 3, 4, 8, 11, -3, 6),
-    PrimeraNacionalFixedRow(8, "Sol de Mayo", 8, 1, 3, 4, 7, 14, -7, 6),
-    PrimeraNacionalFixedRow(9, "Círculo Deportivo", 8, 1, 2, 5, 6, 11, -5, 5)
+    PrimeraNacionalFixedRow(1, "Boca Unidos", 8, 4, 3, 1, 14, 7, 7, 15),
+    PrimeraNacionalFixedRow(2, "Gimnasia y Esgrima (Concepción del Uruguay)", 8, 4, 2, 2, 9, 2, 7, 14),
+    PrimeraNacionalFixedRow(3, "El Linqueño", 8, 3, 4, 1, 8, 4, 4, 13),
+    PrimeraNacionalFixedRow(4, "Sportivo Las Parejas", 8, 3, 3, 2, 8, 3, 5, 12),
+    PrimeraNacionalFixedRow(5, "Defensores de Vilelas", 8, 3, 3, 2, 14, 11, 3, 12),
+    PrimeraNacionalFixedRow(6, "Independiente (Chivilcoy)", 8, 3, 3, 2, 8, 5, 3, 12),
+    PrimeraNacionalFixedRow(7, "Atlético Escobar", 8, 3, 2, 3, 7, 12, -5, 11),
+    PrimeraNacionalFixedRow(8, "Sarmiento (Resistencia)", 8, 2, 0, 6, 5, 16, -11, 6),
+    PrimeraNacionalFixedRow(9, "Tucumán Central", 8, 0, 2, 6, 8, 21, -13, 2)
 )
 
 val TFA_REVALIDA_B_DATA = listOf(
-    PrimeraNacionalFixedRow(1, "Douglas Haig", 9, 5, 4, 0, 14, 7, 7, 19),
-    PrimeraNacionalFixedRow(2, "Boca Unidos", 9, 5, 3, 1, 12, 9, 3, 18),
-    PrimeraNacionalFixedRow(3, "Independiente (Chivilcoy)", 9, 4, 4, 1, 17, 10, 7, 16),
-    PrimeraNacionalFixedRow(4, "Sarmiento (Resistencia)", 9, 3, 4, 2, 6, 6, 0, 13),
-    PrimeraNacionalFixedRow(5, "Gimnasia y Esgrima (Concepción del Uruguay)", 9, 4, 0, 5, 9, 8, 1, 12),
-    PrimeraNacionalFixedRow(6, "El Linqueño", 9, 2, 4, 3, 5, 8, -3, 10),
-    PrimeraNacionalFixedRow(7, "Crucero del Norte", 9, 2, 3, 4, 4, 11, -7, 9),
-    PrimeraNacionalFixedRow(8, "Juventud Antoniana", 9, 2, 2, 5, 6, 10, -4, 8),
-    PrimeraNacionalFixedRow(9, "Unión (Sunchales)", 9, 1, 4, 4, 11, 11, 0, 7),
-    PrimeraNacionalFixedRow(10, "Defensores de Pronunciamiento", 9, 1, 4, 4, 6, 10, -4, 7)
+    PrimeraNacionalFixedRow(1, "Costa Brava (General Pico)", 9, 4, 4, 1, 11, 7, 4, 16),
+    PrimeraNacionalFixedRow(2, "San Martín (Mendoza)", 9, 4, 4, 1, 9, 6, 3, 16),
+    PrimeraNacionalFixedRow(3, "Deportivo Rincón", 9, 4, 3, 2, 11, 5, 6, 15),
+    PrimeraNacionalFixedRow(4, "Fundación Amigos por el Deporte", 9, 4, 3, 2, 7, 4, 3, 15),
+    PrimeraNacionalFixedRow(5, "Juventud Unida Universitario", 9, 4, 2, 3, 7, 6, 1, 14),
+    PrimeraNacionalFixedRow(6, "Germinal (Rawson)", 9, 3, 4, 2, 10, 7, 3, 13),
+    PrimeraNacionalFixedRow(7, "Guillermo Brown (Puerto Madryn)", 9, 3, 2, 4, 6, 7, -1, 11),
+    PrimeraNacionalFixedRow(8, "Círculo Deportivo", 9, 3, 2, 4, 6, 7, -1, 11),
+    PrimeraNacionalFixedRow(9, "Sol de Mayo (Viedma)", 9, 2, 0, 7, 6, 14, -8, 6),
+    PrimeraNacionalFixedRow(10, "Ramón Santamarina", 9, 2, 0, 7, 6, 16, -10, 6)
 )
 
 val PB_METRO_DATA = listOf(
@@ -1203,7 +1203,7 @@ fun GroupStandingsTable(
                         Box(modifier = Modifier.size(9.dp).background(Color(0xFF4CAF50), CircleShape))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "1.°-2.°: Clasifica a Semifinales por el 1.º Ascenso",
+                            text = "1.°-4.°: Clasifica a Cuartos de Final por el 1.º Ascenso",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 11.sp
@@ -1213,7 +1213,7 @@ fun GroupStandingsTable(
                         Box(modifier = Modifier.size(9.dp).background(Color(0xFF2196F3), CircleShape))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "3.°-9.°: Pasan a disputar la Fase Reválida",
+                            text = "5.°-9.°: Pasan a disputar la Fase Reválida",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White.copy(alpha = 0.85f),
                             fontSize = 11.sp
@@ -3124,6 +3124,19 @@ fun getCopaArgentinaStageName(md: Int): String = when (md) {
     else -> "Fase $md"
 }
 
+fun getFederalAStageName(md: Int): String = when (md) {
+    in 1..9 -> "2.ª Fase - Fecha $md"
+    10 -> "Cuartos (1.° Ascenso)"
+    11 -> "Reválida - 2.ª Etapa"
+    12 -> "Semifinales (1.° Asc.)"
+    13 -> "Reválida - 3.ª Etapa"
+    14 -> "Final 1.° Ascenso"
+    15 -> "Reválida - 4.ª Etapa"
+    16 -> "Reválida - Semis"
+    17 -> "Final 2.° Ascenso"
+    else -> "Fase $md"
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -3147,6 +3160,10 @@ fun TournamentFixtureView(
 
     val isCopaArgentina = remember(tournamentId, matches) {
         tournamentId == 6 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 6) == 6 })
+    }
+
+    val isFederalA = remember(tournamentId, matches) {
+        tournamentId == 15 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 15 })
     }
 
     // Procesamos e inferimos las fechas reales de los partidos
@@ -3249,7 +3266,11 @@ fun TournamentFixtureView(
                         },
                         label = {
                             Text(
-                                text = if (isCopaArgentina) getCopaArgentinaStageName(md) else "Fecha $md",
+                                text = when {
+                                    isCopaArgentina -> getCopaArgentinaStageName(md)
+                                    isFederalA -> getFederalAStageName(md)
+                                    else -> "Fecha $md"
+                                },
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal,
                                 color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.8f)
@@ -3328,7 +3349,11 @@ fun TournamentFixtureView(
             val allFinished = matchesForSelectedMatchday.isNotEmpty() && matchesForSelectedMatchday.all { 
                 !it.isFutureMatch() && it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
             }
-            val stageBaseTitle = if (isCopaArgentina) getCopaArgentinaStageName(selectedMatchday).uppercase() else "FECHA $selectedMatchday"
+            val stageBaseTitle = when {
+                isCopaArgentina -> getCopaArgentinaStageName(selectedMatchday).uppercase()
+                isFederalA -> getFederalAStageName(selectedMatchday).uppercase()
+                else -> "FECHA $selectedMatchday"
+            }
 
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
