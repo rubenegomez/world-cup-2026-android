@@ -341,7 +341,7 @@ fun StandingsScreen(
         TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "GOLEADORES", "FIXTURE")
         TournamentFormat.COPA_DIRECTA,
-        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("LLAVE ELIMINATORIA", "GOLEADORES", "FIXTURE")
+        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("GOLEADORES", "FIXTURE")
     }
 
     var selectedTab by remember(tournamentFormat, initialTabName) {
@@ -528,8 +528,18 @@ fun StandingsScreen(
                 liveTournamentsMap = viewModel?.liveTournaments?.value ?: emptyMap(),
                 onDismiss = { showTournamentSelector = false },
                 onSelectTournament = { newId ->
+                    val wasFixture = currentTabTitle == "FIXTURE" || initialTabName == "FIXTURE"
                     tournamentId = newId
-                    selectedTab = 0
+                    selectedTab = if (wasFixture) {
+                        val newIsCopaDirecta = newId in listOf(6, 13, 18)
+                        if (newIsCopaDirecta) 1 else when (newId) {
+                            1, 30, 31, 32, 12 -> 3
+                            5, 7 -> 4
+                            15 -> 5
+                            8, 9, 10 -> 3
+                            else -> 2
+                        }
+                    } else 0
                 },
                 onTournamentUpdated = {
                     updateTrigger++
@@ -585,6 +595,7 @@ fun StandingsScreen(
                 "FIXTURE", "LLAVE ELIMINATORIA" -> {
                     TournamentFixtureView(
                         matches = filteredMatches,
+                        tournamentId = tournamentId,
                         isLigaProfesional = tournamentFormat == TournamentFormat.LIGA_PROFESIONAL,
                         teamsByGroup = teamsByGroup,
                         annualStandings = annualStandings ?: emptyList(),
@@ -3116,6 +3127,7 @@ fun getCopaArgentinaStageName(md: Int): String = when (md) {
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
+    tournamentId: Int = 5,
     isLigaProfesional: Boolean = false,
     teamsByGroup: Map<String, List<Team>> = emptyMap(),
     annualStandings: List<AnnualStandingDto> = emptyList(),
@@ -3133,8 +3145,8 @@ fun TournamentFixtureView(
         return
     }
 
-    val isCopaArgentina = remember(matches) {
-        matches.isNotEmpty() && matches.all { (it.tournament_id ?: 6) == 6 }
+    val isCopaArgentina = remember(tournamentId, matches) {
+        tournamentId == 6 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 6) == 6 })
     }
 
     // Procesamos e inferimos las fechas reales de los partidos
@@ -3386,11 +3398,12 @@ fun TournamentFixtureView(
                 }
             }
 
-            if (matchesForSelectedMatchday.isEmpty() && isCopaArgentina) {
+            if ((matchesForSelectedMatchday.isEmpty() || selectedMatchday == 6) && isCopaArgentina) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
+                    val finalMatch = matchesForSelectedMatchday.firstOrNull()
                     CopaFinalCard(
                         title = "GRAN FINAL · COPA ARGENTINA 2026",
                         subTitle = "Definición a partido único en sede neutral",
@@ -3399,7 +3412,9 @@ fun TournamentFixtureView(
                         team2 = null,
                         team2Seed = "Ganador Semifinal 2 (Banfield vs. Boca Juniors)",
                         venue = "Sede Neutral (A confirmar - 2 de diciembre)",
-                        officialBadge = "Final Copa Argentina"
+                        officialBadge = "Final Copa Argentina",
+                        match = finalMatch,
+                        onClick = { finalMatch?.let(onMatchClick) }
                     )
                 }
             } else {
