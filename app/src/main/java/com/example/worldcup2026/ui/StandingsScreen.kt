@@ -735,7 +735,7 @@ fun StandingsScreen(
                 }
                 "REDUCIDO" -> {
                     val reducidoMatches = remember(currentTournamentMatches) {
-                        currentTournamentMatches.filter { (it.matchday ?: 0) >= 43 || (it.group_name ?: "").contains("Reducido", ignoreCase = true) }
+                        currentTournamentMatches.filter { (it.matchday ?: 0) >= 43 }
                     }
                     if (tournamentFormat == TournamentFormat.PRIMERA_B && reducidoMatches.isNotEmpty()) {
                         Column(modifier = Modifier.fillMaxSize()) {
@@ -764,7 +764,7 @@ fun StandingsScreen(
                                 matches = reducidoMatches,
                                 tournamentId = tournamentId,
                                 isLigaProfesional = false,
-                                teamsByGroup = displayGroups,
+                                teamsByGroup = teamsByGroup,
                                 annualStandings = emptyList(),
                                 allMatches = matches,
                                 onMatchClick = onNavigateToMatch
