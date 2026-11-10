@@ -326,6 +326,7 @@ fun StandingsScreen(
             15 -> TournamentFormat.TORNEO_FEDERAL_A
             12 -> TournamentFormat.WORLD_CUP
             13, 18 -> TournamentFormat.COPA_INTERCONTINENTAL
+            14, 19, 21 -> TournamentFormat.COPA_DIRECTA
             else -> TournamentFormat.LIGA_PROFESIONAL
         }
     }
@@ -334,14 +335,14 @@ fun StandingsScreen(
         TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "MEJORES TERCEROS", "GOLEADORES", "FIXTURE")
         TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES", "FIXTURE")
         TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "FASE FINAL", "GOLEADORES", "FIXTURE")
-        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "FASE FINAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.TORNEO_FEDERAL_A       -> listOf("CAMPEONATO A", "CAMPEONATO B", "REVÁLIDA A", "REVÁLIDA B", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_B              -> listOf("TABLA GENERAL", "REDUCIDO", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_C              -> listOf("ZONA A", "ZONA B", "GOLEADORES", "FIXTURE")
         TournamentFormat.COPA_DIRECTA,
-        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("GOLEADORES", "FIXTURE")
+        TournamentFormat.COPA_INTERCONTINENTAL  -> listOf("FIXTURE", "GOLEADORES")
     }
 
     var selectedTab by remember(tournamentFormat, initialTabName) {
@@ -464,6 +465,22 @@ fun StandingsScreen(
                     }
                 }
             }
+            TournamentFormat.SUDAMERICANA -> {
+                val teamsMap = rawTeams.associateBy { it.name.trim().lowercase() }
+                SUDAMERICANA_GROUPS_DATA.mapValues { (grpName, rows) ->
+                    rows.map { row ->
+                        teamsMap[row.name.lowercase()]
+                            ?: rawTeams.find { it.name.equals(row.name, ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) }
+                            ?: Team(
+                                id = 8900 + Math.abs(row.name.hashCode() % 1000),
+                                name = row.name,
+                                flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                                group = grpName,
+                                players = emptyList()
+                            )
+                    }
+                }
+            }
             else -> {
                 val grouped = rawTeams
                     .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
@@ -547,9 +564,9 @@ fun StandingsScreen(
                     val wasFixture = currentTabTitle == "FIXTURE" || initialTabName == "FIXTURE"
                     tournamentId = newId
                     selectedTab = if (wasFixture) {
-                        val newIsCopaDirecta = newId in listOf(6, 13, 18)
-                        if (newIsCopaDirecta) 1 else when (newId) {
-                            1, 3, 30, 31, 32, 12 -> 3
+                        val newIsCopaDirecta = newId in listOf(6, 13, 14, 18, 19, 21)
+                        if (newIsCopaDirecta) 0 else when (newId) {
+                            1, 3, 4, 30, 31, 32, 12 -> 3
                             5, 7 -> 4
                             15 -> 5
                             8, 9, 10 -> 3
@@ -807,8 +824,23 @@ fun StandingsScreen(
                     }
                 }
                 "FASE FINAL" -> {
-                    val knockoutMatches = remember(currentTournamentMatches) {
-                        currentTournamentMatches.filter { (it.matchday ?: 0) in listOf(1, 2, 3, 10, 11, 12, 13) }
+                    val isSudam = tournamentFormat == TournamentFormat.SUDAMERICANA
+                    val knockoutMatches = remember(currentTournamentMatches, isSudam) {
+                        if (isSudam) {
+                            currentTournamentMatches.filter { (it.matchday ?: 0) in listOf(1, 8, 9, 10, 11, 12) }
+                        } else {
+                            currentTournamentMatches.filter { (it.matchday ?: 0) in listOf(1, 2, 3, 10, 11, 12, 13) }
+                        }
+                    }
+                    val finalTitle = if (isSudam) {
+                        "🏆 FINAL ÚNICA: ATLÉTICO MINEIRO VS BOCA JUNIORS"
+                    } else {
+                        "🏆 FINAL ÚNICA: PALMEIRAS VS ESTUDIANTES DE LA PLATA"
+                    }
+                    val finalSubtitle = if (isSudam) {
+                        "Sábado 21/11 · 19:30 hs · Final Única en Cancha Neutral · Primera Fase, Play-off de Octavos y Eliminatorias (Octavos a Final)."
+                    } else {
+                        "Sábado 28/11 · 17:00 hs · Estadio Centenario (Montevideo) · Fases Previas (1 a 3) y Eliminatorias (Octavos a Final)."
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
                         Card(
@@ -818,14 +850,14 @@ fun StandingsScreen(
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
                                 Text(
-                                    text = "🏆 FINAL ÚNICA: PALMEIRAS VS ESTUDIANTES DE LA PLATA",
+                                    text = finalTitle,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color(0xFFFFD54F)
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Sábado 28/11 · 17:00 hs · Estadio Centenario (Montevideo) · Fases Previas (1 a 3) y Eliminatorias (Octavos a Final).",
+                                    text = finalSubtitle,
                                     style = MaterialTheme.typography.bodySmall,
                                     fontSize = 11.sp,
                                     color = Color.White.copy(alpha = 0.85f)
@@ -1107,6 +1139,57 @@ val LIBERTADORES_GROUPS_DATA = mapOf(
     )
 )
 
+val SUDAMERICANA_GROUPS_DATA = mapOf(
+    "Grupo A" to listOf(
+        PrimeraNacionalFixedRow(1, "Macará", 6, 2, 4, 0, 6, 3, 3, 10),
+        PrimeraNacionalFixedRow(2, "Tigre", 6, 2, 3, 1, 8, 5, 3, 9),
+        PrimeraNacionalFixedRow(3, "América de Cali", 6, 2, 3, 1, 6, 5, 1, 9),
+        PrimeraNacionalFixedRow(4, "Alianza Atlético", 6, 0, 2, 4, 2, 9, -7, 2)
+    ),
+    "Grupo B" to listOf(
+        PrimeraNacionalFixedRow(1, "Atlético Mineiro", 6, 3, 1, 2, 8, 6, 2, 10),
+        PrimeraNacionalFixedRow(2, "Cienciano", 6, 2, 2, 2, 5, 7, -2, 8),
+        PrimeraNacionalFixedRow(3, "Juventud de Las Piedras", 6, 1, 4, 1, 10, 7, 3, 7),
+        PrimeraNacionalFixedRow(4, "Academia Puerto Cabello", 6, 2, 1, 3, 6, 9, -3, 7)
+    ),
+    "Grupo C" to listOf(
+        PrimeraNacionalFixedRow(1, "São Paulo", 6, 3, 3, 0, 6, 1, 5, 12),
+        PrimeraNacionalFixedRow(2, "O'Higgins", 6, 3, 1, 2, 8, 6, 2, 10),
+        PrimeraNacionalFixedRow(3, "Millonarios", 6, 2, 2, 2, 7, 7, 0, 8),
+        PrimeraNacionalFixedRow(4, "Boston River", 6, 1, 0, 5, 5, 12, -7, 3)
+    ),
+    "Grupo D" to listOf(
+        PrimeraNacionalFixedRow(1, "Deportivo Recoleta", 6, 1, 5, 0, 6, 5, 1, 8),
+        PrimeraNacionalFixedRow(2, "Santos", 6, 1, 4, 1, 8, 6, 2, 7),
+        PrimeraNacionalFixedRow(3, "San Lorenzo", 6, 1, 4, 1, 6, 5, 1, 7),
+        PrimeraNacionalFixedRow(4, "Deportivo Cuenca", 6, 1, 3, 2, 3, 7, -4, 6)
+    ),
+    "Grupo E" to listOf(
+        PrimeraNacionalFixedRow(1, "Botafogo", 6, 5, 1, 0, 15, 5, 10, 16),
+        PrimeraNacionalFixedRow(2, "Caracas FC", 6, 2, 3, 1, 9, 9, 0, 9),
+        PrimeraNacionalFixedRow(3, "Racing Club", 6, 2, 2, 2, 11, 9, 2, 8),
+        PrimeraNacionalFixedRow(4, "Independiente Petrolero", 6, 0, 0, 6, 3, 15, -12, 0)
+    ),
+    "Grupo F" to listOf(
+        PrimeraNacionalFixedRow(1, "Montevideo City Torque", 6, 4, 1, 1, 11, 5, 6, 13),
+        PrimeraNacionalFixedRow(2, "Grêmio", 6, 3, 2, 1, 8, 3, 5, 11),
+        PrimeraNacionalFixedRow(3, "Deportivo Riestra", 6, 1, 2, 3, 4, 10, -6, 5),
+        PrimeraNacionalFixedRow(4, "Palestino", 6, 0, 3, 3, 1, 6, -5, 3)
+    ),
+    "Grupo G" to listOf(
+        PrimeraNacionalFixedRow(1, "Olimpia", 6, 4, 1, 1, 10, 6, 4, 13),
+        PrimeraNacionalFixedRow(2, "Vasco da Gama", 6, 3, 1, 2, 10, 6, 4, 10),
+        PrimeraNacionalFixedRow(3, "Audax Italiano", 6, 2, 1, 3, 7, 9, -2, 7),
+        PrimeraNacionalFixedRow(4, "Barracas Central", 6, 0, 3, 3, 2, 8, -6, 3)
+    ),
+    "Grupo H" to listOf(
+        PrimeraNacionalFixedRow(1, "River Plate", 6, 4, 2, 0, 9, 3, 6, 14),
+        PrimeraNacionalFixedRow(2, "Red Bull Bragantino", 6, 3, 1, 2, 12, 5, 7, 10),
+        PrimeraNacionalFixedRow(3, "Carabobo", 6, 3, 0, 3, 6, 5, 1, 9),
+        PrimeraNacionalFixedRow(4, "Blooming", 6, 0, 1, 5, 3, 17, -14, 1)
+    )
+)
+
 @Composable
 fun GroupStandingsTable(
     groupName: String, 
@@ -1213,6 +1296,34 @@ fun GroupStandingsTable(
                     val matchedTeam = teams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
                         ?: Team(
                             id = 8800 + Math.abs(row.name.hashCode() % 1000),
+                            name = row.name,
+                            flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                            group = grpKey,
+                            players = emptyList()
+                        )
+                    TeamStats(
+                        team = matchedTeam,
+                        pj = row.pj,
+                        g = row.g,
+                        e = row.e,
+                        p = row.p,
+                        gf = row.gf,
+                        ga = row.ga,
+                        gd = row.gd,
+                        pts = row.pts
+                    )
+                }
+            } else {
+                StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+            }
+        } else if (tournamentFormat == TournamentFormat.SUDAMERICANA) {
+            val grpKey = if (groupName.startsWith("Grupo")) groupName else "Grupo $groupName"
+            val fixedList = SUDAMERICANA_GROUPS_DATA[grpKey]
+            if (fixedList != null) {
+                fixedList.map { row ->
+                    val matchedTeam = teams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
+                        ?: Team(
+                            id = 8900 + Math.abs(row.name.hashCode() % 1000),
                             name = row.name,
                             flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
                             group = grpKey,
@@ -1502,6 +1613,37 @@ fun GroupStandingsTable(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "3.°: Clasifica al Play-off de Octavos (Copa Sudamericana)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+
+        if (tournamentFormat == TournamentFormat.SUDAMERICANA) {
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFF4CAF50), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "1.°: Clasifica a Octavos de Final (Copa Sudamericana)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFFFFB300), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "2.°: Clasifica al Play-off de Octavos (vs 3.° de Copa Libertadores)",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.85f),
                         fontSize = 11.sp
@@ -3377,6 +3519,17 @@ fun getLibertadoresStageName(md: Int): String = when (md) {
     else -> "Fase $md"
 }
 
+fun getSudamericanaStageName(md: Int): String = when (md) {
+    1 -> "Primera Fase"
+    in 2..7 -> "Grupos - Fecha ${md - 1}"
+    8 -> "Play-off Octavos"
+    9 -> "Octavos de Final"
+    10 -> "Cuartos de Final"
+    11 -> "Semifinales"
+    12 -> "Final"
+    else -> "Fase $md"
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -3412,6 +3565,14 @@ fun TournamentFixtureView(
 
     val isLibertadores = remember(tournamentId, matches) {
         tournamentId == 3 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 3 })
+    }
+
+    val isSudamericana = remember(tournamentId, matches) {
+        tournamentId == 4 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 4 })
+    }
+
+    val isAmistosos = remember(tournamentId, matches) {
+        tournamentId in listOf(14, 19, 21) || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) in listOf(14, 19, 21) })
     }
 
     // Procesamos e inferimos las fechas reales de los partidos
@@ -3519,6 +3680,8 @@ fun TournamentFixtureView(
                                     isFederalA -> getFederalAStageName(md)
                                     isPrimeraB -> getPrimeraBStageName(md)
                                     isLibertadores -> getLibertadoresStageName(md)
+                                    isSudamericana -> getSudamericanaStageName(md)
+                                    isAmistosos -> "Jornada $md"
                                     else -> "Fecha $md"
                                 },
                                 fontSize = 11.sp,
@@ -3603,6 +3766,9 @@ fun TournamentFixtureView(
                 isCopaArgentina -> getCopaArgentinaStageName(selectedMatchday).uppercase()
                 isFederalA -> getFederalAStageName(selectedMatchday).uppercase()
                 isPrimeraB -> getPrimeraBStageName(selectedMatchday).uppercase()
+                isLibertadores -> getLibertadoresStageName(selectedMatchday).uppercase()
+                isSudamericana -> getSudamericanaStageName(selectedMatchday).uppercase()
+                isAmistosos -> "AMISTOSOS · JORNADA $selectedMatchday"
                 else -> "FECHA $selectedMatchday"
             }
 
