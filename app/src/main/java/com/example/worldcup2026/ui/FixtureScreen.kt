@@ -323,8 +323,11 @@ fun DayFilteredFixture(
     val isPrimeraBOnly = remember(matches) {
         matches.isNotEmpty() && matches.all { it.tournament_id == 8 }
     }
-    val isCupOrFriendly = remember(matches, isCopaArgentinaOnly) { 
-        !isCopaArgentinaOnly && matches.any { it.tournament_id in listOf(3, 4, 6, 14, 27) } 
+    val isLibertadoresOnly = remember(matches) {
+        matches.isNotEmpty() && matches.all { it.tournament_id == 3 }
+    }
+    val isCupOrFriendly = remember(matches, isCopaArgentinaOnly, isLibertadoresOnly) { 
+        !isCopaArgentinaOnly && !isLibertadoresOnly && matches.any { it.tournament_id in listOf(4, 6, 14, 27) } 
     }
     val matchdays = remember(matches, isCupOrFriendly, isCopaArgentinaOnly) {
         if (isCopaArgentinaOnly) listOf(1, 2, 3, 4, 5, 6)
@@ -501,6 +504,7 @@ fun DayFilteredFixture(
                                 isCopaArgentinaOnly -> getCopaArgentinaStageName(mDay)
                                 isFederalAOnly -> getFederalAStageName(mDay)
                                 isPrimeraBOnly -> getPrimeraBStageName(mDay)
+                                isLibertadoresOnly -> getLibertadoresStageName(mDay)
                                 else -> "Fecha $mDay"
                             }
                             Text(

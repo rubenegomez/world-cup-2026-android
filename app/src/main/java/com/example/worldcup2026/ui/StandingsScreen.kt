@@ -333,7 +333,7 @@ fun StandingsScreen(
     val tabs = when (tournamentFormat) {
         TournamentFormat.WORLD_CUP              -> listOf("GRUPOS", "MEJORES TERCEROS", "GOLEADORES", "FIXTURE")
         TournamentFormat.ELIMINATORIAS_CONMEBOL -> listOf("TABLA ÚNICA", "GOLEADORES", "FIXTURE")
-        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
+        TournamentFormat.LIBERTADORES           -> listOf("GRUPOS", "FASE FINAL", "GOLEADORES", "FIXTURE")
         TournamentFormat.SUDAMERICANA           -> listOf("GRUPOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.LIGA_PROFESIONAL       -> listOf("ZONAS", "TABLA ANUAL", "PROMEDIOS", "GOLEADORES", "FIXTURE")
         TournamentFormat.PRIMERA_NACIONAL       -> listOf("ZONA A", "ZONA B", "TABLA GENERAL", "GOLEADORES", "FIXTURE")
@@ -448,6 +448,22 @@ fun StandingsScreen(
                 }
                 mapOf("Tabla General" to pbTeams)
             }
+            TournamentFormat.LIBERTADORES -> {
+                val teamsMap = rawTeams.associateBy { it.name.trim().lowercase() }
+                LIBERTADORES_GROUPS_DATA.mapValues { (grpName, rows) ->
+                    rows.map { row ->
+                        teamsMap[row.name.lowercase()]
+                            ?: rawTeams.find { it.name.equals(row.name, ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) }
+                            ?: Team(
+                                id = 8800 + Math.abs(row.name.hashCode() % 1000),
+                                name = row.name,
+                                flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                                group = grpName,
+                                players = emptyList()
+                            )
+                    }
+                }
+            }
             else -> {
                 val grouped = rawTeams
                     .filter { it.id > 0 && it.group.isNotEmpty() && it.group != "Eliminación" && it.group != "TBD" }
@@ -533,7 +549,7 @@ fun StandingsScreen(
                     selectedTab = if (wasFixture) {
                         val newIsCopaDirecta = newId in listOf(6, 13, 18)
                         if (newIsCopaDirecta) 1 else when (newId) {
-                            1, 30, 31, 32, 12 -> 3
+                            1, 3, 30, 31, 32, 12 -> 3
                             5, 7 -> 4
                             15 -> 5
                             8, 9, 10 -> 3
@@ -790,6 +806,43 @@ fun StandingsScreen(
                         }
                     }
                 }
+                "FASE FINAL" -> {
+                    val knockoutMatches = remember(currentTournamentMatches) {
+                        currentTournamentMatches.filter { (it.matchday ?: 0) in listOf(1, 2, 3, 10, 11, 12, 13) }
+                    }
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B5E20).copy(alpha = 0.35f)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = "🏆 FINAL ÚNICA: PALMEIRAS VS ESTUDIANTES DE LA PLATA",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFFFD54F)
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Sábado 28/11 · 17:00 hs · Estadio Centenario (Montevideo) · Fases Previas (1 a 3) y Eliminatorias (Octavos a Final).",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+                        TournamentFixtureView(
+                            matches = if (knockoutMatches.isNotEmpty()) knockoutMatches else currentTournamentMatches,
+                            tournamentId = tournamentId,
+                            isLigaProfesional = false,
+                            teamsByGroup = teamsByGroup,
+                            annualStandings = emptyList(),
+                            allMatches = matches,
+                            onMatchClick = onNavigateToMatch
+                        )
+                    }
+                }
                 else -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
@@ -1003,6 +1056,57 @@ val PB_METRO_DATA = listOf(
     PrimeraNacionalFixedRow(22, "Ituzaingó", 42, 1, 14, 27, 28, 69, -41, 17)
 )
 
+val LIBERTADORES_GROUPS_DATA = mapOf(
+    "Grupo A" to listOf(
+        PrimeraNacionalFixedRow(1, "Flamengo", 6, 5, 1, 0, 14, 2, 12, 16),
+        PrimeraNacionalFixedRow(2, "Estudiantes de La Plata", 6, 2, 3, 1, 6, 5, 1, 9),
+        PrimeraNacionalFixedRow(3, "Independiente Medellín", 6, 2, 1, 3, 6, 11, -5, 7),
+        PrimeraNacionalFixedRow(4, "Cusco FC", 6, 0, 1, 5, 4, 12, -8, 1)
+    ),
+    "Grupo B" to listOf(
+        PrimeraNacionalFixedRow(1, "Coquimbo Unido", 6, 3, 1, 2, 8, 6, 2, 10),
+        PrimeraNacionalFixedRow(2, "Deportes Tolima", 6, 2, 2, 2, 7, 6, 1, 8),
+        PrimeraNacionalFixedRow(3, "Nacional (Uruguay)", 6, 2, 2, 2, 7, 9, -2, 8),
+        PrimeraNacionalFixedRow(4, "Universitario", 6, 1, 3, 2, 5, 6, -1, 6)
+    ),
+    "Grupo C" to listOf(
+        PrimeraNacionalFixedRow(1, "Independiente Rivadavia", 6, 5, 1, 0, 15, 6, 9, 16),
+        PrimeraNacionalFixedRow(2, "Fluminense", 6, 2, 2, 2, 7, 7, 0, 8),
+        PrimeraNacionalFixedRow(3, "Bolívar", 6, 1, 2, 3, 6, 8, -2, 5),
+        PrimeraNacionalFixedRow(4, "Deportivo La Guaira", 6, 0, 3, 3, 6, 13, -7, 3)
+    ),
+    "Grupo D" to listOf(
+        PrimeraNacionalFixedRow(1, "Universidad Católica", 6, 4, 1, 1, 8, 4, 4, 13),
+        PrimeraNacionalFixedRow(2, "Cruzeiro", 6, 3, 2, 1, 8, 3, 5, 11),
+        PrimeraNacionalFixedRow(3, "Boca Juniors", 6, 2, 1, 3, 6, 5, 1, 7),
+        PrimeraNacionalFixedRow(4, "Barcelona SC", 6, 1, 0, 5, 2, 12, -10, 3)
+    ),
+    "Grupo E" to listOf(
+        PrimeraNacionalFixedRow(1, "Corinthians", 6, 3, 2, 1, 8, 4, 4, 11),
+        PrimeraNacionalFixedRow(2, "Platense", 6, 3, 1, 2, 8, 7, 1, 10),
+        PrimeraNacionalFixedRow(3, "Independiente Santa Fe", 6, 2, 2, 2, 6, 7, -1, 8),
+        PrimeraNacionalFixedRow(4, "Peñarol", 6, 0, 3, 3, 4, 8, -4, 3)
+    ),
+    "Grupo F" to listOf(
+        PrimeraNacionalFixedRow(1, "Cerro Porteño", 6, 4, 1, 1, 6, 2, 4, 13),
+        PrimeraNacionalFixedRow(2, "Palmeiras", 6, 3, 2, 1, 10, 5, 5, 11),
+        PrimeraNacionalFixedRow(3, "Sporting Cristal", 6, 2, 0, 4, 6, 9, -3, 6),
+        PrimeraNacionalFixedRow(4, "Junior", 6, 1, 1, 4, 5, 11, -6, 4)
+    ),
+    "Grupo G" to listOf(
+        PrimeraNacionalFixedRow(1, "Liga de Quito", 6, 4, 0, 2, 8, 5, 3, 12),
+        PrimeraNacionalFixedRow(2, "Mirassol", 6, 4, 0, 2, 7, 4, 3, 12),
+        PrimeraNacionalFixedRow(3, "Lanús", 6, 3, 0, 3, 3, 7, -4, 9),
+        PrimeraNacionalFixedRow(4, "Always Ready", 6, 1, 0, 5, 7, 9, -2, 3)
+    ),
+    "Grupo H" to listOf(
+        PrimeraNacionalFixedRow(1, "Independiente del Valle", 6, 4, 1, 1, 11, 6, 5, 13),
+        PrimeraNacionalFixedRow(2, "Rosario Central", 6, 4, 1, 1, 9, 1, 8, 13),
+        PrimeraNacionalFixedRow(3, "Universidad Central de Venezuela (UCV)", 6, 3, 0, 3, 7, 11, -4, 9),
+        PrimeraNacionalFixedRow(4, "Libertad", 6, 0, 0, 6, 4, 13, -9, 0)
+    )
+)
+
 @Composable
 fun GroupStandingsTable(
     groupName: String, 
@@ -1101,11 +1205,39 @@ fun GroupStandingsTable(
                     pts = row.pts
                 )
             }
+        } else if (tournamentFormat == TournamentFormat.LIBERTADORES) {
+            val grpKey = if (groupName.startsWith("Grupo")) groupName else "Grupo $groupName"
+            val fixedList = LIBERTADORES_GROUPS_DATA[grpKey]
+            if (fixedList != null) {
+                fixedList.map { row ->
+                    val matchedTeam = teams.find { it.name.trim().equals(row.name.trim(), ignoreCase = true) || it.name.contains(row.name, ignoreCase = true) || row.name.contains(it.name, ignoreCase = true) }
+                        ?: Team(
+                            id = 8800 + Math.abs(row.name.hashCode() % 1000),
+                            name = row.name,
+                            flagUrl = com.example.worldcup2026.data.model.MasterTeamCatalog.findTeamLogo(row.name) ?: "",
+                            group = grpKey,
+                            players = emptyList()
+                        )
+                    TeamStats(
+                        team = matchedTeam,
+                        pj = row.pj,
+                        g = row.g,
+                        e = row.e,
+                        p = row.p,
+                        gf = row.gf,
+                        ga = row.ga,
+                        gd = row.gd,
+                        pts = row.pts
+                    )
+                }
+            } else {
+                StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
+            }
         } else {
             StandingsCalculator.calculateStandings(teams, matches, isWorldCup)
         }
     }
-    val title = if (groupName.startsWith("Zona") || groupName.startsWith("Tabla") || groupName.startsWith("Campeonato") || groupName.startsWith("Reválida")) groupName else "Grupo $groupName"
+    val title = if (groupName.startsWith("Grupo") || groupName.startsWith("Zona") || groupName.startsWith("Tabla") || groupName.startsWith("Campeonato") || groupName.startsWith("Reválida")) groupName else "Grupo $groupName"
 
     Column(
         modifier = Modifier
@@ -1339,6 +1471,37 @@ fun GroupStandingsTable(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "21.°-22.°: Descenso a Primera C Metropolitana",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+
+        if (tournamentFormat == TournamentFormat.LIBERTADORES) {
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFF4CAF50), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "1.°-2.°: Clasifica a Octavos de Final (Copa Libertadores)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(9.dp).background(Color(0xFFFFB300), CircleShape))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "3.°: Clasifica al Play-off de Octavos (Copa Sudamericana)",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.85f),
                         fontSize = 11.sp
@@ -3202,6 +3365,18 @@ fun getPrimeraBStageName(md: Int): String = when (md) {
     else -> "Fecha $md"
 }
 
+fun getLibertadoresStageName(md: Int): String = when (md) {
+    1 -> "Fase Previa 1"
+    2 -> "Fase Previa 2"
+    3 -> "Fase Previa 3"
+    in 4..9 -> "Grupos - Fecha ${md - 3}"
+    10 -> "Octavos de Final"
+    11 -> "Cuartos de Final"
+    12 -> "Semifinales"
+    13 -> "Final"
+    else -> "Fase $md"
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -3233,6 +3408,10 @@ fun TournamentFixtureView(
 
     val isPrimeraB = remember(tournamentId, matches) {
         tournamentId == 8 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 8 })
+    }
+
+    val isLibertadores = remember(tournamentId, matches) {
+        tournamentId == 3 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 3 })
     }
 
     // Procesamos e inferimos las fechas reales de los partidos
@@ -3339,6 +3518,7 @@ fun TournamentFixtureView(
                                     isCopaArgentina -> getCopaArgentinaStageName(md)
                                     isFederalA -> getFederalAStageName(md)
                                     isPrimeraB -> getPrimeraBStageName(md)
+                                    isLibertadores -> getLibertadoresStageName(md)
                                     else -> "Fecha $md"
                                 },
                                 fontSize = 11.sp,
