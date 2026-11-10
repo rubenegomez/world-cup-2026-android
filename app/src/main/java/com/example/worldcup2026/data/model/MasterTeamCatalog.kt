@@ -141,6 +141,13 @@ object MasterTeamCatalog {
     // 4. PRIMERA B METROPOLITANA (22)
     val PRIMERA_B_METRO = listOf(
         MasterTeam("Acassuso (Boulogne)", "https://a.espncdn.com/i/teamlogos/soccer/500/10058.png", 8, "Primera B Metropolitana"),
+        MasterTeam("Arsenal de Sarandí", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/5913", 8, "Primera B Metropolitana"),
+        MasterTeam("Defensores Unidos", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/11932", 8, "Primera B Metropolitana"),
+        MasterTeam("Deportivo Camioneros", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/17402", 8, "Primera B Metropolitana"),
+        MasterTeam("Ituzaingó", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/11933", 8, "Primera B Metropolitana"),
+        MasterTeam("Real Pilar", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/49732", 8, "Primera B Metropolitana"),
+        MasterTeam("Talleres de Remedios de Escalada", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/11899", 8, "Primera B Metropolitana"),
+        MasterTeam("Villa Dálmine", "https://imagecache.365scores.com/image/upload/f_png,w_80,h_80,c_limit,q_auto:eco,d_Competitors:default1.png/v1/Competitors/9808", 8, "Primera B Metropolitana"),
         MasterTeam("Argentino de Merlo (Merlo)", "https://a.espncdn.com/i/teamlogos/soccer/500/10155.png", 8, "Primera B Metropolitana"),
         MasterTeam("Argentino de Quilmes (Quilmes)", "https://a.espncdn.com/i/teamlogos/soccer/500/10159.png", 8, "Primera B Metropolitana"),
         MasterTeam("Brown de Adrogué (Adrogué)", "https://a.espncdn.com/i/teamlogos/soccer/500/10060.png", 8, "Primera B Metropolitana"),

@@ -320,6 +320,9 @@ fun DayFilteredFixture(
     val isFederalAOnly = remember(matches) {
         matches.isNotEmpty() && matches.all { it.tournament_id == 15 }
     }
+    val isPrimeraBOnly = remember(matches) {
+        matches.isNotEmpty() && matches.all { it.tournament_id == 8 }
+    }
     val isCupOrFriendly = remember(matches, isCopaArgentinaOnly) { 
         !isCopaArgentinaOnly && matches.any { it.tournament_id in listOf(3, 4, 6, 14, 27) } 
     }
@@ -497,6 +500,7 @@ fun DayFilteredFixture(
                             val chipLabel = when {
                                 isCopaArgentinaOnly -> getCopaArgentinaStageName(mDay)
                                 isFederalAOnly -> getFederalAStageName(mDay)
+                                isPrimeraBOnly -> getPrimeraBStageName(mDay)
                                 else -> "Fecha $mDay"
                             }
                             Text(

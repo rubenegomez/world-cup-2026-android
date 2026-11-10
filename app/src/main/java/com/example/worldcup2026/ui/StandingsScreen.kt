@@ -733,6 +733,63 @@ fun StandingsScreen(
                         }
                     }
                 }
+                "REDUCIDO" -> {
+                    val reducidoMatches = remember(currentTournamentMatches) {
+                        currentTournamentMatches.filter { (it.matchday ?: 0) >= 43 || (it.group_name ?: "").contains("Reducido", ignoreCase = true) }
+                    }
+                    if (tournamentFormat == TournamentFormat.PRIMERA_B && reducidoMatches.isNotEmpty()) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF1B5E20).copy(alpha = 0.35f)),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = "🏆 1.° ASCENSO DIRECTO (CAMPEÓN): EXCURSIONISTAS (81 PTS)",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color(0xFF81C784)
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "Torneo Reducido por el 2.° Ascenso (2.° al 9.° de la Tabla General · Ida y vuelta, sin ventaja deportiva, definición por penales).",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.85f)
+                                    )
+                                }
+                            }
+                            TournamentFixtureView(
+                                matches = reducidoMatches,
+                                tournamentId = tournamentId,
+                                isLigaProfesional = false,
+                                teamsByGroup = displayGroups,
+                                annualStandings = emptyList(),
+                                allMatches = matches,
+                                onMatchClick = onNavigateToMatch
+                            )
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Etapa de $currentTabTitle",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Se habilitará automáticamente al finalizar la fase regular.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
                 else -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
@@ -922,28 +979,28 @@ val TFA_REVALIDA_B_DATA = listOf(
 )
 
 val PB_METRO_DATA = listOf(
-    PrimeraNacionalFixedRow(1, "Colegiales", 42, 26, 8, 8, 59, 25, 34, 86),
-    PrimeraNacionalFixedRow(2, "Argentino de Quilmes", 42, 21, 17, 4, 52, 21, 31, 80),
-    PrimeraNacionalFixedRow(3, "Deportivo Armenio", 42, 22, 12, 8, 63, 34, 29, 78),
-    PrimeraNacionalFixedRow(4, "Ferrocarril Midland", 42, 18, 15, 9, 53, 32, 21, 69),
-    PrimeraNacionalFixedRow(5, "Los Andes", 42, 19, 10, 13, 45, 37, 8, 67),
-    PrimeraNacionalFixedRow(6, "Excursionistas", 42, 16, 16, 10, 64, 46, 18, 64),
-    PrimeraNacionalFixedRow(7, "Dock Sud", 42, 17, 11, 14, 51, 44, 7, 62),
-    PrimeraNacionalFixedRow(8, "Argentino de Merlo", 42, 17, 11, 14, 47, 44, 3, 62),
-    PrimeraNacionalFixedRow(9, "Deportivo Merlo", 42, 16, 14, 12, 36, 34, 2, 62),
-    PrimeraNacionalFixedRow(10, "Flandria", 42, 16, 12, 14, 37, 37, 0, 60),
-    PrimeraNacionalFixedRow(11, "Comunicaciones", 42, 14, 15, 13, 47, 38, 9, 57),
-    PrimeraNacionalFixedRow(12, "UAI Urquiza", 42, 12, 14, 16, 43, 56, -13, 50),
-    PrimeraNacionalFixedRow(13, "Liniers", 42, 12, 13, 17, 32, 34, -2, 49),
-    PrimeraNacionalFixedRow(14, "Fénix", 42, 10, 17, 15, 33, 42, -9, 47),
-    PrimeraNacionalFixedRow(15, "Villa Dálmine", 42, 10, 17, 15, 22, 32, -10, 47),
-    PrimeraNacionalFixedRow(16, "Acassuso", 42, 11, 13, 18, 31, 49, -18, 46),
-    PrimeraNacionalFixedRow(17, "San Martín (Burzaco)", 42, 11, 12, 19, 29, 43, -14, 45),
-    PrimeraNacionalFixedRow(18, "Sacachispas", 42, 12, 9, 21, 27, 57, -30, 45),
-    PrimeraNacionalFixedRow(19, "Sportivo Italiano", 42, 8, 19, 15, 38, 48, -10, 43),
-    PrimeraNacionalFixedRow(20, "Deportivo Laferrere", 42, 8, 19, 15, 37, 55, -18, 43),
-    PrimeraNacionalFixedRow(21, "Villa San Carlos", 42, 8, 14, 20, 33, 46, -13, 38),
-    PrimeraNacionalFixedRow(22, "Cañuelas", 42, 9, 10, 23, 30, 55, -25, 37)
+    PrimeraNacionalFixedRow(1, "Excursionistas", 42, 24, 9, 9, 69, 33, 36, 81),
+    PrimeraNacionalFixedRow(2, "Arsenal de Sarandí", 42, 21, 14, 7, 56, 28, 28, 77),
+    PrimeraNacionalFixedRow(3, "Sportivo Italiano", 42, 20, 12, 10, 48, 33, 15, 72),
+    PrimeraNacionalFixedRow(4, "Talleres de Remedios de Escalada", 42, 20, 11, 11, 46, 27, 19, 71),
+    PrimeraNacionalFixedRow(5, "Deportivo Camioneros", 42, 19, 13, 10, 50, 35, 15, 70),
+    PrimeraNacionalFixedRow(6, "Villa Dálmine", 42, 18, 14, 10, 40, 28, 12, 68),
+    PrimeraNacionalFixedRow(7, "Real Pilar", 42, 18, 12, 12, 45, 41, 4, 66),
+    PrimeraNacionalFixedRow(8, "Deportivo Armenio", 42, 17, 12, 13, 43, 40, 3, 63),
+    PrimeraNacionalFixedRow(9, "Comunicaciones", 42, 15, 15, 12, 40, 35, 5, 60),
+    PrimeraNacionalFixedRow(10, "Deportivo Laferrere", 42, 15, 14, 13, 51, 53, -2, 59),
+    PrimeraNacionalFixedRow(11, "Villa San Carlos", 42, 12, 15, 15, 41, 46, -5, 51),
+    PrimeraNacionalFixedRow(12, "San Martín de Burzaco", 42, 12, 15, 15, 43, 49, -6, 51),
+    PrimeraNacionalFixedRow(13, "Argentino de Merlo", 42, 13, 11, 18, 39, 45, -6, 50),
+    PrimeraNacionalFixedRow(14, "Flandria", 42, 13, 10, 19, 40, 50, -10, 49),
+    PrimeraNacionalFixedRow(15, "Deportivo Merlo", 42, 11, 16, 15, 40, 55, -15, 49),
+    PrimeraNacionalFixedRow(16, "Liniers", 42, 11, 15, 16, 36, 43, -7, 48),
+    PrimeraNacionalFixedRow(17, "Argentino de Quilmes", 42, 10, 17, 15, 33, 41, -8, 47),
+    PrimeraNacionalFixedRow(18, "Dock Sud", 42, 11, 14, 17, 42, 51, -9, 47),
+    PrimeraNacionalFixedRow(19, "Defensores Unidos", 42, 10, 16, 16, 35, 41, -6, 46),
+    PrimeraNacionalFixedRow(20, "Brown de Adrogué", 42, 10, 16, 16, 26, 38, -12, 46),
+    PrimeraNacionalFixedRow(21, "UAI Urquiza", 42, 8, 21, 13, 28, 38, -10, 45),
+    PrimeraNacionalFixedRow(22, "Ituzaingó", 42, 1, 14, 27, 28, 69, -41, 17)
 )
 
 @Composable
@@ -3137,6 +3194,14 @@ fun getFederalAStageName(md: Int): String = when (md) {
     else -> "Fase $md"
 }
 
+fun getPrimeraBStageName(md: Int): String = when (md) {
+    in 1..42 -> "Fecha $md"
+    43 -> "Reducido - Cuartos"
+    44 -> "Reducido - Semifinales"
+    45 -> "Reducido - Final"
+    else -> "Fecha $md"
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -3164,6 +3229,10 @@ fun TournamentFixtureView(
 
     val isFederalA = remember(tournamentId, matches) {
         tournamentId == 15 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 15 })
+    }
+
+    val isPrimeraB = remember(tournamentId, matches) {
+        tournamentId == 8 || (matches.isNotEmpty() && matches.all { (it.tournament_id ?: 0) == 8 })
     }
 
     // Procesamos e inferimos las fechas reales de los partidos
@@ -3269,6 +3338,7 @@ fun TournamentFixtureView(
                                 text = when {
                                     isCopaArgentina -> getCopaArgentinaStageName(md)
                                     isFederalA -> getFederalAStageName(md)
+                                    isPrimeraB -> getPrimeraBStageName(md)
                                     else -> "Fecha $md"
                                 },
                                 fontSize = 11.sp,
@@ -3352,6 +3422,7 @@ fun TournamentFixtureView(
             val stageBaseTitle = when {
                 isCopaArgentina -> getCopaArgentinaStageName(selectedMatchday).uppercase()
                 isFederalA -> getFederalAStageName(selectedMatchday).uppercase()
+                isPrimeraB -> getPrimeraBStageName(selectedMatchday).uppercase()
                 else -> "FECHA $selectedMatchday"
             }
 
