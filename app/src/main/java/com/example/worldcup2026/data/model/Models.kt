@@ -56,7 +56,29 @@ data class Match(
 )
 
 
+fun Match.isFutureMatch(): Boolean {
+    val rawDate = date?.trim() ?: return false
+    if (rawDate.length < 10) return false
+    return try {
+        val now = java.time.LocalDateTime.now()
+        val matchDate = java.time.LocalDate.parse(rawDate.take(10))
+        if (matchDate.isAfter(now.toLocalDate())) return true
+        if (rawDate.length >= 16) {
+            val dt = if (rawDate.contains("T")) {
+                java.time.LocalDateTime.parse(rawDate.take(19))
+            } else {
+                java.time.LocalDateTime.parse(rawDate.take(16), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+            }
+            if (dt.toLocalTime() != java.time.LocalTime.MIDNIGHT && dt.isAfter(now)) return true
+        }
+        false
+    } catch (e: Exception) {
+        false
+    }
+}
+
 fun Match.getDisplayHomeScore(): Int? {
+    if (isFutureMatch() || status.equals("Scheduled", ignoreCase = true)) return null
     val base = homeScore
     val eventGoals = countGoalsFromEvents(isHome = true)
     val otherEventGoals = countGoalsFromEvents(isHome = false)
@@ -75,6 +97,7 @@ fun Match.getDisplayHomeScore(): Int? {
 }
 
 fun Match.getDisplayAwayScore(): Int? {
+    if (isFutureMatch() || status.equals("Scheduled", ignoreCase = true)) return null
     val base = awayScore
     val eventGoals = countGoalsFromEvents(isHome = false)
     val otherEventGoals = countGoalsFromEvents(isHome = true)
@@ -135,6 +158,7 @@ fun Match.countGoalsFromEvents(isHome: Boolean): Int {
 }
 
 fun Match.isMatchLive(): Boolean {
+    if (isFutureMatch()) return false
     val rawStatus = status.uppercase().trim()
     val isCancelledOrPostponed = rawStatus.contains("POSTP") || rawStatus.contains("SUSPEND") || rawStatus.contains("CANC")
     if (isCancelledOrPostponed) return false

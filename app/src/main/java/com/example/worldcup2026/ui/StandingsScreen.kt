@@ -38,6 +38,7 @@ import com.example.worldcup2026.data.api.DescensoStandingDto
 import com.example.worldcup2026.data.api.GoleadorDto
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
+import com.example.worldcup2026.data.model.isFutureMatch
 import com.example.worldcup2026.data.model.isMatchLive
 import com.example.worldcup2026.data.util.StandingsCalculator
 import com.example.worldcup2026.data.util.TeamStats
@@ -2372,7 +2373,7 @@ fun LigaPlayoffsView(
             teamsMatch && isPlayoff
         }
         var winner: Team? = null
-        if (m != null && (m.status.equals("Finished", ignoreCase = true) || m.status.contains("Termin", ignoreCase = true))) {
+        if (m != null && !m.isFutureMatch() && (m.status.equals("Finished", ignoreCase = true) || m.status.contains("Termin", ignoreCase = true))) {
             val hScore = m.homeScore ?: 0
             val aScore = m.awayScore ?: 0
             if (hScore > aScore) {
@@ -2593,6 +2594,7 @@ fun PlayoffCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 val statusText = when {
+                    llave.match?.isFutureMatch() == true -> "POR DISPUTARSE"
                     llave.match?.status?.equals("Finished", ignoreCase = true) == true -> "FINALIZADO"
                     llave.match?.status?.contains("Live", ignoreCase = true) == true -> "EN VIVO"
                     else -> "POR DISPUTARSE"
@@ -3011,6 +3013,7 @@ fun CopaFinalCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 val statusText = when {
+                    match?.isFutureMatch() == true -> "PROGRAMADA"
                     match?.status?.equals("Finished", ignoreCase = true) == true -> "FINALIZADO"
                     match?.status?.contains("Live", ignoreCase = true) == true -> "EN VIVO"
                     else -> "PROGRAMADA"
@@ -3294,7 +3297,7 @@ fun TournamentFixtureView(
                 it.status.uppercase() in listOf("LIVE", "HALFTIME", "PAUSA", "PAUSE") 
             }
             val allFinished = matchesForSelectedMatchday.all { 
-                it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
+                !it.isFutureMatch() && it.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO") 
             }
 
             Surface(
@@ -3389,7 +3392,7 @@ fun FixtureMatchCard(
     onClick: () -> Unit = {}
 ) {
     val isLive = match.isMatchLive()
-    val isFinished = match.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO")
+    val isFinished = !match.isFutureMatch() && match.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO")
 
     Card(
         modifier = Modifier

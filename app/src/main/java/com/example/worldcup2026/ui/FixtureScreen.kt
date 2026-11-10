@@ -639,21 +639,26 @@ fun MatchCard(
         }
     }
 
-    val isMatchStartedByTime = remember(parsedStartDate) {
-        parsedStartDate != null && parsedStartDate.isBefore(java.time.LocalDateTime.now())
+    val isFutureMatch = remember(match.date) {
+        match.isFutureMatch()
     }
 
-    val isMatchFinishedByTime = remember(parsedStartDate) {
-        parsedStartDate != null && parsedStartDate.plusMinutes(135).isBefore(java.time.LocalDateTime.now())
+    val isMatchStartedByTime = remember(parsedStartDate, isFutureMatch) {
+        !isFutureMatch && parsedStartDate != null && parsedStartDate.isBefore(java.time.LocalDateTime.now())
     }
 
-    val hasScores = match.homeScore != null && match.awayScore != null
+    val isMatchFinishedByTime = remember(parsedStartDate, isFutureMatch) {
+        !isFutureMatch && parsedStartDate != null && parsedStartDate.plusMinutes(135).isBefore(java.time.LocalDateTime.now())
+    }
+
+    val hasScores = !isFutureMatch && match.homeScore != null && match.awayScore != null
 
     // Estado respetando la base de datos o dinámico
-    val statusUpper = remember(rawStatusUpper, isMatchStartedByTime, isMatchFinishedByTime, match.homeScore, match.awayScore) {
+    val statusUpper = remember(rawStatusUpper, isFutureMatch, isMatchStartedByTime, isMatchFinishedByTime, match.homeScore, match.awayScore) {
         when {
-            rawStatusUpper in listOf("FINISHED", "FINALIZADO", "FT", "FINAL", "TERMINADO") -> "FINISHED"
             rawStatusUpper in listOf("POSTP", "POSTERGADO", "SUSPENDED", "SUSPENDIDO", "CANCELLED", "CANCELADO") -> "SUSPENDED"
+            isFutureMatch -> "SCHEDULED"
+            rawStatusUpper in listOf("FINISHED", "FINALIZADO", "FT", "FINAL", "TERMINADO") -> "FINISHED"
             rawStatusUpper in listOf("LIVE", "HALFTIME", "ENTREETIEMPO", "PAUSA", "PAUSE", "EN VIVO", "1T", "2T", "ET", "PENALES") -> "LIVE"
             isMatchFinishedByTime -> "FINISHED"
             isMatchStartedByTime -> "LIVE"
@@ -1125,7 +1130,7 @@ fun MatchCard(
                 // Durante el partido: línea de tiempo con goles, tarjetas y cambios
                 Spacer(modifier = Modifier.height(12.dp))
                 MatchTimelineView(match = match)
-            } else if (!isLive && match.scorers.isNotEmpty()) {
+            } else if (isFinished && match.scorers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Column(
                     modifier = Modifier

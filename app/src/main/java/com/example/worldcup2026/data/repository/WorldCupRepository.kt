@@ -132,30 +132,28 @@ class WorldCupRepository(private val matchDao: MatchDao) {
 
     private suspend fun addMatchWithPersistence(targetList: MutableList<Match>, savedEntities: List<MatchEntity>, baseMatch: Match, tournamentId: Int) {
         val saved = savedEntities.find { it.id == baseMatch.id }
+        val isFutureOrScheduled = baseMatch.isFutureMatch() || baseMatch.status.equals("Scheduled", ignoreCase = true)
         if (saved != null) {
-            // Si el remoto tiene score, preferimos SIEMPRE el remoto. Si no, usamos el local guardado.
-            val homeScore = baseMatch.getDisplayHomeScore() ?: saved.homeScore
-            val awayScore = baseMatch.getDisplayAwayScore() ?: saved.awayScore
-            val homePenalties = baseMatch.homePenalties ?: saved.homePenalties
-            val awayPenalties = baseMatch.awayPenalties ?: saved.awayPenalties
+            val homeScore = if (isFutureOrScheduled) null else (baseMatch.getDisplayHomeScore() ?: saved.homeScore)
+            val awayScore = if (isFutureOrScheduled) null else (baseMatch.getDisplayAwayScore() ?: saved.awayScore)
+            val homePenalties = if (isFutureOrScheduled) null else (baseMatch.homePenalties ?: saved.homePenalties)
+            val awayPenalties = if (isFutureOrScheduled) null else (baseMatch.awayPenalties ?: saved.awayPenalties)
             
-            // Si localmente ya estaba LIVE o Finished y el endpoint general devuelve Scheduled (por delay de BD o caché), preservar el estado avanzado
-            val status = if (baseMatch.status.equals("Scheduled", ignoreCase = true) && 
-                (saved.status.equals("LIVE", ignoreCase = true) || saved.status.equals("HALFTIME", ignoreCase = true) || saved.status.equals("Finished", ignoreCase = true))) {
-                saved.status
+            val status = if (baseMatch.isFutureMatch()) {
+                "Scheduled"
             } else {
                 baseMatch.status
             }
 
-            val homePossession = baseMatch.homePossession ?: saved.homePossession
-            val awayPossession = baseMatch.awayPossession ?: saved.awayPossession
-            val homeShots = baseMatch.homeShots ?: saved.homeShots
-            val awayShots = baseMatch.awayShots ?: saved.awayShots
-            val scorers = if (baseMatch.scorers.isNotEmpty()) baseMatch.scorers else (if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"))
-            val events = (if (baseMatch.events.isNotEmpty()) baseMatch.events else (if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|")))
+            val homePossession = if (isFutureOrScheduled) null else (baseMatch.homePossession ?: saved.homePossession)
+            val awayPossession = if (isFutureOrScheduled) null else (baseMatch.awayPossession ?: saved.awayPossession)
+            val homeShots = if (isFutureOrScheduled) null else (baseMatch.homeShots ?: saved.homeShots)
+            val awayShots = if (isFutureOrScheduled) null else (baseMatch.awayShots ?: saved.awayShots)
+            val scorers = if (isFutureOrScheduled) emptyList() else if (baseMatch.scorers.isNotEmpty()) baseMatch.scorers else (if (saved.scorers.isNullOrEmpty()) emptyList() else saved.scorers.split("|"))
+            val events = if (isFutureOrScheduled) emptyList() else (if (baseMatch.events.isNotEmpty()) baseMatch.events else (if (saved.events.isNullOrEmpty()) emptyList() else saved.events.split("|")))
                 .filter { !it.contains("upcoming", ignoreCase = true) && !it.contains("notification", ignoreCase = true) }
-            val vipStats = baseMatch.vipStats ?: saved.vipStats
-            val clock = baseMatch.clock ?: saved.clock
+            val vipStats = if (isFutureOrScheduled) null else (baseMatch.vipStats ?: saved.vipStats)
+            val clock = if (isFutureOrScheduled) null else (baseMatch.clock ?: saved.clock)
 
             targetList.add(baseMatch.copy(
                 tournament_id = tournamentId,
@@ -209,7 +207,21 @@ class WorldCupRepository(private val matchDao: MatchDao) {
             }
         } else {
             val finalTournamentId = baseMatch.tournament_id ?: tournamentId
-            val newMatch = baseMatch.copy(tournament_id = finalTournamentId)
+            val newMatch = if (isFutureOrScheduled) {
+                baseMatch.copy(
+                    tournament_id = finalTournamentId,
+                    homeScore = null,
+                    awayScore = null,
+                    homePenalties = null,
+                    awayPenalties = null,
+                    status = if (baseMatch.isFutureMatch()) "Scheduled" else baseMatch.status,
+                    scorers = emptyList(),
+                    events = emptyList(),
+                    clock = null
+                )
+            } else {
+                baseMatch.copy(tournament_id = finalTournamentId)
+            }
             targetList.add(newMatch)
             
             // FIX: Debemos insertar en la base de datos local si no existía, para que el Prode y el SyncWorker puedan usarlo!
