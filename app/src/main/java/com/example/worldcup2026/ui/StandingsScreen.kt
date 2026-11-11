@@ -2823,26 +2823,26 @@ fun LigaPlayoffsView(
 
         listOf(
             run {
-                val teamLocal = l1.winnerTeam ?: l1.localTeam
-                val teamVisit = l2.winnerTeam ?: l2.localTeam
+                val teamLocal = l1.winnerTeam
+                val teamVisit = l2.winnerTeam
                 val (m, w) = resolveMatch(teamLocal, teamVisit)
                 PlayoffLlaveItem(1, "CUARTO 1", "Ganador Llave 1", "Ganador Llave 2", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
             },
             run {
-                val teamLocal = l3.winnerTeam ?: l3.localTeam
-                val teamVisit = l4.winnerTeam ?: l4.localTeam
+                val teamLocal = l3.winnerTeam
+                val teamVisit = l4.winnerTeam
                 val (m, w) = resolveMatch(teamLocal, teamVisit)
                 PlayoffLlaveItem(2, "CUARTO 2", "Ganador Llave 3", "Ganador Llave 4", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
             },
             run {
-                val teamLocal = l5.winnerTeam ?: l5.localTeam
-                val teamVisit = l6.winnerTeam ?: l6.localTeam
+                val teamLocal = l5.winnerTeam
+                val teamVisit = l6.winnerTeam
                 val (m, w) = resolveMatch(teamLocal, teamVisit)
                 PlayoffLlaveItem(3, "CUARTO 3", "Ganador Llave 5", "Ganador Llave 6", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
             },
             run {
-                val teamLocal = l7.winnerTeam ?: l7.localTeam
-                val teamVisit = l8.winnerTeam ?: l8.localTeam
+                val teamLocal = l7.winnerTeam
+                val teamVisit = l8.winnerTeam
                 val (m, w) = resolveMatch(teamLocal, teamVisit)
                 PlayoffLlaveItem(4, "CUARTO 4", "Ganador Llave 7", "Ganador Llave 8", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
             }
@@ -2858,14 +2858,14 @@ fun LigaPlayoffsView(
 
         listOf(
             run {
-                val t1 = c1.winnerTeam ?: c1.localTeam
-                val t2 = c2.winnerTeam ?: c2.localTeam
+                val t1 = c1.winnerTeam
+                val t2 = c2.winnerTeam
                 val (m, w) = resolveMatch(t1, t2)
                 PlayoffLlaveItem(1, "SEMIFINAL 1", "Ganador Cuarto 1", "Ganador Cuarto 2", t1, t2, m, "Sede Neutral", w)
             },
             run {
-                val t1 = c3.winnerTeam ?: c3.localTeam
-                val t2 = c4.winnerTeam ?: c4.localTeam
+                val t1 = c3.winnerTeam
+                val t2 = c4.winnerTeam
                 val (m, w) = resolveMatch(t1, t2)
                 PlayoffLlaveItem(2, "SEMIFINAL 2", "Ganador Cuarto 3", "Ganador Cuarto 4", t1, t2, m, "Sede Neutral", w)
             }
@@ -2876,8 +2876,8 @@ fun LigaPlayoffsView(
     val finalLlave = remember(semiLlaves, matches) {
         val s1 = semiLlaves[0]
         val s2 = semiLlaves[1]
-        val t1 = s1.winnerTeam ?: s1.localTeam
-        val t2 = s2.winnerTeam ?: s2.localTeam
+        val t1 = s1.winnerTeam
+        val t2 = s2.winnerTeam
         val (m, w) = resolveMatch(t1, t2)
         listOf(
             PlayoffLlaveItem(1, "GRAN FINAL", "Ganador Semifinal 1", "Ganador Semifinal 2", t1, t2, m, "Sede Neutral (Ambas Hinchadas)", w)

@@ -431,6 +431,7 @@ fun DailyMatchesScreen(
                 filterLiveOnly = false
             },
             onSelectLiveOnly = {
+                selectedTournamentIds = setOf(0)
                 filterLiveOnly = true
             },
             onTournamentUpdated = {

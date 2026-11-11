@@ -223,13 +223,14 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     fun checkForUpdates() {
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                val url = java.net.URL("https://ellocodelpedal.duckdns.org/api/AppVersions/check?platform=ArenaMobile")
+                val url = java.net.URL("https://ellocodelpedal.duckdns.org/versions/updates.json")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
                 if (conn.responseCode == 200) {
                     val json = conn.inputStream.bufferedReader().use { it.readText() }
-                    val obj = org.json.JSONObject(json)
+                    val root = org.json.JSONObject(json)
+                    val obj = root.optJSONObject("arena_prode") ?: return@launch
                     val serverVersionCode = obj.optInt("versionCode", 0)
                     val notes = obj.optString("releaseNotes", "Nuevas mejoras y correcciones disponibles.")
                     
@@ -251,7 +252,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                         
                         _appUpdateInfo.value = update
                         
-                        // Si está en automático, dispara la descarga
+                        // Si está en automático, dispara la descarga silenciosa
                         if (isAutoUpdate) {
                             try {
                                 openDownloadUrlInChromeOrFallback(getApplication(), fullUrl)
