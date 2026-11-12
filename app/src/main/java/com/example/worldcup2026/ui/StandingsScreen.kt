@@ -3144,6 +3144,29 @@ fun LigaCopasYFinalesView(
     val supercopaIntMatch = remember(matches) { findCopaMatch(listOf("Supercopa Internacional"), listOf(27)) }
     val supercopaArgMatch = remember(matches) { findCopaMatch(listOf("Supercopa Argentina"), listOf(26)) }
 
+    val estudiantesTeam = remember(allTeams) {
+        allTeams.find { it.name.contains("Estudiantes", ignoreCase = true) && !it.name.contains("Río Cuarto", ignoreCase = true) && !it.name.contains("Buenos Aires", ignoreCase = true) }
+    }
+    val indRivadaviaTeam = remember(allTeams) {
+        allTeams.find { it.name.contains("Independiente Rivadavia", ignoreCase = true) }
+    }
+    val scTeam1 = supercopaArgMatch?.homeTeam ?: estudiantesTeam
+    val scTeam2 = supercopaArgMatch?.awayTeam ?: indRivadaviaTeam
+
+    val supercopaWinner = remember(supercopaArgMatch, scTeam1, scTeam2) {
+        if (supercopaArgMatch != null && supercopaArgMatch.status.uppercase() in listOf("FINISHED", "FT", "FINALIZADO")) {
+            val h = supercopaArgMatch.homeScore ?: 0
+            val a = supercopaArgMatch.awayScore ?: 0
+            if (h > a) supercopaArgMatch.homeTeam ?: scTeam1
+            else if (a > h) supercopaArgMatch.awayTeam ?: scTeam2
+            else {
+                val hp = supercopaArgMatch.homePenalties ?: 0
+                val ap = supercopaArgMatch.awayPenalties ?: 0
+                if (hp > ap) supercopaArgMatch.homeTeam ?: scTeam1 else supercopaArgMatch.awayTeam ?: scTeam2
+            }
+        } else null
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(10.dp),
@@ -3208,12 +3231,12 @@ fun LigaCopasYFinalesView(
         item {
             CopaFinalCard(
                 title = "SUPERCOPA ARGENTINA",
-                subTitle = "Campeón de Liga vs. Campeón Copa Argentina",
-                team1 = null,
-                team1Seed = "Campeón de Liga / Trofeo",
-                team2 = null,
+                subTitle = "Ganador Trofeo de Campeones vs. Campeón Copa Argentina",
+                team1 = scTeam1,
+                team1Seed = "Ganador Trofeo de Campeones",
+                team2 = scTeam2,
                 team2Seed = "Campeón Copa Argentina",
-                venue = "Sede Neutral (Ambas Hinchadas)",
+                venue = supercopaArgMatch?.stadium ?: "Estadio Julio César Villagra (Córdoba)",
                 officialBadge = "Copa Nacional Oficial AFA",
                 match = supercopaArgMatch,
                 onClick = { if (supercopaArgMatch != null) onMatchClick(supercopaArgMatch) }
@@ -3225,8 +3248,8 @@ fun LigaCopasYFinalesView(
             CopaFinalCard(
                 title = "RECOPA DE CAMPEONES / TROFEO DE LIGA",
                 subTitle = "Cruces y desempates clasificatorios de temporada",
-                team1 = null,
-                team1Seed = "Finalista / Ganador Clasificatorio",
+                team1 = supercopaWinner,
+                team1Seed = if (supercopaWinner != null) "Campeón Supercopa Argentina (${supercopaWinner.name})" else "Campeón Supercopa Argentina (Estudiantes o Ind. Rivadavia)",
                 team2 = null,
                 team2Seed = "Finalista de Temporada",
                 venue = "Sede Neutral Designada por AFA",
