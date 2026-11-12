@@ -335,10 +335,14 @@ fun DayFilteredFixture(
     val isCupOrFriendly = remember(matches, isCopaArgentinaOnly, isLibertadoresOnly, isSudamericanaOnly) { 
         !isCopaArgentinaOnly && !isLibertadoresOnly && !isSudamericanaOnly && matches.any { it.tournament_id in listOf(6, 14, 27) } 
     }
-    val matchdays = remember(matches, isCupOrFriendly, isCopaArgentinaOnly) {
+    val matchdays = remember(matches, isCupOrFriendly, isCopaArgentinaOnly, isLigaProfesionalOnly) {
         if (isCopaArgentinaOnly) listOf(1, 2, 3, 4, 5, 6)
+        else if (isLigaProfesionalOnly) {
+            // Fechas 1 a 16 (fase regular) y luego 17 (Octavos), 18 (Cuartos), 19 (Semis), 20 (Final)
+            matches.mapNotNull { it.matchday }.filter { it in 1..20 }.distinct().sorted()
+        }
         else if (isCupOrFriendly) emptyList()
-        else matches.mapNotNull { it.matchday }.filter { it > 0 }.distinct().sorted()
+        else matches.mapNotNull { it.matchday }.filter { it > 0 && it < 100 }.distinct().sorted()
     }
     
     val defaultMatchday = remember(matchdays, matches) {
