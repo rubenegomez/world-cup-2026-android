@@ -329,6 +329,9 @@ fun DayFilteredFixture(
     val isSudamericanaOnly = remember(matches) {
         matches.isNotEmpty() && matches.all { it.tournament_id == 4 }
     }
+    val isLigaProfesionalOnly = remember(matches) {
+        matches.isNotEmpty() && matches.all { it.tournament_id == 5 }
+    }
     val isCupOrFriendly = remember(matches, isCopaArgentinaOnly, isLibertadoresOnly, isSudamericanaOnly) { 
         !isCopaArgentinaOnly && !isLibertadoresOnly && !isSudamericanaOnly && matches.any { it.tournament_id in listOf(6, 14, 27) } 
     }
@@ -509,6 +512,14 @@ fun DayFilteredFixture(
                                 isPrimeraBOnly -> getPrimeraBStageName(mDay)
                                 isLibertadoresOnly -> getLibertadoresStageName(mDay)
                                 isSudamericanaOnly -> getSudamericanaStageName(mDay)
+                                isLigaProfesionalOnly || matches.any { it.tournament_id == 5 && it.matchday == mDay } -> when (mDay) {
+                                    17 -> "Octavos"
+                                    18 -> "Cuartos"
+                                    19 -> "Semifinal"
+                                    20 -> "Final"
+                                    105 -> "Supercopa"
+                                    else -> "Fecha $mDay"
+                                }
                                 else -> "Fecha $mDay"
                             }
                             Text(
@@ -801,7 +812,18 @@ fun MatchCard(
                     }
                 }
                 5 -> { // Liga Profesional
-                    if (match.matchday != null && match.matchday > 0) {
+                    val isSupercopa = match.matchday == 105 || match.city?.contains("Supercopa", ignoreCase = true) == true || match.stadium?.contains("Supercopa", ignoreCase = true) == true
+                    if (isSupercopa) {
+                        "Final"
+                    } else if (match.matchday == 17) {
+                        "Octavos"
+                    } else if (match.matchday == 18) {
+                        "Cuartos"
+                    } else if (match.matchday == 19) {
+                        "Semifinal"
+                    } else if (match.matchday == 20) {
+                        "Final"
+                    } else if (match.matchday != null && match.matchday > 0) {
                         "Fecha ${match.matchday}"
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
@@ -904,7 +926,9 @@ fun MatchCard(
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     if (!tournamentName.isNullOrBlank()) {
+                        val isSupercopa = match.matchday == 105 || match.city?.contains("Supercopa", ignoreCase = true) == true || match.stadium?.contains("Supercopa", ignoreCase = true) == true
                         val cleanTournamentName = when {
+                            isSupercopa -> "Supercopa Argentina"
                             tournamentName.contains("B Metropolitana", ignoreCase = true) -> "B Metropolitana"
                             tournamentName.contains("Liga Profesional", ignoreCase = true) -> "Liga Profesional"
                             tournamentName.contains("Primera Nacional", ignoreCase = true) -> "Primera Nacional"
@@ -1150,8 +1174,8 @@ fun MatchCard(
                 } || match.scorers.isNotEmpty()
             }
 
-            if (isLive && hasLiveEvents) {
-                // Durante el partido: línea de tiempo con goles, tarjetas y cambios
+            if (hasLiveEvents) {
+                // Tanto en vivo como finalizado: línea de tiempo completa con goles, tarjetas y cambios
                 Spacer(modifier = Modifier.height(12.dp))
                 MatchTimelineView(match = match)
             } else if (isFinished && match.scorers.isNotEmpty()) {
@@ -1215,17 +1239,20 @@ fun MatchCard(
                 }
             }
 
-            if (isFinished) {
+            if (isFinished || isLive) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { onShowVipStats(match) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isLive) Color(0xFFE53935).copy(alpha = 0.35f) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        contentColor = if (isLive) Color(0xFFFFD700) else MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("VER ESTADÍSTICAS VIP", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    Text(if (isLive) "ESTADÍSTICAS VIP (EN VIVO)" else "VER ESTADÍSTICAS VIP", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 }
             }
 
