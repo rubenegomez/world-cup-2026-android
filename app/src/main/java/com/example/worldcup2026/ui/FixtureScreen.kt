@@ -3123,8 +3123,10 @@ fun MatchLiveStatusBadge(
 
     val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") ||
             clockLower.contains("pens") || statusUpper == "PENALES" || statusUpper.contains("PENAL")
+    val clockBaseMinute = Regex("^(\\d+)").find(clockLower.trim())?.groupValues?.get(1)?.toIntOrNull()
     val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") ||
-            clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet")
+            clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
+            (clockBaseMinute != null && clockBaseMinute > 90)
 
     // Calcular segundos transcurridos desde el inicio
     val elapsedSeconds = remember(parsedStartDate, currentTime) {
@@ -3137,7 +3139,10 @@ fun MatchLiveStatusBadge(
     // Cronómetro dinámico o minuto oficial
     val (labelText, labelColor) = when {
         isPenalties -> "Penales" to Color(0xFFE91E63)
-        isExtraTime -> "Alargue" to Color(0xFF9C27B0)
+        isExtraTime -> {
+            val extraLabel = if (!clock.isNullOrBlank() && !clockLower.contains("alargue")) "Alargue $clock" else "Alargue"
+            extraLabel to Color(0xFF9C27B0)
+        }
         isWaterBreak -> "Pausa Hidratación" to Color(0xFF03A9F4)
         isHalftime -> {
             if (elapsedSeconds != null && elapsedSeconds in (45 * 60)..(64 * 60)) {
