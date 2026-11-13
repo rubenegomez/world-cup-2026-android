@@ -3557,6 +3557,15 @@ fun getSudamericanaStageName(md: Int): String = when (md) {
     else -> "Fase $md"
 }
 
+fun getLigaProfesionalStageName(md: Int): String = when (md) {
+    17 -> "Octavos"
+    18 -> "Cuartos"
+    19 -> "Semifinal"
+    20 -> "Final"
+    105 -> "Supercopa"
+    else -> "Fecha $md"
+}
+
 @Composable
 fun TournamentFixtureView(
     matches: List<Match>,
@@ -3612,8 +3621,12 @@ fun TournamentFixtureView(
         processedMatches.groupBy { it.matchday ?: 1 }.toSortedMap()
     }
 
-    val matchdaysList = remember(matchdaysGrouped, isCopaArgentina) {
-        if (isCopaArgentina) listOf(1, 2, 3, 4, 5, 6) else matchdaysGrouped.keys.toList()
+    val matchdaysList = remember(matchdaysGrouped, isCopaArgentina, isLigaProfesional) {
+        when {
+            isCopaArgentina -> listOf(1, 2, 3, 4, 5, 6)
+            isLigaProfesional -> matchdaysGrouped.keys.filter { it in 1..20 }
+            else -> matchdaysGrouped.keys.toList()
+        }
     }
     val knockoutTabs = remember(isLigaProfesional) {
         if (isLigaProfesional) {
@@ -3708,6 +3721,7 @@ fun TournamentFixtureView(
                                     isPrimeraB -> getPrimeraBStageName(md)
                                     isLibertadores -> getLibertadoresStageName(md)
                                     isSudamericana -> getSudamericanaStageName(md)
+                                    isLigaProfesional -> getLigaProfesionalStageName(md)
                                     isAmistosos -> "Jornada $md"
                                     else -> "Fecha $md"
                                 },

@@ -349,7 +349,7 @@ fun DayFilteredFixture(
         val active = matches.firstOrNull { 
             val st = it.status.uppercase()
             val hasScores = it.homeScore != null && it.awayScore != null
-            (st == "LIVE" || (st == "SCHEDULED" && !hasScores) || st == "HALFTIME") && it.matchday != null && it.matchday > 0 
+            (st == "LIVE" || (st == "SCHEDULED" && !hasScores) || st == "HALFTIME") && it.matchday != null && it.matchday in matchdays
         }?.matchday
         active ?: matchdays.lastOrNull()
     }

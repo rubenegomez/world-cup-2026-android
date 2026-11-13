@@ -97,8 +97,12 @@ fun DailyMatchesScreen(
         } else emptyList()
     }
 
-    val availableMatchdays = remember(tournamentMatches) {
-        tournamentMatches.mapNotNull { it.matchday ?: if (it.tournament_id == 1 && it.id in 1..72) ((it.id - 1) / 16 + 1) else null }.filter { it > 0 }.distinct().sorted()
+    val availableMatchdays = remember(tournamentMatches, singleSelectedTourneyId) {
+        tournamentMatches
+            .mapNotNull { it.matchday ?: if (it.tournament_id == 1 && it.id in 1..72) ((it.id - 1) / 16 + 1) else null }
+            .filter { if (singleSelectedTourneyId == 5) it in 1..20 else it > 0 }
+            .distinct()
+            .sorted()
     }
 
     LaunchedEffect(singleSelectedTourneyId, availableMatchdays, date) {
@@ -320,8 +324,20 @@ fun DailyMatchesScreen(
                         )
                     }
 
+                    val matchdayHeaderLabel = if (singleSelectedTourneyId == 5) {
+                        when (selectedMatchday) {
+                            17 -> "🏆 OCTAVOS DE FINAL"
+                            18 -> "🏆 CUARTOS DE FINAL"
+                            19 -> "🏆 SEMIFINALES"
+                            20 -> "🏆 GRAN FINAL"
+                            105 -> "🏆 SUPERCOPA ARGENTINA"
+                            else -> "⚽ FECHA $selectedMatchday DE 16"
+                        }
+                    } else {
+                        "⚽ FECHA $selectedMatchday DE ${availableMatchdays.maxOrNull() ?: 0}"
+                    }
                     Text(
-                        text = "⚽ FECHA $selectedMatchday DE ${availableMatchdays.maxOrNull() ?: 0} (${displayedMatches.size} partidos)",
+                        text = "$matchdayHeaderLabel (${displayedMatches.size} partidos)",
                         fontWeight = FontWeight.Black,
                         fontSize = 12.sp,
                         color = Color(0xFFFFD700)
