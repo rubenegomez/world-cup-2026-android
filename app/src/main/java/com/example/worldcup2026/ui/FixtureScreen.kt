@@ -3123,10 +3123,8 @@ fun MatchLiveStatusBadge(
 
     val isPenalties = clockLower.contains("penal") || clockLower.contains("shootout") || clockLower.contains("penalties") ||
             clockLower.contains("pens") || statusUpper == "PENALES" || statusUpper.contains("PENAL")
-    val clockBaseMinute = Regex("^(\\d+)").find(clockLower.trim())?.groupValues?.get(1)?.toIntOrNull()
     val isExtraTime = clockLower.contains("extra") || clockLower.contains("overtime") || clockLower.contains("alargue") ||
-            clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet") ||
-            (clockBaseMinute != null && clockBaseMinute > 90)
+            clockLower.contains("prórroga") || clockLower.contains("prorrogas") || clockLower.contains("aet")
 
     // Calcular segundos transcurridos desde el inicio
     val elapsedSeconds = remember(parsedStartDate, currentTime) {
