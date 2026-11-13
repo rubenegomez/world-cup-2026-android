@@ -3628,13 +3628,13 @@ fun TournamentFixtureView(
             else -> matchdaysGrouped.keys.toList()
         }
     }
-    val knockoutTabs = remember(isLigaProfesional) {
+    val knockoutTabs = remember(isLigaProfesional, matchdaysList) {
         if (isLigaProfesional) {
-            listOf(
-                101 to "OCTAVOS",
-                102 to "CUARTOS",
-                103 to "SEMIFINAL",
-                104 to "FINAL",
+            listOfNotNull(
+                if (17 !in matchdaysList) 101 to "OCTAVOS" else null,
+                if (18 !in matchdaysList) 102 to "CUARTOS" else null,
+                if (19 !in matchdaysList) 103 to "SEMIFINAL" else null,
+                if (20 !in matchdaysList) 104 to "FINAL" else null,
                 105 to "COPAS Y FINALES"
             )
         } else emptyList()
@@ -3809,6 +3809,7 @@ fun TournamentFixtureView(
                 isPrimeraB -> getPrimeraBStageName(selectedMatchday).uppercase()
                 isLibertadores -> getLibertadoresStageName(selectedMatchday).uppercase()
                 isSudamericana -> getSudamericanaStageName(selectedMatchday).uppercase()
+                isLigaProfesional -> getLigaProfesionalStageName(selectedMatchday).uppercase()
                 isAmistosos -> "AMISTOSOS · JORNADA $selectedMatchday"
                 else -> "FECHA $selectedMatchday"
             }
