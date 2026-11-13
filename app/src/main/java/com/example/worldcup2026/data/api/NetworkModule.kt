@@ -105,51 +105,7 @@ interface WorldCupApiService {
         @Query("email") email: String,
         @retrofit2.http.Body req: RescheduleMatchRequest
     ): retrofit2.Response<RescheduleMatchResponse>
-
-    @retrofit2.http.POST("api/ai/route")
-    suspend fun routeAiModel(
-        @retrofit2.http.Body req: AiRouteRequest
-    ): AiRouteResponse
-
-    @GET("api/ai/status")
-    suspend fun getAiRouterStatus(): AiRouterStatusResponse
-
-    @retrofit2.http.POST("api/ai/circuit-breaker")
-    suspend fun setAiCircuitBreaker(
-        @retrofit2.http.Body req: AiCircuitBreakerRequest
-    ): AiCircuitBreakerResponse
 }
-
-data class AiRouteRequest(
-    val prompt: String,
-    val task_type: String? = null,
-    val prefer_provider: String? = null
-)
-
-data class AiRouteResponse(
-    val requested_tier: String,
-    val effective_tier: String,
-    val selected_model: String,
-    val fallback_applied: Boolean,
-    val circuit_breaker_active: Boolean,
-    val prompt_length: Int,
-    val task_type: String? = null
-)
-
-data class AiRouterStatusResponse(
-    val tiers: Map<String, List<String>>,
-    val circuit_breakers: Map<String, Boolean>
-)
-
-data class AiCircuitBreakerRequest(
-    val tier: String,
-    val is_open: Boolean
-)
-
-data class AiCircuitBreakerResponse(
-    val message: String,
-    val status: AiRouterStatusResponse
-)
 
 data class RescheduleMatchRequest(
     val match_id: Int,
