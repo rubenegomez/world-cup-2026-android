@@ -150,7 +150,7 @@ fun TournamentHeaderButton(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (onEditTournament != null && selectedTournamentId != null && selectedTournamentId > 0 && !filterLiveOnly) {
+                if (com.example.worldcup2026.data.api.AuthManager.isAdmin() && onEditTournament != null && selectedTournamentId != null && selectedTournamentId > 0 && !filterLiveOnly) {
                     IconButton(
                         onClick = { onEditTournament(selectedTournamentId) },
                         modifier = Modifier.size(28.dp)
@@ -192,6 +192,9 @@ fun TournamentSelectorModal(
     onTournamentUpdated: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isAdmin = remember(com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()) {
+        com.example.worldcup2026.data.api.AuthManager.isAdmin()
+    }
     var editingTournamentId by remember { mutableStateOf<Int?>(null) }
     var versionTrigger by remember { mutableIntStateOf(0) }
 
@@ -202,7 +205,7 @@ fun TournamentSelectorModal(
         }
     }
 
-    if (editingTournamentId != null) {
+    if (isAdmin && editingTournamentId != null) {
         val tId = editingTournamentId!!
         val initialName = MasterTeamCatalog.getTournamentDisplayName(context, tId)
         val initialLogo = MasterTeamCatalog.getTournamentLogo(context, tId)
@@ -504,7 +507,9 @@ fun TournamentSelectorModal(
                                                                     onDismiss()
                                                                 },
                                                                 onLongClick = {
-                                                                    editingTournamentId = item.id
+                                                                    if (isAdmin) {
+                                                                        editingTournamentId = item.id
+                                                                    }
                                                                 }
                                                             ),
                                                         contentAlignment = Alignment.Center

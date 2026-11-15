@@ -660,6 +660,8 @@ fun MatchCard(
     var showGameRules by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
     var editingTeamTarget by remember { mutableStateOf<Team?>(null) }
+    val currentUserEmail = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()
+    val isAdmin = remember(currentUserEmail) { com.example.worldcup2026.data.api.AuthManager.isAdmin() }
 
     val rawStatusUpper = match.status.uppercase()
     val hasFav = match.homeTeam.name in favoriteTeamNames || match.awayTeam.name in favoriteTeamNames
@@ -982,7 +984,6 @@ fun MatchCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    val isAdmin = remember { com.example.worldcup2026.data.api.AuthManager.isAdmin() }
                     var showAdminDialog by remember { mutableStateOf(false) }
 
                     if (isAdmin) {
@@ -1024,7 +1025,7 @@ fun MatchCard(
                             )
                         }
 
-                        if (editingTeamTarget != null) {
+                        if (isAdmin && editingTeamTarget != null) {
                             AdminEditTeamDialog(
                                 team = editingTeamTarget!!,
                                 onDismiss = { editingTeamTarget = null },
@@ -1085,7 +1086,7 @@ fun MatchCard(
                     penalties = if (hasPenalties) match.homePenalties else null,
                     isFavorite = match.homeTeam.name in favoriteTeamNames,
                     isQualified = isHomeQualified,
-                    onEditTeam = { editingTeamTarget = match.homeTeam }
+                    onEditTeam = if (isAdmin) { { editingTeamTarget = match.homeTeam } } else null
                 )
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1165,7 +1166,7 @@ fun MatchCard(
                     penalties = if (hasPenalties) match.awayPenalties else null,
                     isFavorite = match.awayTeam.name in favoriteTeamNames,
                     isQualified = isAwayQualified,
-                    onEditTeam = { editingTeamTarget = match.awayTeam }
+                    onEditTeam = if (isAdmin) { { editingTeamTarget = match.awayTeam } } else null
                 )
             }
  
@@ -1871,7 +1872,7 @@ fun TeamMatchInfo(
             .width(100.dp)
             .clip(RoundedCornerShape(12.dp))
             .then(
-                if (onEditTeam != null) {
+                if (onEditTeam != null && com.example.worldcup2026.data.api.AuthManager.isAdmin()) {
                     Modifier.combinedClickable(
                         onClick = { onEditTeam() },
                         onLongClick = { onEditTeam() }
@@ -3222,6 +3223,10 @@ fun AdminMatchDialog(
     onDeleteMatch: (() -> Unit)? = null,
     onTeamUpdated: (() -> Unit)? = null
 ) {
+    if (!com.example.worldcup2026.data.api.AuthManager.isAdmin()) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
     var homeScoreStr by remember { mutableStateOf(match.homeScore?.toString() ?: "") }
     var awayScoreStr by remember { mutableStateOf(match.awayScore?.toString() ?: "") }
     var selectedStatus by remember { mutableStateOf(match.status) }

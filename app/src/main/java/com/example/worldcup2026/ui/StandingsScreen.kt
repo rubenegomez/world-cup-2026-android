@@ -533,12 +533,15 @@ fun StandingsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        val isAdmin = remember(com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()) {
+            com.example.worldcup2026.data.api.AuthManager.isAdmin()
+        }
         var showTournamentSelector by remember { mutableStateOf(false) }
         var editingTournamentId by remember { mutableStateOf<Int?>(null) }
         var updateTrigger by remember { mutableIntStateOf(0) }
         val context = LocalContext.current
 
-        if (editingTournamentId != null) {
+        if (isAdmin && editingTournamentId != null) {
             val tId = editingTournamentId!!
             AdminEditTournamentDialog(
                 tournamentId = tId,
@@ -589,7 +592,7 @@ fun StandingsScreen(
             selectedTournamentId = tournamentId,
             filterLiveOnly = false,
             onOpenSelector = { showTournamentSelector = true },
-            onEditTournament = { editingTournamentId = it },
+            onEditTournament = if (isAdmin) { { editingTournamentId = it } } else null,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
         )
 

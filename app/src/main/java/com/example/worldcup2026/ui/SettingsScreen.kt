@@ -438,8 +438,8 @@ fun SettingsMenuScreen(
             }
         }
         // Sección de Pruebas y Simulación (Exclusiva para Desarrollo / Administrador)
-        val isAdminUser = user != null && (user.email?.contains("ruben", ignoreCase = true) == true || user.email?.contains("admin", ignoreCase = true) == true)
-        val isDevMode = com.example.worldcup2026.BuildConfig.DEBUG || isAdminUser
+        val isAdminUser = com.example.worldcup2026.data.api.AuthManager.isAdmin()
+        val isDevMode = isAdminUser
 
         if (isDevMode) {
             item {
@@ -723,12 +723,15 @@ fun TeamsListScreen(
 ) {
     val context = LocalContext.current
     val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
+    val isAdmin = remember(com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()) {
+        com.example.worldcup2026.data.api.AuthManager.isAdmin()
+    }
     var selectedTab by remember { mutableIntStateOf(0) }
     var favoriteTournamentId by remember { mutableIntStateOf(sharedPrefs.getInt("favorite_tournament_id", 5)) }
     var updateTrigger by remember { mutableIntStateOf(0) }
     var editingTournamentId by remember { mutableStateOf<Int?>(null) }
 
-    if (editingTournamentId != null) {
+    if (isAdmin && editingTournamentId != null) {
         val tId = editingTournamentId!!
         AdminEditTournamentDialog(
             tournamentId = tId,
@@ -847,7 +850,9 @@ fun TeamsListScreen(
                                     viewModel.toggleFavoriteTournament(t.id)
                                 },
                                 onLongClick = {
-                                    editingTournamentId = t.id
+                                    if (isAdmin) {
+                                        editingTournamentId = t.id
+                                    }
                                 }
                             ),
                         colors = CardDefaults.cardColors(
@@ -893,18 +898,20 @@ fun TeamsListScreen(
                             }
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(
-                                    onClick = { editingTournamentId = t.id },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = "Editar Torneo",
-                                        tint = Color(0xFFFFD700),
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                if (isAdmin) {
+                                    IconButton(
+                                        onClick = { editingTournamentId = t.id },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Edit,
+                                            contentDescription = "Editar Torneo",
+                                            tint = Color(0xFFFFD700),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(4.dp))
                                 }
-                                Spacer(modifier = Modifier.width(4.dp))
                                 Icon(
                                     imageVector = if (isFav) Icons.Default.Star else Icons.Outlined.StarBorder,
                                     contentDescription = "Torneo Favorito",

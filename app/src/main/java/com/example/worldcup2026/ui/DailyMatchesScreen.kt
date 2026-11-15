@@ -183,7 +183,9 @@ fun DailyMatchesScreen(
                 selectedTournamentId = singleSelectedTourneyId,
                 filterLiveOnly = false,
                 onOpenSelector = { showTournamentSelectorDialog = true },
-                onEditTournament = { editingTournamentId = it },
+                onEditTournament = if (com.example.worldcup2026.data.api.AuthManager.isAdmin()) {
+                    { editingTournamentId = it }
+                } else null,
                 modifier = Modifier.weight(1f)
             )
 
@@ -458,7 +460,7 @@ fun DailyMatchesScreen(
     }
 
     // Diálogo de edición de símbolo y nombre del torneo
-    if (editingTournamentId != null) {
+    if (com.example.worldcup2026.data.api.AuthManager.isAdmin() && editingTournamentId != null) {
         val tId = editingTournamentId!!
         AdminEditTournamentDialog(
             tournamentId = tId,

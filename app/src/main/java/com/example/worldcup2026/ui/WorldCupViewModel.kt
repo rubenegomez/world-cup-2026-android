@@ -485,6 +485,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateMatchScore(matchId: Int, homeScore: Int?, awayScore: Int?) {
+        if (!com.example.worldcup2026.data.api.AuthManager.isAdmin()) return
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             val match = currentState.matches.find { it.id == matchId } ?: return@launch
@@ -522,6 +523,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun updateMatchStatus(matchId: Int, status: String) {
+        if (!com.example.worldcup2026.data.api.AuthManager.isAdmin()) return
         viewModelScope.launch {
             val currentState = _uiState.value as? WorldCupUiState.Success ?: return@launch
             val match = currentState.matches.find { it.id == matchId }
@@ -546,6 +548,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun syncAdminMatchToBackend(matchId: Int, homeScore: Int?, awayScore: Int?, status: String) {
+        if (!com.example.worldcup2026.data.api.AuthManager.isAdmin()) return
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 com.example.worldcup2026.data.api.NetworkModule.apiService.updateMatchAdmin(
