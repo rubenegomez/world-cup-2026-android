@@ -146,8 +146,10 @@ fun SettingsMenuScreen(
     val context = LocalContext.current
     val authManager = remember { AuthManager(context) }
     val coroutineScope = rememberCoroutineScope()
-    
-    val user = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+    val currentEmail = com.example.worldcup2026.data.api.AuthManager.currentEmailState.value
+    val user = remember(isAuthenticated, currentEmail) {
+        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -723,9 +725,7 @@ fun TeamsListScreen(
 ) {
     val context = LocalContext.current
     val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
-    val isAdmin = remember(com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()) {
-        com.example.worldcup2026.data.api.AuthManager.isAdmin()
-    }
+    val isAdmin = com.example.worldcup2026.data.api.AuthManager.isAdmin()
     var selectedTab by remember { mutableIntStateOf(0) }
     var favoriteTournamentId by remember { mutableIntStateOf(sharedPrefs.getInt("favorite_tournament_id", 5)) }
     var updateTrigger by remember { mutableIntStateOf(0) }
@@ -849,11 +849,9 @@ fun TeamsListScreen(
                                 onClick = {
                                     viewModel.toggleFavoriteTournament(t.id)
                                 },
-                                onLongClick = {
-                                    if (isAdmin) {
-                                        editingTournamentId = t.id
-                                    }
-                                }
+                                onLongClick = if (isAdmin) {
+                                    { editingTournamentId = t.id }
+                                } else null
                             ),
                         colors = CardDefaults.cardColors(
                             containerColor = if (isFav) Color(0xFFFFC107).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

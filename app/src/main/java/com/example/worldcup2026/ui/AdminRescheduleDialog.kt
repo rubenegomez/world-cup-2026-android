@@ -46,6 +46,10 @@ fun AdminRescheduleDialog(
     onDismiss: () -> Unit,
     onSuccess: (updatedCount: Int) -> Unit
 ) {
+    if (!AuthManager.isAdmin()) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
@@ -66,7 +70,7 @@ fun AdminRescheduleDialog(
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var isErrorMessage by remember { mutableStateOf(false) }
 
-    val adminEmail = remember { AuthManager.ADMIN_EMAIL }
+    val adminEmail = remember { AuthManager.getCurrentUserEmail()?.takeIf { AuthManager.isAdmin() } ?: "" }
 
     // Torneos principales para reprogramación
     val tournamentOptions = remember {

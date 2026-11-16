@@ -32,6 +32,11 @@ fun AdminEditTournamentDialog(
     var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var isUploading by remember { mutableStateOf(false) }
 
+    if (!com.example.worldcup2026.data.api.AuthManager.isAdmin()) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
+
     val context = androidx.compose.ui.platform.LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -163,7 +168,10 @@ fun AdminEditTournamentDialog(
                             MasterTeamCatalog.saveCustomTournament(context, tournamentId, finalName, finalLogo)
 
                             val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()?.takeIf { it.isNotBlank() }
-                                ?: com.example.worldcup2026.data.api.AuthManager.ADMIN_EMAIL
+                            if (!com.example.worldcup2026.data.api.AuthManager.isAdmin() || email == null) {
+                                android.widget.Toast.makeText(context, "Acción permitida solo para administrador autenticado", android.widget.Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
 
                             var definitiveLogo = finalLogo
                             var definitiveName = finalName

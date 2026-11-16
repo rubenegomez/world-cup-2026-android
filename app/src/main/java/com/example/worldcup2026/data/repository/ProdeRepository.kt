@@ -18,6 +18,7 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
     
     companion object {
         var authToken: String? = null
+        val authenticatedEmailState = androidx.compose.runtime.mutableStateOf<String?>(null)
     }
         
     var currentUser: UserDto? = null
@@ -26,6 +27,7 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
     fun logout() {
         authToken = null
         currentUser = null
+        authenticatedEmailState.value = null
     }
 
     suspend fun authenticateWithFirebase(firebaseToken: String): Boolean {
@@ -33,6 +35,7 @@ class ProdeRepository(private val leagueDao: LeagueDao) {
             val response = api.authFirebase(FirebaseTokenRequest(firebaseToken))
             authToken = "Bearer ${response.token}"
             currentUser = response.user
+            authenticatedEmailState.value = response.user.email.trim()
             true
         } catch (e: Exception) {
             if (e is retrofit2.HttpException) {

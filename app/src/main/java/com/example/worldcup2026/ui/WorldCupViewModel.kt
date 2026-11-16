@@ -1031,7 +1031,8 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
         } else {
             all
         }
-        return applyComodinPersistence(combined.distinctBy { it.id })
+        val propagated = KnockoutCalculator.propagateTournamentKnockouts(combined.distinctBy { it.id })
+        return applyComodinPersistence(propagated)
     }
 
     private fun startAutoSync(matches: List<Match>) {

@@ -533,9 +533,7 @@ fun StandingsScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        val isAdmin = remember(com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()) {
-            com.example.worldcup2026.data.api.AuthManager.isAdmin()
-        }
+        val isAdmin = com.example.worldcup2026.data.api.AuthManager.isAdmin()
         var showTournamentSelector by remember { mutableStateOf(false) }
         var editingTournamentId by remember { mutableStateOf<Int?>(null) }
         var updateTrigger by remember { mutableIntStateOf(0) }
@@ -3886,23 +3884,49 @@ fun TournamentFixtureView(
             }
 
             if ((matchesForSelectedMatchday.isEmpty() || selectedMatchday == 6) && isCopaArgentina) {
-                Box(
+                val semiMatches = matches.filter { it.matchday == 5 }.sortedWith(compareBy({ it.date ?: "" }, { it.id }))
+                val semiWinners = semiMatches.mapNotNull { com.example.worldcup2026.data.util.KnockoutCalculator.getWinner(it) }
+                val finalMatch = matchesForSelectedMatchday.firstOrNull()
+                val rawHome = finalMatch?.homeTeam?.takeIf { !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(it) }
+                val rawAway = finalMatch?.awayTeam?.takeIf { !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(it) }
+                val team1 = rawHome ?: semiWinners.getOrNull(0)
+                val team2 = rawAway ?: semiWinners.firstOrNull { it.id != team1?.id } ?: semiWinners.getOrNull(1)
+                val team1Seed = semiMatches.getOrNull(0)?.let { "Ganador Semifinal 1 (${it.homeTeam.name} vs. ${it.awayTeam.name})" } ?: "Ganador Semifinal 1"
+                val team2Seed = semiMatches.getOrNull(1)?.let { "Ganador Semifinal 2 (${it.homeTeam.name} vs. ${it.awayTeam.name})" } ?: "Ganador Semifinal 2"
+                val venueText = listOfNotNull(
+                    finalMatch?.stadium?.takeIf { it.isNotBlank() },
+                    finalMatch?.city?.takeIf { it.isNotBlank() }
+                ).joinToString(" · ").ifBlank { "Sede Neutral (A confirmar)" }
+                val dateSuffix = finalMatch?.date?.take(10)?.takeIf { it.isNotBlank() }?.let { " - $it" } ?: ""
+
+                LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(16.dp),
-                    contentAlignment = Alignment.TopCenter
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    val finalMatch = matchesForSelectedMatchday.firstOrNull()
-                    CopaFinalCard(
-                        title = "GRAN FINAL · COPA ARGENTINA 2026",
-                        subTitle = "Definición a partido único en sede neutral",
-                        team1 = matches.flatMap { listOf(it.homeTeam, it.awayTeam) }.find { it.name.contains("Platense", ignoreCase = true) },
-                        team1Seed = "Ganador Semifinal 1 (Platense)",
-                        team2 = null,
-                        team2Seed = "Ganador Semifinal 2 (Banfield vs. Boca Juniors)",
-                        venue = "Sede Neutral (A confirmar - 2 de diciembre)",
-                        officialBadge = "Final Copa Argentina",
-                        match = finalMatch,
-                        onClick = { finalMatch?.let(onMatchClick) }
-                    )
+                    item {
+                        CopaFinalCard(
+                            title = "GRAN FINAL · COPA ARGENTINA 2026",
+                            subTitle = "Definición a partido único en sede neutral",
+                            team1 = team1,
+                            team1Seed = team1?.name ?: team1Seed,
+                            team2 = team2,
+                            team2Seed = team2?.name ?: team2Seed,
+                            venue = venueText + dateSuffix,
+                            officialBadge = "Final Copa Argentina",
+                            match = finalMatch,
+                            onClick = { finalMatch?.let(onMatchClick) }
+                        )
+                    }
+                    if (finalMatch != null) {
+                        item {
+                            FixtureMatchCard(
+                                match = finalMatch,
+                                onClick = { onMatchClick(finalMatch) }
+                            )
+                        }
+                    }
                 }
             } else {
                 LazyColumn(

@@ -192,16 +192,20 @@ fun TournamentSelectorModal(
     onTournamentUpdated: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val isAdmin = remember(com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()) {
-        com.example.worldcup2026.data.api.AuthManager.isAdmin()
-    }
+    val isAdmin = com.example.worldcup2026.data.api.AuthManager.isAdmin()
     var editingTournamentId by remember { mutableStateOf<Int?>(null) }
     var versionTrigger by remember { mutableIntStateOf(0) }
 
-    // Estados colapsables por categoría (todas desplegadas por defecto)
-    val expandedCategories = remember {
+    val prefs = remember(context) {
+        context.getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
+    // Estados colapsables por categoría persistidos en SharedPreferences
+    val expandedCategories = remember(prefs) {
         mutableStateMapOf<String, Boolean>().apply {
-            CATEGORIES_ORDER.forEach { cat -> put(cat.key, true) }
+            CATEGORIES_ORDER.forEach { cat ->
+                put(cat.key, prefs.getBoolean("tournament_selector_cat_expanded_${cat.key}", true))
+            }
         }
     }
 
@@ -397,7 +401,9 @@ fun TournamentSelectorModal(
                                         .fillMaxWidth()
                                         .clickable {
                                             com.example.worldcup2026.data.util.SoundManager.playTic()
-                                            expandedCategories[categoryDef.key] = !isExpanded
+                                            val newState = !isExpanded
+                                            expandedCategories[categoryDef.key] = newState
+                                            prefs.edit().putBoolean("tournament_selector_cat_expanded_${categoryDef.key}", newState).apply()
                                         },
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(
@@ -506,11 +512,9 @@ fun TournamentSelectorModal(
                                                                     onSelectTournament(item.id)
                                                                     onDismiss()
                                                                 },
-                                                                onLongClick = {
-                                                                    if (isAdmin) {
-                                                                        editingTournamentId = item.id
-                                                                    }
-                                                                }
+                                                                onLongClick = if (isAdmin) {
+                                                                    { editingTournamentId = item.id }
+                                                                } else null
                                                             ),
                                                         contentAlignment = Alignment.Center
                                                     ) {

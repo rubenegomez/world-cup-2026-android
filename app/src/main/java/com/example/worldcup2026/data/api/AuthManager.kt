@@ -2,6 +2,7 @@ package com.example.worldcup2026.data.api
 
 import android.content.Context
 import android.util.Log
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -11,6 +12,9 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.security.MessageDigest
 import java.util.UUID
@@ -106,19 +110,58 @@ class AuthManager(private val context: Context) {
     }
 
     fun signOut() {
-        FirebaseAuth.getInstance().signOut()
+        signOut(context)
     }
 
     companion object {
         const val ADMIN_EMAIL = "rubeng696@gmail.com"
 
+        val currentEmailState = androidx.compose.runtime.mutableStateOf<String?>(
+            try { FirebaseAuth.getInstance().currentUser?.email } catch (_: Exception) { null }
+        )
+
+        init {
+            try {
+                FirebaseAuth.getInstance().addAuthStateListener { auth ->
+                    currentEmailState.value = auth.currentUser?.email
+                }
+            } catch (_: Exception) {
+            }
+        }
+
+        fun signOut(context: Context? = null) {
+            try {
+                FirebaseAuth.getInstance().signOut()
+            } catch (_: Exception) {
+            }
+            currentEmailState.value = null
+            com.example.worldcup2026.data.repository.ProdeRepository.authToken = null
+            com.example.worldcup2026.data.repository.ProdeRepository.authenticatedEmailState.value = null
+            if (context != null) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    try {
+                        CredentialManager.create(context)
+                            .clearCredentialState(ClearCredentialStateRequest())
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+        }
+
         fun isAdmin(): Boolean {
-            val user = FirebaseAuth.getInstance().currentUser
-            return user?.email?.trim()?.equals(ADMIN_EMAIL, ignoreCase = true) == true
+            val user = try { FirebaseAuth.getInstance().currentUser } catch (_: Exception) { null }
+            val firebaseEmail = currentEmailState.value ?: user?.email
+            val repoEmail = com.example.worldcup2026.data.repository.ProdeRepository.authenticatedEmailState.value
+            val hasActiveSession = user != null && !com.example.worldcup2026.data.repository.ProdeRepository.authToken.isNullOrBlank()
+            if (!hasActiveSession) return false
+            val effectiveEmail = (repoEmail ?: firebaseEmail)?.trim() ?: return false
+            return effectiveEmail.equals(ADMIN_EMAIL, ignoreCase = true)
         }
 
         fun getCurrentUserEmail(): String? {
-            return FirebaseAuth.getInstance().currentUser?.email
+            return com.example.worldcup2026.data.repository.ProdeRepository.authenticatedEmailState.value
+                ?: currentEmailState.value
+                ?: try { FirebaseAuth.getInstance().currentUser?.email } catch (_: Exception) { null }
         }
     }
 }

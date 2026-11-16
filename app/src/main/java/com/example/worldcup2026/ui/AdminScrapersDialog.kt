@@ -31,6 +31,10 @@ import kotlinx.coroutines.withContext
 fun AdminScrapersDialog(
     onDismiss: () -> Unit
 ) {
+    if (!AuthManager.isAdmin()) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(true) }
@@ -39,7 +43,7 @@ fun AdminScrapersDialog(
     var feedbackMessage by remember { mutableStateOf<String?>(null) }
     var showRescheduleDialog by remember { mutableStateOf(false) }
 
-    val adminEmail = remember { AuthManager.ADMIN_EMAIL }
+    val adminEmail = remember { AuthManager.getCurrentUserEmail()?.takeIf { AuthManager.isAdmin() } ?: "" }
 
     fun loadStatus() {
         isLoading = true

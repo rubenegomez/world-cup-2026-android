@@ -73,12 +73,19 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                             val token = task.result?.token
                             if (token != null) {
                                 handleSignIn(token)
+                            } else {
+                                com.example.worldcup2026.data.api.AuthManager.signOut(getApplication())
                             }
+                        } else {
+                            com.example.worldcup2026.data.api.AuthManager.signOut(getApplication())
                         }
                     }
+                } else {
+                    com.example.worldcup2026.data.api.AuthManager.signOut(getApplication())
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                com.example.worldcup2026.data.api.AuthManager.signOut(getApplication())
             }
         }
     }
@@ -155,6 +162,11 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 }
+            } else {
+                com.example.worldcup2026.data.api.AuthManager.signOut(getApplication())
+                prodeRepository.logout()
+                _isAuthenticated.value = false
+                _currentUser.value = null
             }
         }
     }
@@ -182,6 +194,7 @@ class ProdeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun logout() {
+        com.example.worldcup2026.data.api.AuthManager.signOut(getApplication())
         prodeRepository.logout()
         _isAuthenticated.value = false
         _currentUser.value = null

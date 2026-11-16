@@ -660,8 +660,7 @@ fun MatchCard(
     var showGameRules by remember { mutableStateOf(false) }
     var isEditingProde by remember { mutableStateOf(false) }
     var editingTeamTarget by remember { mutableStateOf<Team?>(null) }
-    val currentUserEmail = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()
-    val isAdmin = remember(currentUserEmail) { com.example.worldcup2026.data.api.AuthManager.isAdmin() }
+    val isAdmin = com.example.worldcup2026.data.api.AuthManager.isAdmin()
 
     val rawStatusUpper = match.status.uppercase()
     val hasFav = match.homeTeam.name in favoriteTeamNames || match.awayTeam.name in favoriteTeamNames
@@ -3263,7 +3262,10 @@ fun AdminMatchDialog(
                         coroutineScope.launch {
                             try {
                                 val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()?.takeIf { it.isNotBlank() }
-                                ?: com.example.worldcup2026.data.api.AuthManager.ADMIN_EMAIL
+                                if (!com.example.worldcup2026.data.api.AuthManager.isAdmin() || email == null) {
+                                    android.widget.Toast.makeText(context, "Acción permitida solo para administrador autenticado", android.widget.Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
                                 val response = com.example.worldcup2026.data.api.NetworkModule.apiService.deleteMatchAdmin(match.id, email)
                                 if (response.isSuccessful) {
                                     android.widget.Toast.makeText(context, "Partido eliminado correctamente", android.widget.Toast.LENGTH_SHORT).show()
@@ -3511,6 +3513,10 @@ fun AdminEditTeamDialog(
     onDismiss: () -> Unit,
     onSuccess: () -> Unit
 ) {
+    if (!com.example.worldcup2026.data.api.AuthManager.isAdmin()) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
     var teamName by remember { mutableStateOf(team.name) }
     var flagUrl by remember { mutableStateOf(team.flagUrl ?: "") }
     var selectedImageBase64 by remember { mutableStateOf<String?>(null) }
@@ -3634,7 +3640,10 @@ fun AdminEditTeamDialog(
                     coroutineScope.launch {
                         try {
                             val email = com.example.worldcup2026.data.api.AuthManager.getCurrentUserEmail()?.takeIf { it.isNotBlank() }
-                                ?: com.example.worldcup2026.data.api.AuthManager.ADMIN_EMAIL
+                            if (!com.example.worldcup2026.data.api.AuthManager.isAdmin() || email == null) {
+                                android.widget.Toast.makeText(context, "Acción permitida solo para administrador autenticado", android.widget.Toast.LENGTH_SHORT).show()
+                                return@launch
+                            }
                             val req = com.example.worldcup2026.data.api.AdminTeamEditRequest(
                                 team_id = team.id,
                                 name = teamName.trim(),
