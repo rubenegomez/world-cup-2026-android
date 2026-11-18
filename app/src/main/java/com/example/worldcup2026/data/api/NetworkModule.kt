@@ -187,6 +187,8 @@ data class ApiTournament(
     val id: Int,
     val name: String,
     val type: String,
+    val category: String? = null,
+    val is_active: Boolean = true,
     val order: Int = 0,
     val logo_url: String? = null
 )

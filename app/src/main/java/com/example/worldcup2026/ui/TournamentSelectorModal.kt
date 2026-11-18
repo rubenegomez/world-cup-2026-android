@@ -227,17 +227,37 @@ fun TournamentSelectorModal(
     }
 
     val allTournamentOptions = remember(apiTournaments, liveTournamentsMap, versionTrigger) {
-        MasterTeamCatalog.MASTER_TOURNAMENTS.map { masterT ->
-            val customName = MasterTeamCatalog.getTournamentDisplayName(context, masterT.id)
-            val customLogo = MasterTeamCatalog.getTournamentLogo(context, masterT.id) ?: masterT.logoUrl
-            val hasLive = liveTournamentsMap[masterT.id] == true
-            TournamentOption(
-                id = masterT.id,
-                name = if (customName.isNotBlank()) customName else masterT.displayName,
-                category = masterT.category,
-                logoUrl = customLogo,
-                hasLive = hasLive
-            )
+        val activeApi = apiTournaments.filter { it.is_active }
+        if (activeApi.isNotEmpty()) {
+            activeApi.map { apiT ->
+                val customName = MasterTeamCatalog.getTournamentDisplayName(context, apiT.id)
+                val customLogo = MasterTeamCatalog.getTournamentLogo(context, apiT.id) ?: apiT.logo_url
+                val resolvedCategory = apiT.category
+                    ?.takeIf { it.isNotBlank() && it !in listOf("Nacional", "Internacional") }
+                    ?: MasterTeamCatalog.MASTER_TOURNAMENTS.find { it.id == apiT.id }?.category
+                    ?: "OTROS TORNEOS"
+                val hasLive = liveTournamentsMap[apiT.id] == true
+                TournamentOption(
+                    id = apiT.id,
+                    name = if (customName.isNotBlank() && !customName.startsWith("Torneo #")) customName else apiT.name,
+                    category = resolvedCategory,
+                    logoUrl = customLogo,
+                    hasLive = hasLive
+                )
+            }
+        } else {
+            MasterTeamCatalog.MASTER_TOURNAMENTS.map { masterT ->
+                val customName = MasterTeamCatalog.getTournamentDisplayName(context, masterT.id)
+                val customLogo = MasterTeamCatalog.getTournamentLogo(context, masterT.id) ?: masterT.logoUrl
+                val hasLive = liveTournamentsMap[masterT.id] == true
+                TournamentOption(
+                    id = masterT.id,
+                    name = if (customName.isNotBlank()) customName else masterT.displayName,
+                    category = masterT.category,
+                    logoUrl = customLogo,
+                    hasLive = hasLive
+                )
+            }
         }
     }
 

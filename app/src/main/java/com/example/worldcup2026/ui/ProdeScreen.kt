@@ -564,21 +564,34 @@ fun MisLigasTab(
         }
     }
     
-    val tournamentOptions = listOf(
-        5 to "🏆 Liga Profesional",
-        7 to "⚽ Primera Nacional",
-        6 to "🏆 Copa Argentina",
-        3 to "🌎 Copa Libertadores",
-        4 to "🌎 Copa Sudamericana",
-        8 to "⚽ Primera B",
-        9 to "⚽ Primera C",
-        15 to "⚽ Federal A",
-        13 to "⚽ Promocional Amateur",
-        2 to "🌍 Eliminatorias",
-        12 to "🏆 Finalíssima",
-        14 to "🌍 Amistosos FIFA",
-        11 to "🏆 Mundial Clubes"
-    )
+    val apiTournamentsList = worldCupViewModel?.apiTournaments?.value ?: emptyList()
+    val tournamentOptions = remember(apiTournamentsList) {
+        val activeApi = apiTournamentsList.filter { it.is_active }
+        if (activeApi.isNotEmpty()) {
+            activeApi.map { apiT ->
+                val cat = apiT.category ?: com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS.find { it.id == apiT.id }?.category ?: ""
+                val emoji = when (cat) {
+                    "CONMEBOL" -> "🌎"
+                    "FIFA" -> "🌍"
+                    "OTROS TORNEOS" -> "🌐"
+                    else -> "⚽"
+                }
+                val displayName = com.example.worldcup2026.data.model.MasterTeamCatalog.getTournamentDisplayName(context, apiT.id)
+                    .takeIf { it.isNotBlank() && !it.startsWith("Torneo #") } ?: apiT.name
+                apiT.id to "$emoji $displayName"
+            }
+        } else {
+            com.example.worldcup2026.data.model.MasterTeamCatalog.ACTIVE_TOURNAMENTS.map { m ->
+                val emoji = when (m.category) {
+                    "CONMEBOL" -> "🌎"
+                    "FIFA" -> "🌍"
+                    "OTROS TORNEOS" -> "🌐"
+                    else -> "⚽"
+                }
+                m.id to "$emoji ${m.displayName}"
+            }
+        }
+    }
 
     LaunchedEffect(selectedTournamentId, showCreateDialog) {
         minActiveMatchday = worldCupViewModel?.getCurrentMatchdayForTournament(selectedTournamentId ?: 5) ?: 1
