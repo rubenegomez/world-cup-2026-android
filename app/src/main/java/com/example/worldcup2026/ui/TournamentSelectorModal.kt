@@ -60,7 +60,8 @@ private val CATEGORIES_ORDER = listOf(
     CategoryHeader("AFA", "AFA", "🇦🇷"),
     CategoryHeader("CONMEBOL", "CONMEBOL", "🌎"),
     CategoryHeader("FIFA", "FIFA", "🌍"),
-    CategoryHeader("OTROS TORNEOS", "OTROS TORNEOS", "🌐")
+    CategoryHeader("OTROS TORNEOS", "OTROS TORNEOS", "🌐"),
+    CategoryHeader("PRÓXIMAMENTE", "PRÓXIMAMENTE", "⏳")
 )
 
 @Composable
@@ -204,7 +205,8 @@ fun TournamentSelectorModal(
     val expandedCategories = remember(prefs) {
         mutableStateMapOf<String, Boolean>().apply {
             CATEGORIES_ORDER.forEach { cat ->
-                put(cat.key, prefs.getBoolean("tournament_selector_cat_expanded_${cat.key}", true))
+                val defaultExpanded = cat.key != "PRÓXIMAMENTE"
+                put(cat.key, prefs.getBoolean("tournament_selector_cat_expanded_${cat.key}", defaultExpanded))
             }
         }
     }

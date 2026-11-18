@@ -568,7 +568,9 @@ fun MisLigasTab(
     val tournamentOptions = remember(apiTournamentsList) {
         val activeApi = apiTournamentsList.filter { it.is_active }
         if (activeApi.isNotEmpty()) {
-            activeApi.map { apiT ->
+            activeApi
+                .filter { !it.name.contains("próximamente", ignoreCase = true) && !it.name.contains("proximamente", ignoreCase = true) }
+                .map { apiT ->
                 val cat = apiT.category ?: com.example.worldcup2026.data.model.MasterTeamCatalog.MASTER_TOURNAMENTS.find { it.id == apiT.id }?.category ?: ""
                 val emoji = when (cat) {
                     "CONMEBOL" -> "🌎"
