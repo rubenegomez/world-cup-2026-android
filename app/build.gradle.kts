@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.worldcup2026"
         minSdk = 24
         targetSdk = 34
-        versionCode = 93
-        versionName = "1.9.10"
+        versionCode = 94
+        versionName = "1.9.11"
 
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
