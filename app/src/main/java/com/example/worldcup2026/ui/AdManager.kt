@@ -3,8 +3,6 @@ package com.example.worldcup2026.ui
 import android.app.Activity
 import android.content.Context
 import android.widget.Toast
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -22,56 +20,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.android.gms.ads.*
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-
-import com.google.android.gms.ads.rewarded.RewardedAd
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 
 object AdManager {
-    const val INTERSTITIAL_REAL_ID = "ca-app-pub-7768012635304880/8383774129"
-    const val BANNER_REAL_ID = "ca-app-pub-7768012635304880/7721429148"
-    const val REWARDED_TEST_ID = "ca-app-pub-3940256099942544/5224354917"
-    const val BANNER_TEST_ID = "ca-app-pub-3940256099942544/6300978111"
-    const val INTERSTITIAL_TEST_ID = "ca-app-pub-3940256099942544/1033173712"
-
-    val BANNER_AD_UNIT_ID: String
-        get() = if (com.example.worldcup2026.BuildConfig.DEBUG) BANNER_TEST_ID else BANNER_REAL_ID
-
-    val INTERSTITIAL_AD_UNIT_ID: String
-        get() = if (com.example.worldcup2026.BuildConfig.DEBUG) INTERSTITIAL_TEST_ID else INTERSTITIAL_REAL_ID
-
     const val ADSTERRA_SMARTLINK_URL = "https://www.profitableratecpmnetwork.com/ugedck5w?key=8537e3c00b02fb7cb23b3137c7867de3"
 
-    private var mInterstitialAd: InterstitialAd? = null
-    private var isLoading = false
-
-    private var mRewardedAd: RewardedAd? = null
-    private var isRewardedLoading = false
-
-    fun loadRewardedAd(context: Context) {
+    fun loadRewardedAd(@Suppress("UNUSED_PARAMETER") context: Context) {
         UnityAdsManager.loadRewardedAd()
-        if (mRewardedAd != null || isRewardedLoading) return
-        isRewardedLoading = true
-
-        val adRequest = AdRequest.Builder().build()
-        RewardedAd.load(
-            context,
-            REWARDED_TEST_ID,
-            adRequest,
-            object : RewardedAdLoadCallback() {
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    mRewardedAd = null
-                    isRewardedLoading = false
-                }
-
-                override fun onAdLoaded(rewardedAd: RewardedAd) {
-                    mRewardedAd = rewardedAd
-                    isRewardedLoading = false
-                }
-            }
-        )
     }
 
     // House Ads de Videos e Imágenes propios alojados en el Servidor / App
@@ -85,14 +39,6 @@ object AdManager {
     )
 
     val houseVideoAds = listOf(
-        HouseVideoAd(
-            appName = "Arena Prode",
-            appTagline = "¡El Prode oficial con resultados en vivo y estadísticas VIP!",
-            videoUrl = "https://ellocodelpedal.duckdns.org/videos/ads/arena_ad.mp4",
-            targetUrl = "https://ellocodelpedal.duckdns.org/arena.html",
-            accentColor = 0xFFFFD700,
-            imageDrawableRes = com.example.worldcup2026.R.drawable.banner_arena_ad
-        ),
         HouseVideoAd(
             appName = "Bondi Maps",
             appTagline = "¡Gestioná tus tarjetas de colectivo, saldos y viajes de forma fácil!",
@@ -137,173 +83,130 @@ object AdManager {
     }
 
     fun dismissHouseVideoAd() {
+        val callback = onHouseAdFinishedCallback
         currentHouseVideoAd.value = null
         currentHouseAdIsImage.value = false
-        onHouseAdFinishedCallback?.invoke()
         onHouseAdFinishedCallback = null
+        callback?.invoke()
     }
 
     private var rewardedCycleIndex = 0
     private var interstitialCycleIndex = 0
 
-    // Función auxiliar para mostrar video de AdMob
-    private fun showAdmobRewarded(activity: Activity, onRewardGranted: () -> Unit, onFallback: () -> Unit) {
-        val ad = mRewardedAd
-        if (ad != null) {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    mRewardedAd = null
-                    loadRewardedAd(activity)
-                }
-                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                    mRewardedAd = null
-                    onFallback()
-                }
-            }
-            ad.show(activity) { _ ->
-                onRewardGranted()
-                Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            onFallback()
-        }
-    }
-
     // Diálogo Intersticial / Oferta Patrocinada de Adsterra
     val showAdsterraInterstitialDialog = androidx.compose.runtime.mutableStateOf(false)
+    val isAdsterraInterstitialRewarded = androidx.compose.runtime.mutableStateOf(false)
     private var onAdsterraInterstitialCompletedCallback: (() -> Unit)? = null
+    private var onAdsterraDismissWithoutRewardCallback: (() -> Unit)? = null
 
-    fun showAdsterraInterstitial(onComplete: () -> Unit) {
+    fun showAdsterraInterstitial(
+        isRewarded: Boolean = false,
+        onComplete: () -> Unit,
+        onDismissWithoutReward: (() -> Unit)? = null
+    ) {
+        isAdsterraInterstitialRewarded.value = isRewarded
         onAdsterraInterstitialCompletedCallback = onComplete
+        onAdsterraDismissWithoutRewardCallback = onDismissWithoutReward
         showAdsterraInterstitialDialog.value = true
     }
 
-    fun dismissAdsterraInterstitial() {
+    fun completeAdsterraInterstitialAction() {
+        val callback = onAdsterraInterstitialCompletedCallback
         showAdsterraInterstitialDialog.value = false
-        onAdsterraInterstitialCompletedCallback?.invoke()
+        isAdsterraInterstitialRewarded.value = false
         onAdsterraInterstitialCompletedCallback = null
+        onAdsterraDismissWithoutRewardCallback = null
+        callback?.invoke()
     }
 
-    // Rotación de Recompensas: 0 -> Adsterra (Smartlink/Patrocinio), 1 -> Google AdMob, 2 -> Unity Ads, 3 -> Videos Propios
+    fun dismissAdsterraInterstitialWithoutAction() {
+        val wasRewarded = isAdsterraInterstitialRewarded.value
+        val completeCallback = onAdsterraInterstitialCompletedCallback
+        val dismissCallback = onAdsterraDismissWithoutRewardCallback
+        showAdsterraInterstitialDialog.value = false
+        isAdsterraInterstitialRewarded.value = false
+        onAdsterraInterstitialCompletedCallback = null
+        onAdsterraDismissWithoutRewardCallback = null
+        if (wasRewarded) {
+            dismissCallback?.invoke()
+        } else {
+            completeCallback?.invoke()
+        }
+    }
+
+    private fun isAdFreeActive(context: Context): Boolean {
+        return try {
+            val prefs = context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE)
+            val adFreeUntil = prefs.getLong("ad_free_until", 0L)
+            System.currentTimeMillis() <= adFreeUntil
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    // Rotación de Recompensas: 0 -> Unity Ads, 1 -> Adsterra (Smartlink), 2 -> Videos Propios
     fun showRewardedAd(context: Context, onRewardGranted: () -> Unit) {
         val activity = context as? Activity ?: run {
             onRewardGranted()
             return
         }
 
-        val turn = rewardedCycleIndex % 4
+        val grantWithToast = {
+            onRewardGranted()
+            Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+        }
+
+        val turn = rewardedCycleIndex % 3
         rewardedCycleIndex++
 
         when (turn) {
             0 -> {
-                // Turno Adsterra Smartlink (Recompensa inmediata con oferta patrocinada)
-                showAdsterraInterstitial(onComplete = {
-                    onRewardGranted()
-                    Toast.makeText(activity, "🎉 ¡2 horas sin publicidad activadas!", Toast.LENGTH_SHORT).show()
+                UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
+                    showHouseVideoAd(grantWithToast)
                 })
             }
             1 -> {
-                // Turno Google AdMob
-                showAdmobRewarded(activity, onRewardGranted, onFallback = {
-                    UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
-                        showHouseVideoAd(onRewardGranted)
-                    })
-                })
-            }
-            2 -> {
-                // Turno Unity Ads
-                UnityAdsManager.showRewardedAd(activity, onRewardGranted, onFallback = {
-                    showAdmobRewarded(activity, onRewardGranted, onFallback = {
-                        showHouseVideoAd(onRewardGranted)
-                    })
-                })
+                showAdsterraInterstitial(
+                    isRewarded = true,
+                    onComplete = grantWithToast
+                )
             }
             else -> {
-                // Turno Nosotros (Arena Prode / Bondi / TimeTracker / Fondos)
-                showHouseVideoAd(onRewardGranted)
+                showHouseVideoAd(grantWithToast)
             }
         }
     }
 
-    fun loadInterstitialAd(context: Context) {
+    fun loadInterstitialAd(@Suppress("UNUSED_PARAMETER") context: Context) {
         UnityAdsManager.loadInterstitialAd()
-        if (mInterstitialAd != null || isLoading) return
-        isLoading = true
-
-        val adRequest = AdRequest.Builder().build()
-        InterstitialAd.load(
-            context,
-            INTERSTITIAL_AD_UNIT_ID,
-            adRequest,
-            object : InterstitialAdLoadCallback() {
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    mInterstitialAd = null
-                    isLoading = false
-                }
-
-                override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                    mInterstitialAd = interstitialAd
-                    isLoading = false
-                }
-            }
-        )
-    }
-
-    private fun showAdmobInterstitial(activity: Activity, onComplete: () -> Unit, onFallback: () -> Unit) {
-        val ad = mInterstitialAd
-        if (ad != null) {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    mInterstitialAd = null
-                    onComplete()
-                    loadInterstitialAd(activity)
-                }
-
-                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-                    mInterstitialAd = null
-                    onFallback()
-                }
-            }
-            ad.show(activity)
-        } else {
-            onFallback()
-        }
     }
 
     // Rotación para Intersticiales / Estadísticas VIP:
-    // 0 -> Adsterra (Smartlink/Patrocinio), 1 -> Google AdMob, 2 -> Unity Ads, 3 -> Nosotros
+    // 0 -> Unity Ads, 1 -> Adsterra (Smartlink/Patrocinio), 2 -> Nosotros
     fun showInterstitialAd(context: Context, onComplete: () -> Unit) {
+        if (isAdFreeActive(context)) {
+            onComplete()
+            return
+        }
+
         val activity = context as? Activity ?: run {
             onComplete()
             return
         }
 
-        val turn = interstitialCycleIndex % 4
+        val turn = interstitialCycleIndex % 3
         interstitialCycleIndex++
 
         when (turn) {
             0 -> {
-                // Turno Adsterra Intersticial
-                showAdsterraInterstitial(onComplete = onComplete)
+                UnityAdsManager.showInterstitialAd(activity, onComplete, onFallback = {
+                    showAdsterraInterstitial(isRewarded = false, onComplete = onComplete)
+                })
             }
             1 -> {
-                // Turno Google AdMob
-                showAdmobInterstitial(activity, onComplete, onFallback = {
-                    UnityAdsManager.showInterstitialAd(context, onComplete, onFallback = {
-                        showHouseVideoAd(onComplete)
-                    })
-                })
-            }
-            2 -> {
-                // Turno Unity Ads
-                UnityAdsManager.showInterstitialAd(context, onComplete, onFallback = {
-                    showAdmobInterstitial(activity, onComplete, onFallback = {
-                        showHouseVideoAd(onComplete)
-                    })
-                })
+                showAdsterraInterstitial(isRewarded = false, onComplete = onComplete)
             }
             else -> {
-                // Turno Nosotros
                 showHouseVideoAd(onComplete)
             }
         }
@@ -358,7 +261,9 @@ fun AdsterraBannerView(
                         request: android.webkit.WebResourceRequest?,
                         error: android.webkit.WebResourceError?
                     ) {
-                        onBannerFailed()
+                        if (request?.isForMainFrame == true) {
+                            onBannerFailed()
+                        }
                     }
 
                     override fun shouldOverrideUrlLoading(
@@ -379,75 +284,65 @@ fun AdsterraBannerView(
                 }
                 loadDataWithBaseURL("https://www.highrevenueformat.com", htmlContent, "text/html", "UTF-8", null)
             }
+        },
+        onRelease = { webView ->
+            webView.stopLoading()
+            webView.destroy()
         }
     )
 }
 
 @Composable
 fun AdmobBanner(modifier: Modifier = Modifier) {
-    // Rotación con prioridad a Adsterra:
-    // 0: Adsterra (3 min = 180s), 1: AdMob (1 min = 60s), 2: Unity (1 min = 60s), 3: House Ads (1 min = 60s)
+    // Rotación con waterfall:
+    // 0: Unity Ads (120s), 1: Adsterra (120s), 2: House Ads (60s)
     var currentProvider by remember { mutableIntStateOf(0) }
-    var providerFailed by remember { mutableStateOf(false) }
+    var unityFailed by remember { mutableStateOf(false) }
+    var adsterraFailed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         while (true) {
-            // Bloque 1: Adsterra Banner Webview (Prioridad: 3 minutos)
             currentProvider = 0
-            providerFailed = false
-            kotlinx.coroutines.delay(180000L)
+            unityFailed = false
+            adsterraFailed = false
+            kotlinx.coroutines.delay(120000L)
 
-            // Bloque 2: AdMob (1 minuto)
             currentProvider = 1
-            providerFailed = false
-            kotlinx.coroutines.delay(60000L)
+            unityFailed = false
+            adsterraFailed = false
+            kotlinx.coroutines.delay(120000L)
 
-            // Bloque 3: Unity Ads (1 minuto)
             currentProvider = 2
-            providerFailed = false
-            kotlinx.coroutines.delay(60000L)
-
-            // Bloque 4: House Ads propios (1 minuto)
-            currentProvider = 3
-            providerFailed = false
+            unityFailed = false
+            adsterraFailed = false
             kotlinx.coroutines.delay(60000L)
         }
     }
 
-    if (currentProvider == 3 || providerFailed) {
-        HouseBannerFallback(modifier = modifier)
-    } else if (currentProvider == 0) {
-        AdsterraBannerView(
+    val effectiveProvider = when (currentProvider) {
+        0 -> when {
+            !unityFailed -> 0
+            !adsterraFailed -> 1
+            else -> 2
+        }
+        1 -> when {
+            !adsterraFailed -> 1
+            !unityFailed -> 0
+            else -> 2
+        }
+        else -> 2
+    }
+
+    when (effectiveProvider) {
+        0 -> UnityBannerView(
             modifier = modifier,
-            onBannerFailed = {
-                providerFailed = true
-            }
+            onBannerFailed = { unityFailed = true }
         )
-    } else if (currentProvider == 2) {
-        UnityBannerView(
+        1 -> AdsterraBannerView(
             modifier = modifier,
-            onBannerFailed = {
-                providerFailed = true
-            }
+            onBannerFailed = { adsterraFailed = true }
         )
-    } else {
-        AndroidView(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            factory = { ctx ->
-                AdView(ctx).apply {
-                    setAdSize(AdSize.BANNER)
-                    adUnitId = AdManager.BANNER_AD_UNIT_ID
-                    adListener = object : com.google.android.gms.ads.AdListener() {
-                        override fun onAdFailedToLoad(error: com.google.android.gms.ads.LoadAdError) {
-                            providerFailed = true
-                        }
-                    }
-                    loadAd(AdRequest.Builder().build())
-                }
-            }
-        )
+        else -> HouseBannerFallback(modifier = modifier)
     }
 }
 
@@ -462,7 +357,6 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val houseBanners = remember {
         listOf(
-            HouseBannerItem("Arena Prode y Torneos", com.example.worldcup2026.R.drawable.banner_arena_ad, "https://ellocodelpedal.duckdns.org/arena.html"),
             HouseBannerItem("Bondi Horarios y SUBE", com.example.worldcup2026.R.drawable.banner_bondi_ad, "https://ellocodelpedal.duckdns.org/bondi.html"),
             HouseBannerItem("TimeTracker Pro", com.example.worldcup2026.R.drawable.banner_timetracker_ad, "https://ellocodelpedal.duckdns.org/timetracker.html"),
             HouseBannerItem("Fondos del Loco", com.example.worldcup2026.R.drawable.banner_fondos_ad, "https://ellocodelpedal.duckdns.org/fondos.html")
@@ -470,10 +364,10 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
     }
     var bannerIndex by remember { mutableIntStateOf(0) }
 
-    // Rotar banners propios cada 15 segundos
+    // Rotar banners propios cada 25 segundos
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(15000L)
+            kotlinx.coroutines.delay(25000L)
             bannerIndex = (bannerIndex + 1) % houseBanners.size
         }
     }
@@ -496,12 +390,19 @@ fun HouseBannerFallback(modifier: Modifier = Modifier) {
             },
         color = Color(0xFF0A0F1D)
     ) {
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(id = currentBanner.drawableRes),
-            contentDescription = currentBanner.title,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = androidx.compose.ui.layout.ContentScale.FillBounds
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0A0F1D)),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = currentBanner.drawableRes),
+                contentDescription = currentBanner.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Fit
+            )
+        }
     }
 }
 
@@ -756,7 +657,9 @@ fun HouseVideoAdPlayerOverlay(
 
 @Composable
 fun AdsterraInterstitialOverlay(
-    onDismiss: () -> Unit
+    isRewarded: Boolean = false,
+    onActionClicked: () -> Unit,
+    onSkipDismiss: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var countdown by remember { mutableIntStateOf(5) }
@@ -771,7 +674,7 @@ fun AdsterraInterstitialOverlay(
     }
 
     androidx.compose.ui.window.Dialog(
-        onDismissRequest = { if (canSkip) onDismiss() },
+        onDismissRequest = { if (canSkip) onSkipDismiss() },
         properties = androidx.compose.ui.window.DialogProperties(
             usePlatformDefaultWidth = false,
             dismissOnBackPress = canSkip,
@@ -835,7 +738,7 @@ fun AdsterraInterstitialOverlay(
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
-                        onDismiss()
+                        onActionClicked()
                     },
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFFF5722)
@@ -844,7 +747,7 @@ fun AdsterraInterstitialOverlay(
                     modifier = Modifier.fillMaxWidth().height(52.dp)
                 ) {
                     Text(
-                        text = "🚀 VER OFERTA Y CONTINUAR",
+                        text = if (isRewarded) "🚀 VER OFERTA Y GANAR +2 HS" else "🚀 VER OFERTA Y CONTINUAR",
                         fontWeight = FontWeight.Black,
                         fontSize = 14.sp,
                         color = Color.White
@@ -878,11 +781,11 @@ fun AdsterraInterstitialOverlay(
                     color = if (canSkip) Color(0xFFE53935) else Color.Black.copy(alpha = 0.75f),
                     shape = RoundedCornerShape(20.dp),
                     modifier = Modifier.clickable {
-                        if (canSkip) onDismiss()
+                        if (canSkip) onSkipDismiss()
                     }
                 ) {
                     Text(
-                        text = if (canSkip) "✕ Continuar" else "Esperar ${countdown}s",
+                        text = if (canSkip) (if (isRewarded) "✕ Cerrar" else "✕ Continuar") else "Esperar ${countdown}s",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,

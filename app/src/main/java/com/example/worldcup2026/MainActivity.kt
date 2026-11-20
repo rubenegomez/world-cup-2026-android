@@ -60,11 +60,11 @@ class MainActivity : ComponentActivity() {
         // Inicializamos Remote Config para IDs dinámicos
         RemoteConfigManager.init()
         
-        // Inicializamos Google Mobile Ads (AdMob) y Unity Ads
-        val testDeviceIds = listOf("06874EC776CBCBA4868189D76E5A890A", com.google.android.gms.ads.AdRequest.DEVICE_ID_EMULATOR)
-        val configuration = com.google.android.gms.ads.RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build()
-        com.google.android.gms.ads.MobileAds.setRequestConfiguration(configuration)
-        com.google.android.gms.ads.MobileAds.initialize(this) {}
+        // Inicializamos Unity Ads
+
+
+
+
         com.example.worldcup2026.ui.UnityAdsManager.init(this)
         com.example.worldcup2026.ui.AdManager.loadRewardedAd(this)
         com.example.worldcup2026.ui.AdManager.loadInterstitialAd(this)

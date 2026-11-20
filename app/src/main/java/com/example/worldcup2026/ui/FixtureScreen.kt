@@ -271,7 +271,7 @@ fun KnockoutBracket(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(filteredMatches) { index, match ->
-                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, onTeamUpdated = onTeamUpdated)
+                    MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, onTeamUpdated = onTeamUpdated, showAds = showAds)
                 }
             }
         }
@@ -586,7 +586,7 @@ fun DayFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             itemsIndexed(filteredMatches) { index, match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, favoriteTeamNames = favoriteTeamNames, onTeamUpdated = onTeamUpdated)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, favoriteTeamNames = favoriteTeamNames, onTeamUpdated = onTeamUpdated, showAds = showAds)
             }
         }
     }
@@ -634,7 +634,7 @@ fun GroupFilteredFixture(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredMatches) { match ->
-                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, onTeamUpdated = onTeamUpdated)
+                MatchCard(match, onScoreChange, onPenaltiesChange, onStatusChange, onShowVipStats, onPredictionChange, allMatches = matches, onToggleComodin = onToggleComodin, onTeamUpdated = onTeamUpdated, showAds = showAds)
             }
         }
     }
@@ -654,7 +654,8 @@ fun MatchCard(
     onToggleComodin: ((Int) -> Unit)? = null,
     favoriteTeamNames: Set<String> = emptySet(),
     onTeamUpdated: (() -> Unit)? = null,
-    onDeleteMatch: (() -> Unit)? = null
+    onDeleteMatch: (() -> Unit)? = null,
+    showAds: Boolean = true
 ) {
     var showTeamStats by remember { mutableStateOf(false) }
     var showGameRules by remember { mutableStateOf(false) }
@@ -1476,7 +1477,7 @@ fun MatchCard(
                                         savedPredictionsCount % 3 == 0
                                     }
 
-                                    if (shouldShowAd) {
+                                    if (showAds && shouldShowAd) {
                                         AdManager.showInterstitialAd(context) {}
                                     }
                                 },

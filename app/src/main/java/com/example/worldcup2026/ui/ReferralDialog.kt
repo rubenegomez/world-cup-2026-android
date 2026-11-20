@@ -215,9 +215,7 @@ fun ReferralDialog(
                                         isSubmittingCode = false
                                         Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                         if (success) {
-                                            if (bonusHours > 0) {
-                                                worldCupViewModel?.addAdFreeTime(bonusHours * 3600 * 1000L)
-                                            }
+                                            worldCupViewModel?.refreshAdFreeFromPrefs()
                                             inputCode = ""
                                             onDismiss()
                                         }

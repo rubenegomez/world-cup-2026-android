@@ -113,9 +113,22 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun checkAdBlocker() {
+        if (System.currentTimeMillis() <= _adFreeUntil.value) {
+            _isAdBlockerDetected.value = false
+            return
+        }
         viewModelScope.launch {
             val isBlocked = AdBlockerDetector.isAdBlockerActive(getApplication())
-            _isAdBlockerDetected.value = isBlocked
+            _isAdBlockerDetected.value = isBlocked && System.currentTimeMillis() > _adFreeUntil.value
+        }
+    }
+
+    fun refreshAdFreeFromPrefs() {
+        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
+        val until = prefs.getLong("ad_free_until", 0L)
+        _adFreeUntil.value = until
+        if (System.currentTimeMillis() <= until) {
+            _isAdBlockerDetected.value = false
         }
     }
 

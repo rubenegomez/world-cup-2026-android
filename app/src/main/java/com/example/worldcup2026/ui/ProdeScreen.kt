@@ -116,6 +116,11 @@ fun ProdeScreen(
 
                 // Notificación de Bonos de Bienvenida o Referidos
                 val bonusNotification by viewModel.bonusNotification.collectAsState()
+                LaunchedEffect(bonusNotification) {
+                    if (bonusNotification != null) {
+                        worldCupViewModel?.refreshAdFreeFromPrefs()
+                    }
+                }
                 if (!bonusNotification.isNullOrBlank()) {
                     Surface(
                         modifier = Modifier

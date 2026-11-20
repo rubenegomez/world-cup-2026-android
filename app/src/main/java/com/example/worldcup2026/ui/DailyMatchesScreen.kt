@@ -48,7 +48,8 @@ fun DailyMatchesScreen(
     matches: List<Match>,
     viewModel: WorldCupViewModel,
     onNavigateToTournament: (Int) -> Unit,
-    onShowVipStats: (Match) -> Unit
+    onShowVipStats: (Match) -> Unit,
+    showAds: Boolean = true
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var filterLiveOnly by remember { mutableStateOf(false) }
@@ -421,7 +422,8 @@ fun DailyMatchesScreen(
                         },
                         onDeleteMatch = {
                             viewModel.syncLiveResults()
-                        }
+                        },
+                        showAds = showAds
                     )
                 }
             }

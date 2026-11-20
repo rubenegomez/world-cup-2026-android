@@ -63,7 +63,16 @@ fun MainScreen(
     var tourStepIndex by remember { mutableIntStateOf(0) }
     
     val adFreeUntil by viewModel.adFreeUntil
-    val isAdsEnabled = remember(adFreeUntil) { System.currentTimeMillis() > adFreeUntil }
+    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(adFreeUntil) {
+        nowMillis = System.currentTimeMillis()
+        while (adFreeUntil > nowMillis) {
+            val waitMs = (adFreeUntil - nowMillis).coerceAtMost(60_000L).coerceAtLeast(1_000L)
+            kotlinx.coroutines.delay(waitMs)
+            nowMillis = System.currentTimeMillis()
+        }
+    }
+    val isAdsEnabled = nowMillis > adFreeUntil
     
     val celebrationMatch by viewModel.celebrationMatch
     
@@ -437,7 +446,8 @@ fun MainScreen(
                                                     } else {
                                                         showVipDialog = true
                                                     }
-                                                }
+                                                },
+                                                showAds = isAdsEnabled
                                             )
                                         } else {
                                             selectedScreen = 0
@@ -522,7 +532,9 @@ fun MainScreen(
 
                                  if (AdManager.showAdsterraInterstitialDialog.value) {
                                      AdsterraInterstitialOverlay(
-                                         onDismiss = { AdManager.dismissAdsterraInterstitial() }
+                                         isRewarded = AdManager.isAdsterraInterstitialRewarded.value,
+                                         onActionClicked = { AdManager.completeAdsterraInterstitialAction() },
+                                         onSkipDismiss = { AdManager.dismissAdsterraInterstitialWithoutAction() }
                                      )
                                  }
 
@@ -669,7 +681,7 @@ fun MainScreen(
                         }
 
                         val isAdBlockerActive by viewModel.isAdBlockerDetected
-                        if (isAdBlockerActive) {
+                        if (isAdBlockerActive && isAdsEnabled) {
                             AlertDialog(
                                 onDismissRequest = { /* No descartable hasta desactivar o reintentar */ },
                                 containerColor = androidx.compose.ui.graphics.Color(0xFF1E1E1E),
