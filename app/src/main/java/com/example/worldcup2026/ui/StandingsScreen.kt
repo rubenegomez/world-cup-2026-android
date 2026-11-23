@@ -2429,16 +2429,28 @@ fun BestThirdsTable(thirds: List<TeamStats>) {
     }
 }
 
+private fun filterRegularClausuraMatches(matches: List<Match>): List<Match> =
+    matches.filter {
+        (it.tournament_id == null || it.tournament_id == 5) &&
+            isClausuraMatch(it.date) &&
+            (it.matchday == null || it.matchday in 1..16) &&
+            ((it.date ?: "").take(10).let { d -> d.isEmpty() || d < "2026-11-19" })
+    }
+
 @Composable
 fun LigaZonasFullView(
     teamsByGroup: Map<String, List<Team>>,
     allMatches: List<Match>
 ) {
     val matchesClausura = remember(allMatches) {
-        allMatches.filter { (it.tournament_id == null || it.tournament_id == 5) && isClausuraMatch(it.date) }
+        filterRegularClausuraMatches(allMatches)
     }
     val matchesApertura = remember(allMatches) {
-        allMatches.filter { (it.tournament_id == null || it.tournament_id == 5) && !isClausuraMatch(it.date) }
+        allMatches.filter {
+            (it.tournament_id == null || it.tournament_id == 5) &&
+                !isClausuraMatch(it.date) &&
+                (it.matchday == null || it.matchday in 1..16)
+        }
     }
 
     val zonaATeams = teamsByGroup["Zona A"] ?: emptyList()
@@ -2679,6 +2691,141 @@ data class PlayoffLlaveItem(
     val winnerTeam: Team? = null
 )
 
+private fun isSamePlayoffTeam(candidate: Team?, matchTeam: Team?): Boolean {
+    if (candidate == null || matchTeam == null) return false
+    if (candidate.id > 0 && matchTeam.id > 0 && candidate.id == matchTeam.id) return true
+    val c = normalizeTeamName(candidate.name).lowercase().trim()
+    val m = normalizeTeamName(matchTeam.name).lowercase().trim()
+    if (c == m) return true
+
+    if (c.contains("rivadavia") != m.contains("rivadavia")) return false
+
+    val cCordoba = c.contains("cordoba") || c.contains("córdoba")
+    val mCordoba = m.contains("cordoba") || m.contains("córdoba")
+    if (cCordoba != mCordoba) return false
+
+    if (c.contains("rosario") != m.contains("rosario")) return false
+    if (c.contains("barracas") != m.contains("barracas")) return false
+
+    val cRioCuarto = c.contains("río cuarto") || c.contains("rio cuarto")
+    val mRioCuarto = m.contains("río cuarto") || m.contains("rio cuarto")
+    if (cRioCuarto != mRioCuarto) return false
+
+    if (c.contains("mendoza") != m.contains("mendoza")) return false
+    if (c.contains("defensores") != m.contains("defensores")) return false
+
+    return c.contains(m) || m.contains(c)
+}
+
+private fun isFinishedPlayoffMatch(m: Match?): Boolean {
+    if (m == null || m.isFutureMatch()) return false
+    val st = m.status.trim().uppercase()
+    return st in setOf("FINISHED", "FT", "FINALIZADO", "FINAL") || st.contains("TERMIN")
+}
+
+private fun extractPlayoffWinner(m: Match?, team1: Team? = null, team2: Team? = null): Team? {
+    if (!isFinishedPlayoffMatch(m) || m == null) return null
+    val hScore = m.homeScore ?: return null
+    val aScore = m.awayScore ?: return null
+    val winHome = when {
+        hScore > aScore -> true
+        aScore > hScore -> false
+        else -> {
+            val hPen = m.homePenalties ?: 0
+            val aPen = m.awayPenalties ?: 0
+            if (hPen > aPen) true
+            else if (aPen > hPen) false
+            else return null
+        }
+    }
+    val matchWinner = if (winHome) m.homeTeam else m.awayTeam
+    if (team1 != null && isSamePlayoffTeam(team1, matchWinner)) return team1
+    if (team2 != null && isSamePlayoffTeam(team2, matchWinner)) return team2
+    return matchWinner
+}
+
+private data class OctavosSeed(
+    val numero: Int,
+    val titulo: String,
+    val localLabel: String,
+    val visitLabel: String,
+    val seedLocal: Team?,
+    val seedVisit: Team?
+)
+
+private fun scoreOctavosMatch(seed: OctavosSeed, m: Match): Int {
+    val lHome = isSamePlayoffTeam(seed.seedLocal, m.homeTeam)
+    val lAway = isSamePlayoffTeam(seed.seedLocal, m.awayTeam)
+    val vHome = isSamePlayoffTeam(seed.seedVisit, m.homeTeam)
+    val vAway = isSamePlayoffTeam(seed.seedVisit, m.awayTeam)
+    return when {
+        (lHome && vAway) || (lAway && vHome) -> 1000
+        lHome || vAway -> 110
+        lAway || vHome -> 105
+        else -> -1
+    }
+}
+
+private fun reconcileOctavosMatches(
+    seeds: List<OctavosSeed>,
+    realMatches: List<Match>
+): List<Match?> {
+    val result = MutableList<Match?>(seeds.size) { null }
+    if (realMatches.isEmpty()) return result
+
+    val usedMatches = BooleanArray(realMatches.size)
+    for (i in seeds.indices) {
+        val exactIdx = realMatches.indices.firstOrNull { j ->
+            !usedMatches[j] && scoreOctavosMatch(seeds[i], realMatches[j]) >= 1000
+        }
+        if (exactIdx != null) {
+            result[i] = realMatches[exactIdx]
+            usedMatches[exactIdx] = true
+        }
+    }
+
+    val remSlots = seeds.indices.filter { result[it] == null }
+    val remMatchIdx = realMatches.indices.filter { !usedMatches[it] }
+    if (remSlots.isEmpty() || remMatchIdx.isEmpty()) return result
+
+    var bestScore = -1
+    var bestAssign = IntArray(remSlots.size) { -1 }
+    val curAssign = IntArray(remSlots.size) { -1 }
+    val localUsed = BooleanArray(remMatchIdx.size)
+
+    fun dfs(pos: Int, accScore: Int) {
+        if (pos == remSlots.size) {
+            if (accScore > bestScore) {
+                bestScore = accScore
+                bestAssign = curAssign.copyOf()
+            }
+            return
+        }
+        val slot = seeds[remSlots[pos]]
+        for (k in remMatchIdx.indices) {
+            if (localUsed[k]) continue
+            val sc = scoreOctavosMatch(slot, realMatches[remMatchIdx[k]])
+            if (sc > 0) {
+                localUsed[k] = true
+                curAssign[pos] = remMatchIdx[k]
+                dfs(pos + 1, accScore + sc)
+                localUsed[k] = false
+                curAssign[pos] = -1
+            }
+        }
+        dfs(pos + 1, accScore)
+    }
+
+    dfs(0, 0)
+    for (pos in remSlots.indices) {
+        val mIdx = bestAssign[pos]
+        if (mIdx >= 0) {
+            result[remSlots[pos]] = realMatches[mIdx]
+        }
+    }
+    return result
+}
+
 @Composable
 fun LigaPlayoffsView(
     ronda: String, // "OCTAVOS", "CUARTOS", "SEMIFINAL", "FINAL"
@@ -2687,7 +2834,7 @@ fun LigaPlayoffsView(
     onMatchClick: (Match) -> Unit = {}
 ) {
     val matchesClausura = remember(matches) {
-        matches.filter { (it.tournament_id == null || it.tournament_id == 5) && isClausuraMatch(it.date) }
+        filterRegularClausuraMatches(matches)
     }
     val zonaATeams = teamsByGroup["Zona A"] ?: emptyList()
     val zonaBTeams = teamsByGroup["Zona B"] ?: emptyList()
@@ -2718,145 +2865,124 @@ fun LigaPlayoffsView(
     val b7 = standingsB.getOrNull(6)?.team
     val b8 = standingsB.getOrNull(7)?.team
 
-    // Función auxiliar para comparar equipos sin confundir nombres similares
-    fun isSamePlayoffTeam(candidate: Team, matchTeam: Team?): Boolean {
-        if (matchTeam == null) return false
-        if (candidate.id > 0 && matchTeam.id > 0 && candidate.id == matchTeam.id) return true
-        val c = normalizeTeamName(candidate.name).lowercase().trim()
-        val m = normalizeTeamName(matchTeam.name).lowercase().trim()
-        if (c == m) return true
-
-        // Desambiguar Independiente vs Independiente Rivadavia
-        val cRivadavia = c.contains("rivadavia")
-        val mRivadavia = m.contains("rivadavia")
-        if (cRivadavia != mRivadavia) return false
-
-        // Desambiguar Central Córdoba vs Rosario Central vs Barracas Central
-        val cCordoba = c.contains("cordoba") || c.contains("córdoba")
-        val mCordoba = m.contains("cordoba") || m.contains("córdoba")
-        if (cCordoba != mCordoba) return false
-
-        val cRosario = c.contains("rosario")
-        val mRosario = m.contains("rosario")
-        if (cRosario != mRosario) return false
-
-        val cBarracas = c.contains("barracas")
-        val mBarracas = m.contains("barracas")
-        if (cBarracas != mBarracas) return false
-
-        return c.contains(m) || m.contains(c)
+    fun regularRankKey(team: Team?): Long {
+        if (team == null) return Long.MAX_VALUE
+        val idxA = standingsA.indexOfFirst { isSamePlayoffTeam(it.team, team) }
+        if (idxA >= 0) {
+            val s = standingsA[idxA]
+            return idxA.toLong() * 10_000_000L - s.pts * 100_000L - (s.gd + 500) * 100L - s.gf
+        }
+        val idxB = standingsB.indexOfFirst { isSamePlayoffTeam(it.team, team) }
+        if (idxB >= 0) {
+            val s = standingsB[idxB]
+            return idxB.toLong() * 10_000_000L - s.pts * 100_000L - (s.gd + 500) * 100L - s.gf
+        }
+        return Long.MAX_VALUE
     }
 
-    // Función auxiliar para buscar partido disputado o ganador
-    fun resolveMatch(team1: Team?, team2: Team?): Pair<Match?, Team?> {
+    fun resolveMatch(team1: Team?, team2: Team?, expectedMatchday: Int? = null): Pair<Match?, Team?> {
         if (team1 == null || team2 == null) return null to null
         val m = matches.firstOrNull { match ->
-            val isRegularSeason = (match.matchday ?: 0) in 1..16
-            val isPlayoff = !isRegularSeason && (
-                (match.matchday ?: 0) > 16 || match.status.contains("Playoff", ignoreCase = true)
-            )
-            val teamsMatch = (isSamePlayoffTeam(team1, match.homeTeam) && isSamePlayoffTeam(team2, match.awayTeam)) ||
-                             (isSamePlayoffTeam(team2, match.homeTeam) && isSamePlayoffTeam(team1, match.awayTeam))
-            teamsMatch && isPlayoff
-        }
-        var winner: Team? = null
-        if (m != null && !m.isFutureMatch() && (m.status.equals("Finished", ignoreCase = true) || m.status.contains("Termin", ignoreCase = true))) {
-            val hScore = m.homeScore ?: 0
-            val aScore = m.awayScore ?: 0
-            if (hScore > aScore) {
-                winner = if (isSamePlayoffTeam(team1, m.homeTeam)) team1 else team2
-            } else if (aScore > hScore) {
-                winner = if (isSamePlayoffTeam(team1, m.awayTeam)) team1 else team2
+            val validTournament = match.tournament_id == null || match.tournament_id == 5
+            val md = match.matchday ?: 0
+            val validRound = if (expectedMatchday != null) {
+                md == expectedMatchday
             } else {
-                val hPen = m.homePenalties ?: 0
-                val aPen = m.awayPenalties ?: 0
-                if (hPen > aPen) {
-                    winner = if (isSamePlayoffTeam(team1, m.homeTeam)) team1 else team2
-                } else if (aPen > hPen) {
-                    winner = if (isSamePlayoffTeam(team1, m.awayTeam)) team1 else team2
-                }
+                md in 17..20
             }
+            val teamsMatch = (isSamePlayoffTeam(team1, match.homeTeam) && isSamePlayoffTeam(team2, match.awayTeam)) ||
+                (isSamePlayoffTeam(team2, match.homeTeam) && isSamePlayoffTeam(team1, match.awayTeam))
+            validTournament && validRound && teamsMatch
         }
-        return m to winner
+        return m to extractPlayoffWinner(m, team1, team2)
     }
 
-    // 8 Llaves Oficiales de Octavos
+    // 8 Llaves Oficiales de Octavos reconciliadas con partidos reales (matchday = 17)
     val octavosLlaves = remember(a1, a2, a3, a4, a5, a6, a7, a8, b1, b2, b3, b4, b5, b6, b7, b8, matches) {
-        listOf(
-            // Cuadro Superior
-            run {
-                val (m, w) = resolveMatch(a1, b8)
-                PlayoffLlaveItem(1, "LLAVE 1 · CUADRO SUPERIOR", "1.° Zona A", "8.° Zona B", a1, b8, m, a1?.let { "Estadio de ${it.name}" } ?: "Cancha 1.° Zona A", w)
-            },
-            run {
-                val (m, w) = resolveMatch(b4, a5)
-                PlayoffLlaveItem(2, "LLAVE 2 · CUADRO SUPERIOR", "4.° Zona B", "5.° Zona A", b4, a5, m, b4?.let { "Estadio de ${it.name}" } ?: "Cancha 4.° Zona B", w)
-            },
-            run {
-                val (m, w) = resolveMatch(b2, a7)
-                PlayoffLlaveItem(3, "LLAVE 3 · CUADRO SUPERIOR", "2.° Zona B", "7.° Zona A", b2, a7, m, b2?.let { "Estadio de ${it.name}" } ?: "Cancha 2.° Zona B", w)
-            },
-            run {
-                val (m, w) = resolveMatch(a3, b6)
-                PlayoffLlaveItem(4, "LLAVE 4 · CUADRO SUPERIOR", "3.° Zona A", "6.° Zona B", a3, b6, m, a3?.let { "Estadio de ${it.name}" } ?: "Cancha 3.° Zona A", w)
-            },
-            // Cuadro Inferior
-            run {
-                val (m, w) = resolveMatch(b1, a8)
-                PlayoffLlaveItem(5, "LLAVE 5 · CUADRO INFERIOR", "1.° Zona B", "8.° Zona A", b1, a8, m, b1?.let { "Estadio de ${it.name}" } ?: "Cancha 1.° Zona B", w)
-            },
-            run {
-                val (m, w) = resolveMatch(a4, b5)
-                PlayoffLlaveItem(6, "LLAVE 6 · CUADRO INFERIOR", "4.° Zona A", "5.° Zona B", a4, b5, m, a4?.let { "Estadio de ${it.name}" } ?: "Cancha 4.° Zona A", w)
-            },
-            run {
-                val (m, w) = resolveMatch(a2, b7)
-                PlayoffLlaveItem(7, "LLAVE 7 · CUADRO INFERIOR", "2.° Zona A", "7.° Zona B", a2, b7, m, a2?.let { "Estadio de ${it.name}" } ?: "Cancha 2.° Zona A", w)
-            },
-            run {
-                val (m, w) = resolveMatch(b3, a6)
-                PlayoffLlaveItem(8, "LLAVE 8 · CUADRO INFERIOR", "3.° Zona B", "6.° Zona A", b3, a6, m, b3?.let { "Estadio de ${it.name}" } ?: "Cancha 3.° Zona B", w)
-            }
+        val seeds = listOf(
+            OctavosSeed(1, "LLAVE 1 · CUADRO SUPERIOR", "1.° Zona A", "8.° Zona B", a1, b8),
+            OctavosSeed(2, "LLAVE 2 · CUADRO SUPERIOR", "4.° Zona B", "5.° Zona A", b4, a5),
+            OctavosSeed(3, "LLAVE 3 · CUADRO SUPERIOR", "2.° Zona B", "7.° Zona A", b2, a7),
+            OctavosSeed(4, "LLAVE 4 · CUADRO SUPERIOR", "3.° Zona A", "6.° Zona B", a3, b6),
+            OctavosSeed(5, "LLAVE 5 · CUADRO INFERIOR", "1.° Zona B", "8.° Zona A", b1, a8),
+            OctavosSeed(6, "LLAVE 6 · CUADRO INFERIOR", "4.° Zona A", "5.° Zona B", a4, b5),
+            OctavosSeed(7, "LLAVE 7 · CUADRO INFERIOR", "2.° Zona A", "7.° Zona B", a2, b7),
+            OctavosSeed(8, "LLAVE 8 · CUADRO INFERIOR", "3.° Zona B", "6.° Zona A", b3, a6)
         )
+        val octavosReales = matches
+            .filter { (it.tournament_id == null || it.tournament_id == 5) && it.matchday == 17 }
+            .sortedWith(compareBy({ it.date ?: "" }, { it.id }))
+        val assigned = reconcileOctavosMatches(seeds, octavosReales)
+
+        seeds.mapIndexed { idx, seed ->
+            val realMatch = assigned[idx]
+            val local = realMatch?.homeTeam ?: seed.seedLocal
+            val visit = realMatch?.awayTeam ?: seed.seedVisit
+            val winner = extractPlayoffWinner(realMatch, local, visit)
+            val fallbackVenue = seed.seedLocal?.let { "Estadio de ${it.name}" }
+                ?: "Cancha ${seed.localLabel}"
+            val venue = realMatch?.stadium?.takeIf { it.isNotBlank() }
+                ?: local?.let { "Estadio de ${it.name}" }
+                ?: fallbackVenue
+            PlayoffLlaveItem(
+                numero = seed.numero,
+                titulo = seed.titulo,
+                localSeedText = seed.localLabel,
+                visitSeedText = seed.visitLabel,
+                localTeam = local,
+                visitTeam = visit,
+                match = realMatch,
+                venueText = venue,
+                winnerTeam = winner
+            )
+        }
     }
 
     // Cuartos de Final
     val cuartosLlaves = remember(octavosLlaves, matches) {
-        val l1 = octavosLlaves[0]
-        val l2 = octavosLlaves[1]
-        val l3 = octavosLlaves[2]
-        val l4 = octavosLlaves[3]
-        val l5 = octavosLlaves[4]
-        val l6 = octavosLlaves[5]
-        val l7 = octavosLlaves[6]
-        val l8 = octavosLlaves[7]
-
-        listOf(
-            run {
-                val teamLocal = l1.winnerTeam
-                val teamVisit = l2.winnerTeam
-                val (m, w) = resolveMatch(teamLocal, teamVisit)
-                PlayoffLlaveItem(1, "CUARTO 1", "Ganador Llave 1", "Ganador Llave 2", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
-            },
-            run {
-                val teamLocal = l3.winnerTeam
-                val teamVisit = l4.winnerTeam
-                val (m, w) = resolveMatch(teamLocal, teamVisit)
-                PlayoffLlaveItem(2, "CUARTO 2", "Ganador Llave 3", "Ganador Llave 4", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
-            },
-            run {
-                val teamLocal = l5.winnerTeam
-                val teamVisit = l6.winnerTeam
-                val (m, w) = resolveMatch(teamLocal, teamVisit)
-                PlayoffLlaveItem(3, "CUARTO 3", "Ganador Llave 5", "Ganador Llave 6", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
-            },
-            run {
-                val teamLocal = l7.winnerTeam
-                val teamVisit = l8.winnerTeam
-                val (m, w) = resolveMatch(teamLocal, teamVisit)
-                PlayoffLlaveItem(4, "CUARTO 4", "Ganador Llave 7", "Ganador Llave 8", teamLocal, teamVisit, m, "Estadio del mejor posicionado", w)
-            }
+        val pairs = listOf(
+            Triple(1, "CUARTO 1", ("Ganador Llave 1" to "Ganador Llave 2") to (octavosLlaves[0].winnerTeam to octavosLlaves[1].winnerTeam)),
+            Triple(2, "CUARTO 2", ("Ganador Llave 3" to "Ganador Llave 4") to (octavosLlaves[2].winnerTeam to octavosLlaves[3].winnerTeam)),
+            Triple(3, "CUARTO 3", ("Ganador Llave 5" to "Ganador Llave 6") to (octavosLlaves[4].winnerTeam to octavosLlaves[5].winnerTeam)),
+            Triple(4, "CUARTO 4", ("Ganador Llave 7" to "Ganador Llave 8") to (octavosLlaves[6].winnerTeam to octavosLlaves[7].winnerTeam))
         )
+        pairs.map { (num, titulo, data) ->
+            val (labels, teamsPair) = data
+            val (label1, label2) = labels
+            val (rawT1, rawT2) = teamsPair
+            val (m, w) = resolveMatch(rawT1, rawT2, expectedMatchday = 18)
+            val (local, visit, localLbl, visitLbl) = when {
+                m != null -> {
+                    val mHomeIsT1 = isSamePlayoffTeam(rawT1, m.homeTeam)
+                    if (mHomeIsT1) listOf(m.homeTeam, m.awayTeam, label1, label2)
+                    else listOf(m.homeTeam, m.awayTeam, label2, label1)
+                }
+                rawT1 != null && rawT2 != null -> {
+                    if (regularRankKey(rawT2) < regularRankKey(rawT1)) {
+                        listOf(rawT2, rawT1, label2, label1)
+                    } else {
+                        listOf(rawT1, rawT2, label1, label2)
+                    }
+                }
+                else -> listOf(rawT1, rawT2, label1, label2)
+            }
+            val resolvedLocal = local as? Team
+            val resolvedVisit = visit as? Team
+            val venue = m?.stadium?.takeIf { it.isNotBlank() }
+                ?: resolvedLocal?.let { "Estadio de ${it.name}" }
+                ?: "Estadio del mejor posicionado"
+            PlayoffLlaveItem(
+                numero = num,
+                titulo = titulo,
+                localSeedText = localLbl as String,
+                visitSeedText = visitLbl as String,
+                localTeam = resolvedLocal,
+                visitTeam = resolvedVisit,
+                match = m,
+                venueText = venue,
+                winnerTeam = w
+            )
+        }
     }
 
     // Semifinales
@@ -2870,14 +2996,22 @@ fun LigaPlayoffsView(
             run {
                 val t1 = c1.winnerTeam
                 val t2 = c2.winnerTeam
-                val (m, w) = resolveMatch(t1, t2)
-                PlayoffLlaveItem(1, "SEMIFINAL 1", "Ganador Cuarto 1", "Ganador Cuarto 2", t1, t2, m, "Sede Neutral", w)
+                val (m, w) = resolveMatch(t1, t2, expectedMatchday = 19)
+                val local = m?.homeTeam ?: t1
+                val visit = m?.awayTeam ?: t2
+                val lLbl = if (m != null && isSamePlayoffTeam(t2, m.homeTeam)) "Ganador Cuarto 2" else "Ganador Cuarto 1"
+                val vLbl = if (m != null && isSamePlayoffTeam(t2, m.homeTeam)) "Ganador Cuarto 1" else "Ganador Cuarto 2"
+                PlayoffLlaveItem(1, "SEMIFINAL 1", lLbl, vLbl, local, visit, m, m?.stadium?.takeIf { it.isNotBlank() } ?: "Sede Neutral", w)
             },
             run {
                 val t1 = c3.winnerTeam
                 val t2 = c4.winnerTeam
-                val (m, w) = resolveMatch(t1, t2)
-                PlayoffLlaveItem(2, "SEMIFINAL 2", "Ganador Cuarto 3", "Ganador Cuarto 4", t1, t2, m, "Sede Neutral", w)
+                val (m, w) = resolveMatch(t1, t2, expectedMatchday = 19)
+                val local = m?.homeTeam ?: t1
+                val visit = m?.awayTeam ?: t2
+                val lLbl = if (m != null && isSamePlayoffTeam(t2, m.homeTeam)) "Ganador Cuarto 4" else "Ganador Cuarto 3"
+                val vLbl = if (m != null && isSamePlayoffTeam(t2, m.homeTeam)) "Ganador Cuarto 3" else "Ganador Cuarto 4"
+                PlayoffLlaveItem(2, "SEMIFINAL 2", lLbl, vLbl, local, visit, m, m?.stadium?.takeIf { it.isNotBlank() } ?: "Sede Neutral", w)
             }
         )
     }
@@ -2888,9 +3022,13 @@ fun LigaPlayoffsView(
         val s2 = semiLlaves[1]
         val t1 = s1.winnerTeam
         val t2 = s2.winnerTeam
-        val (m, w) = resolveMatch(t1, t2)
+        val (m, w) = resolveMatch(t1, t2, expectedMatchday = 20)
+        val local = m?.homeTeam ?: t1
+        val visit = m?.awayTeam ?: t2
+        val lLbl = if (m != null && isSamePlayoffTeam(t2, m.homeTeam)) "Ganador Semifinal 2" else "Ganador Semifinal 1"
+        val vLbl = if (m != null && isSamePlayoffTeam(t2, m.homeTeam)) "Ganador Semifinal 1" else "Ganador Semifinal 2"
         listOf(
-            PlayoffLlaveItem(1, "GRAN FINAL", "Ganador Semifinal 1", "Ganador Semifinal 2", t1, t2, m, "Sede Neutral (Ambas Hinchadas)", w)
+            PlayoffLlaveItem(1, "GRAN FINAL", lLbl, vLbl, local, visit, m, m?.stadium?.takeIf { it.isNotBlank() } ?: "Sede Neutral (Ambas Hinchadas)", w)
         )
     }
 
@@ -2968,6 +3106,16 @@ fun PlayoffCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            val m = llave.match
+            val matchHomeIsLocal = m != null && (
+                isSamePlayoffTeam(llave.localTeam, m.homeTeam) ||
+                    (!isSamePlayoffTeam(llave.visitTeam, m.homeTeam) && isSamePlayoffTeam(llave.visitTeam, m.awayTeam))
+                )
+            val displayLocalScore = if (m == null) null else if (matchHomeIsLocal) m.homeScore else m.awayScore
+            val displayVisitScore = if (m == null) null else if (matchHomeIsLocal) m.awayScore else m.homeScore
+            val displayLocalPen = if (m == null) null else if (matchHomeIsLocal) m.homePenalties else m.awayPenalties
+            val displayVisitPen = if (m == null) null else if (matchHomeIsLocal) m.awayPenalties else m.homePenalties
+
             // Header del cruce
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -2980,10 +3128,12 @@ fun PlayoffCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+
                 val statusText = when {
-                    llave.match?.isFutureMatch() == true -> "POR DISPUTARSE"
-                    llave.match?.status?.equals("Finished", ignoreCase = true) == true -> "FINALIZADO"
-                    llave.match?.status?.contains("Live", ignoreCase = true) == true -> "EN VIVO"
+                    m == null -> "POR DISPUTARSE"
+                    m.isFutureMatch() -> "POR DISPUTARSE"
+                    isFinishedPlayoffMatch(m) -> "FINALIZADO"
+                    m.status.contains("Live", ignoreCase = true) || m.status.equals("HALFTIME", ignoreCase = true) -> "EN VIVO"
                     else -> "POR DISPUTARSE"
                 }
                 val statusColor = when {
@@ -3024,7 +3174,7 @@ fun PlayoffCard(
                     Text(
                         text = llave.localTeam?.name ?: llave.localSeedText,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (llave.winnerTeam != null && llave.winnerTeam == llave.localTeam) FontWeight.Black else FontWeight.SemiBold,
+                        fontWeight = if (llave.winnerTeam != null && isSamePlayoffTeam(llave.winnerTeam, llave.localTeam)) FontWeight.Black else FontWeight.SemiBold,
                         color = Color.White
                     )
                     Text(
@@ -3034,7 +3184,9 @@ fun PlayoffCard(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-                val localScore = llave.match?.homeScore?.toString() ?: "-"
+                val localScore = displayLocalScore?.let { sc ->
+                    if (displayLocalPen != null && displayVisitPen != null) "$sc ($displayLocalPen)" else "$sc"
+                } ?: "-"
                 Text(
                     text = localScore,
                     style = MaterialTheme.typography.titleMedium,
@@ -3068,7 +3220,7 @@ fun PlayoffCard(
                     Text(
                         text = llave.visitTeam?.name ?: llave.visitSeedText,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (llave.winnerTeam != null && llave.winnerTeam == llave.visitTeam) FontWeight.Black else FontWeight.SemiBold,
+                        fontWeight = if (llave.winnerTeam != null && isSamePlayoffTeam(llave.winnerTeam, llave.visitTeam)) FontWeight.Black else FontWeight.SemiBold,
                         color = Color.White
                     )
                     Text(
@@ -3078,7 +3230,9 @@ fun PlayoffCard(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
-                val visitScore = llave.match?.awayScore?.toString() ?: "-"
+                val visitScore = displayVisitScore?.let { sc ->
+                    if (displayLocalPen != null && displayVisitPen != null) "$sc ($displayVisitPen)" else "$sc"
+                } ?: "-"
                 Text(
                     text = visitScore,
                     style = MaterialTheme.typography.titleMedium,
@@ -3100,10 +3254,10 @@ fun PlayoffCard(
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.outline
                 )
-                if (llave.match?.homePenalties != null && llave.match.awayPenalties != null) {
+                if (displayLocalPen != null && displayVisitPen != null) {
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = "Penales: ${llave.match.homePenalties} - ${llave.match.awayPenalties}",
+                        text = "Penales: $displayLocalPen - $displayVisitPen",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD54F)
@@ -3761,20 +3915,61 @@ fun TournamentFixtureView(
         processedMatches.groupBy { it.matchday ?: 1 }.toSortedMap()
     }
 
-    val matchdaysList = remember(matchdaysGrouped, isCopaArgentina, isLigaProfesional) {
+    val hasCompleteOctavos = remember(matchdaysGrouped, isLigaProfesional) {
+        isLigaProfesional && (matchdaysGrouped[17]?.size ?: 0) >= 8
+    }
+    val hasCompleteCuartos = remember(matchdaysGrouped, isLigaProfesional) {
+        isLigaProfesional && (matchdaysGrouped[18]?.size ?: 0) >= 4
+    }
+    val hasCompleteSemis = remember(matchdaysGrouped, isLigaProfesional) {
+        isLigaProfesional && (matchdaysGrouped[19]?.size ?: 0) >= 2
+    }
+    val hasCompleteFinal = remember(matchdaysGrouped, isLigaProfesional) {
+        isLigaProfesional && matchdaysGrouped[20]?.any {
+            !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(it.homeTeam) &&
+                !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(it.awayTeam)
+        } == true
+    }
+
+    val matchdaysList = remember(
+        matchdaysGrouped,
+        isCopaArgentina,
+        isLigaProfesional,
+        hasCompleteOctavos,
+        hasCompleteCuartos,
+        hasCompleteSemis,
+        hasCompleteFinal
+    ) {
         when {
             isCopaArgentina -> listOf(1, 2, 3, 4, 5, 6)
-            isLigaProfesional -> matchdaysGrouped.keys.filter { it in 1..20 }
+            isLigaProfesional -> matchdaysGrouped.keys.filter { md ->
+                when (md) {
+                    in 1..16 -> true
+                    17 -> hasCompleteOctavos
+                    18 -> hasCompleteCuartos
+                    19 -> hasCompleteSemis
+                    20 -> hasCompleteFinal
+                    else -> false
+                }
+            }
             else -> matchdaysGrouped.keys.toList()
         }
     }
-    val knockoutTabs = remember(isLigaProfesional, isLibertadores, isSudamericana, matchdaysList) {
+    val knockoutTabs = remember(
+        isLigaProfesional,
+        isLibertadores,
+        isSudamericana,
+        hasCompleteOctavos,
+        hasCompleteCuartos,
+        hasCompleteSemis,
+        hasCompleteFinal
+    ) {
         when {
             isLigaProfesional -> listOfNotNull(
-                if (17 !in matchdaysList) 101 to "OCTAVOS" else null,
-                if (18 !in matchdaysList) 102 to "CUARTOS" else null,
-                if (19 !in matchdaysList) 103 to "SEMIFINAL" else null,
-                if (20 !in matchdaysList) 104 to "FINAL" else null,
+                if (!hasCompleteOctavos) 101 to "OCTAVOS" else null,
+                if (!hasCompleteCuartos) 102 to "CUARTOS" else null,
+                if (!hasCompleteSemis) 103 to "SEMIFINAL" else null,
+                if (!hasCompleteFinal) 104 to "FINAL" else null,
                 105 to "COPAS Y FINALES"
             )
             isLibertadores || isSudamericana -> listOf(
