@@ -327,8 +327,8 @@ fun DailyMatchesScreen(
                         )
                     }
 
-                    val matchdayHeaderLabel = if (singleSelectedTourneyId == 5) {
-                        when (selectedMatchday) {
+                    val matchdayHeaderLabel = when (singleSelectedTourneyId) {
+                        5 -> when (selectedMatchday) {
                             17 -> "🏆 OCTAVOS DE FINAL"
                             18 -> "🏆 CUARTOS DE FINAL"
                             19 -> "🏆 SEMIFINALES"
@@ -336,8 +336,13 @@ fun DailyMatchesScreen(
                             105 -> "🏆 SUPERCOPA ARGENTINA"
                             else -> "⚽ FECHA $selectedMatchday DE 16"
                         }
-                    } else {
-                        "⚽ FECHA $selectedMatchday DE ${availableMatchdays.maxOrNull() ?: 0}"
+                        3 -> "🏆 ${getLibertadoresStageName(selectedMatchday!!).uppercase()}"
+                        4 -> "🏆 ${getSudamericanaStageName(selectedMatchday!!).uppercase()}"
+                        6 -> "🏆 ${getCopaArgentinaStageName(selectedMatchday!!).uppercase()}"
+                        8 -> "⚽ ${getPrimeraBStageName(selectedMatchday!!).uppercase()}"
+                        15 -> "⚽ ${getFederalAStageName(selectedMatchday!!).uppercase()}"
+                        33 -> "🏆 RECOPA SUDAMERICANA"
+                        else -> "⚽ FECHA $selectedMatchday DE ${availableMatchdays.maxOrNull() ?: 0}"
                     }
                     Text(
                         text = "$matchdayHeaderLabel (${displayedMatches.size} partidos)",
@@ -494,6 +499,7 @@ private fun resolveTournamentName(match: Match, context: android.content.Context
         contextText.contains("primera nacional") || contextText.contains("nacional b") -> "Primera Nacional"
         contextText.contains("federal a") -> "Torneo Federal A"
         contextText.contains("regional") || contextText.contains("trfa") -> "Torneo Regional Federal Amateur"
+        contextText.contains("recopa") || tId == 33 -> "Recopa CONMEBOL Sudamericana"
         contextText.contains("libertadores") -> "Copa CONMEBOL Libertadores"
         contextText.contains("sudamericana") -> "Copa CONMEBOL Sudamericana"
         contextText.contains("intercontinental") -> "Copa Intercontinental"

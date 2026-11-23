@@ -33,6 +33,7 @@ object MasterTeamCatalog {
         MasterTournament(2, "Eliminatorias Sudamericanas", "Eliminatorias", "CONMEBOL", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png"),
         MasterTournament(3, "Copa Conmebol Libertadores", "Libertadores", "CONMEBOL", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2683.png"),
         MasterTournament(4, "Copa Conmebol Sudamericana", "Sudamericana", "CONMEBOL", isActive = true, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/2684.png"),
+        MasterTournament(33, "Recopa Sudamericana", "Recopa Sudamericana", "CONMEBOL", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png"),
         MasterTournament(21, "Amistosos Conmebol", "Amistosos Conmebol", "CONMEBOL", isActive = false, logoUrl = "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png"),
 
         // FIFA

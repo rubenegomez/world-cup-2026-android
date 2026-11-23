@@ -941,6 +941,7 @@ fun VipStatsDialog(match: Match, onDismiss: () -> Unit) {
                                     30 -> "Juegos ODESUR"
                                     31 -> "Messi Cup"
                                     32 -> "Mundial Sub-20"
+                                    33 -> "Recopa Sudamericana"
                                     else -> "Torneo Oficial"
                                 }
 
@@ -1252,18 +1253,41 @@ fun parseEventString(eventStr: String, homeTeamName: String): ParsedEvent {
         }
         val startBracket = eventStr.indexOf('[')
         val endBracket = eventStr.indexOf(']')
-        val minute = if (startBracket != -1 && endBracket != -1) {
+        var minute = if (startBracket != -1 && endBracket != -1) {
             eventStr.substring(startBracket + 1, endBracket).replace("'", "").replace("\"", "").trim()
         } else ""
-        
-        val firstColon = eventStr.indexOf(':', endBracket.coerceAtLeast(0))
-        val team = if (endBracket != -1 && firstColon != -1) {
-            eventStr.substring(endBracket + 1, firstColon).trim()
-        } else ""
-        
-        val detail = if (firstColon != -1) {
+
+        val firstColon = if (endBracket != -1) {
+            eventStr.indexOf(':', endBracket)
+        } else {
+            eventStr.indexOf(':')
+        }
+
+        val team = when {
+            endBracket != -1 && firstColon != -1 -> eventStr.substring(endBracket + 1, firstColon).trim()
+            firstColon != -1 -> {
+                val prefix = eventStr.substring(0, firstColon)
+                    .replace(emojiMatch, "")
+                    .trim()
+                prefix.dropWhile { !it.isLetterOrDigit() }.trim()
+            }
+            else -> ""
+        }
+
+        var detail = if (firstColon != -1) {
             eventStr.substring(firstColon + 1).trim()
         } else eventStr
+
+        if (minute.isEmpty() && detail.endsWith(")")) {
+            val lastOpenParen = detail.lastIndexOf('(')
+            if (lastOpenParen != -1) {
+                val candidate = detail.substring(lastOpenParen + 1, detail.length - 1).trim()
+                if (candidate.any { it.isDigit() } && candidate.length <= 8) {
+                    minute = candidate.replace("'", "").replace("\"", "").trim()
+                    detail = detail.substring(0, lastOpenParen).trim()
+                }
+            }
+        }
         
         val tLow = team.lowercase().trim()
         val hLow = homeTeamName.lowercase().trim()

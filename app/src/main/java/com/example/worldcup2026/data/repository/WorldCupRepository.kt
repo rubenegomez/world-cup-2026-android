@@ -376,12 +376,18 @@ class WorldCupRepository(private val matchDao: MatchDao) {
                 }
                 // ----------------------------------------
                 
-                val vipStatsStr = if (liveMatch.homeFouls != null) {
-                    "fouls:${liveMatch.homeFouls},${liveMatch.awayFouls}|" +
-                    "corners:${liveMatch.homeCorners},${liveMatch.awayCorners}|" +
-                    "saves:${liveMatch.homeSaves},${liveMatch.awaySaves}|" +
-                    "yellow:${liveMatch.homeYellowCards},${liveMatch.awayYellowCards}|" +
-                    "red:${liveMatch.homeRedCards},${liveMatch.awayRedCards}|" +
+                val hasVipDetails = liveMatch.homeFouls != null || liveMatch.awayFouls != null ||
+                    liveMatch.homeCorners != null || liveMatch.awayCorners != null ||
+                    liveMatch.homeSaves != null || liveMatch.awaySaves != null ||
+                    liveMatch.homeYellowCards != null || liveMatch.awayYellowCards != null ||
+                    liveMatch.homeRedCards != null || liveMatch.awayRedCards != null ||
+                    !liveMatch.homePasses.isNullOrBlank() || !liveMatch.awayPasses.isNullOrBlank()
+                val vipStatsStr = if (hasVipDetails) {
+                    "fouls:${liveMatch.homeFouls ?: ""},${liveMatch.awayFouls ?: ""}|" +
+                    "corners:${liveMatch.homeCorners ?: ""},${liveMatch.awayCorners ?: ""}|" +
+                    "saves:${liveMatch.homeSaves ?: ""},${liveMatch.awaySaves ?: ""}|" +
+                    "yellow:${liveMatch.homeYellowCards ?: ""},${liveMatch.awayYellowCards ?: ""}|" +
+                    "red:${liveMatch.homeRedCards ?: ""},${liveMatch.awayRedCards ?: ""}|" +
                     "passes:${liveMatch.homePasses ?: ""},${liveMatch.awayPasses ?: ""}"
                 } else null
 

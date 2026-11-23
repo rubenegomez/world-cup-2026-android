@@ -780,16 +780,19 @@ fun MatchCard(
                         }
                     } else "Cuartos"
                 }
-                3, 4 -> { // Libertadores / Sudamericana
+                3 -> { // Copa Libertadores
                     val mDay = match.matchday
                     if (mDay != null && mDay > 0) {
                         when (mDay) {
-                            in 1..6 -> "Fecha $mDay"
-                            7, 8 -> "Octavos"
-                            9, 10 -> "Cuartos"
-                            11, 12 -> "Semifinal"
+                            1 -> "Fase Previa 1"
+                            2 -> "Fase Previa 2"
+                            3 -> "Fase Previa 3"
+                            in 4..9 -> "Grupos · F${mDay - 3}"
+                            10 -> "Octavos"
+                            11 -> "Cuartos"
+                            12 -> "Semifinal"
                             13 -> "Final"
-                            else -> "Cuartos"
+                            else -> getLibertadoresStageName(mDay)
                         }
                     } else if (!match.date.isNullOrBlank()) {
                         val dtStr = match.date.take(10)
@@ -801,6 +804,37 @@ fun MatchCard(
                             else -> "Final"
                         }
                     } else "Cuartos"
+                }
+                4 -> { // Copa Sudamericana
+                    val mDay = match.matchday
+                    if (mDay != null && mDay > 0) {
+                        when (mDay) {
+                            1 -> "Primera Fase"
+                            in 2..7 -> "Grupos · F${mDay - 1}"
+                            8 -> "Play-off Octavos"
+                            9 -> "Octavos"
+                            10 -> "Cuartos"
+                            11 -> "Semifinal"
+                            12 -> "Final"
+                            else -> getSudamericanaStageName(mDay)
+                        }
+                    } else if (!match.date.isNullOrBlank()) {
+                        val dtStr = match.date.take(10)
+                        when {
+                            dtStr <= "2026-06-30" -> "Fase de Grupos"
+                            dtStr <= "2026-08-31" -> "Octavos"
+                            dtStr <= "2026-09-30" -> "Cuartos"
+                            dtStr <= "2026-10-31" -> "Semifinal"
+                            else -> "Final"
+                        }
+                    } else "Cuartos"
+                }
+                33 -> { // Recopa Sudamericana
+                    when (match.matchday) {
+                        1 -> "Final · Ida"
+                        2 -> "Final · Vuelta"
+                        else -> "Final · Recopa"
+                    }
                 }
                 1 -> { // Mundial 2026
                     when (match.id) {
@@ -872,7 +906,7 @@ fun MatchCard(
                 }
                 8 -> { // Primera B Metropolitana
                     if (match.matchday != null && match.matchday > 0) {
-                        "Fecha ${match.matchday}"
+                        getPrimeraBStageName(match.matchday)
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
@@ -888,7 +922,7 @@ fun MatchCard(
                 }
                 15 -> { // Torneo Federal A
                     if (match.matchday != null && match.matchday > 0) {
-                        "Fecha ${match.matchday}"
+                        getFederalAStageName(match.matchday)
                     } else if (!match.date.isNullOrBlank() && match.date.length >= 10) {
                         val dtStr = match.date.substring(0, 10)
                         when {
@@ -935,6 +969,7 @@ fun MatchCard(
                         val isSupercopa = match.matchday == 105 || match.city?.contains("Supercopa", ignoreCase = true) == true || match.stadium?.contains("Supercopa", ignoreCase = true) == true
                         val cleanTournamentName = when {
                             isSupercopa -> "Supercopa Argentina"
+                            match.tournament_id == 33 || tournamentName.contains("Recopa", ignoreCase = true) -> "Recopa Sudamericana"
                             tournamentName.contains("B Metropolitana", ignoreCase = true) -> "B Metropolitana"
                             tournamentName.contains("Liga Profesional", ignoreCase = true) -> "Liga Profesional"
                             tournamentName.contains("Primera Nacional", ignoreCase = true) -> "Primera Nacional"

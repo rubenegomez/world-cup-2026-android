@@ -638,6 +638,7 @@ fun StandingsScreen(
                         teamsByGroup = teamsByGroup,
                         annualStandings = annualStandings ?: emptyList(),
                         allMatches = currentTournamentMatches,
+                        globalMatches = matches,
                         onMatchClick = onNavigateToMatch
                     )
                 }
@@ -837,10 +838,17 @@ fun StandingsScreen(
                             currentTournamentMatches.filter { (it.matchday ?: 0) in listOf(1, 2, 3, 10, 11, 12, 13) }
                         }
                     }
-                    val finalTitle = if (isSudam) {
-                        "🏆 FINAL ÚNICA: ATLÉTICO MINEIRO VS BOCA JUNIORS"
-                    } else {
-                        "🏆 FINAL ÚNICA: PALMEIRAS VS ESTUDIANTES DE LA PLATA"
+                    val finalMatch = remember(currentTournamentMatches, isSudam) {
+                        val finalMd = if (isSudam) 12 else 13
+                        currentTournamentMatches.firstOrNull { it.matchday == finalMd }
+                    }
+                    val champion = remember(finalMatch) {
+                        com.example.worldcup2026.data.util.KnockoutCalculator.getWinner(finalMatch)
+                    }
+                    val finalTitle = when {
+                        champion != null -> "🏆 CAMPEÓN: ${champion.name.uppercase()}"
+                        isSudam -> "🏆 FINAL ÚNICA: ATLÉTICO MINEIRO VS BOCA JUNIORS"
+                        else -> "🏆 FINAL ÚNICA: PALMEIRAS VS ESTUDIANTES DE LA PLATA"
                     }
                     val finalSubtitle = if (isSudam) {
                         "Sábado 21/11 · 19:30 hs · Final Única en Cancha Neutral · Primera Fase, Play-off de Octavos y Eliminatorias (Octavos a Final)."
@@ -876,6 +884,7 @@ fun StandingsScreen(
                             teamsByGroup = teamsByGroup,
                             annualStandings = emptyList(),
                             allMatches = matches,
+                            globalMatches = matches,
                             onMatchClick = onNavigateToMatch
                         )
                     }
@@ -3568,6 +3577,135 @@ fun getLigaProfesionalStageName(md: Int): String = when (md) {
 }
 
 @Composable
+fun ConmebolCopasYFinalesView(
+    allMatches: List<Match>,
+    onMatchClick: (Match) -> Unit = {}
+) {
+    val sudamFinalMatch = remember(allMatches) {
+        allMatches.filter { it.tournament_id == 4 && it.matchday == 12 }
+            .maxByOrNull { it.date ?: "" }
+    }
+    val sudamChampion = remember(sudamFinalMatch, allMatches) {
+        com.example.worldcup2026.data.util.KnockoutCalculator.getWinner(sudamFinalMatch)
+            ?: allMatches.flatMap { listOf(it.homeTeam, it.awayTeam) }
+                .firstOrNull { it.name.contains("Boca", ignoreCase = true) }
+            ?: Team(
+                id = 8305,
+                name = "Boca Juniors",
+                flagUrl = "https://a.espncdn.com/i/teamlogos/soccer/500/5.png",
+                group = "CONMEBOL"
+            )
+    }
+
+    val libFinalMatch = remember(allMatches) {
+        allMatches.filter { it.tournament_id == 3 && it.matchday == 13 }
+            .maxByOrNull { it.date ?: "" }
+    }
+    val libChampion = remember(libFinalMatch) {
+        com.example.worldcup2026.data.util.KnockoutCalculator.getWinner(libFinalMatch)
+    }
+    val libPendingSeed = remember(libFinalMatch) {
+        val h = libFinalMatch?.homeTeam
+        val a = libFinalMatch?.awayTeam
+        if (h != null && a != null &&
+            !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(h) &&
+            !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(a)
+        ) {
+            "Campeón Libertadores (${h.name} vs. ${a.name})"
+        } else {
+            "Campeón Copa Libertadores 2026 (A definir)"
+        }
+    }
+
+    val recopaMatches = remember(allMatches) {
+        allMatches.filter {
+            it.tournament_id == 33 ||
+                (it.tournament_id != 5 && (
+                    it.stadium?.contains("Recopa", ignoreCase = true) == true ||
+                    it.city?.contains("Recopa", ignoreCase = true) == true
+                ))
+        }.sortedBy { it.date ?: "" }
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "🏆 COPAS Y FINALES CONMEBOL",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD54F)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Supercopa continental oficial entre el campeón de la Copa Sudamericana y el campeón de la Copa Libertadores.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
+            }
+        }
+
+        if (recopaMatches.size >= 2) {
+            items(recopaMatches) { m ->
+                val legTitle = when (m.matchday) {
+                    1 -> "RECOPA SUDAMERICANA · IDA"
+                    2 -> "RECOPA SUDAMERICANA · VUELTA"
+                    else -> "RECOPA SUDAMERICANA"
+                }
+                val venueStr = listOfNotNull(
+                    m.stadium?.takeIf { it.isNotBlank() },
+                    m.city?.takeIf { it.isNotBlank() }
+                ).joinToString(" · ").ifBlank { "Sede por confirmar" }
+                CopaFinalCard(
+                    title = legTitle,
+                    subTitle = "Campeón Copa Sudamericana vs. Campeón Copa Libertadores",
+                    team1 = m.homeTeam,
+                    team1Seed = if (m.homeTeam.id == sudamChampion.id) "Campeón Copa Sudamericana 2026" else "Campeón Copa Libertadores 2026",
+                    team2 = m.awayTeam,
+                    team2Seed = if (m.awayTeam.id == sudamChampion.id) "Campeón Copa Sudamericana 2026" else "Campeón Copa Libertadores 2026",
+                    venue = venueStr,
+                    officialBadge = "Supercopa CONMEBOL",
+                    match = m,
+                    onClick = { onMatchClick(m) }
+                )
+            }
+        } else {
+            val singleRecopa = recopaMatches.firstOrNull()
+            val team1 = singleRecopa?.homeTeam?.takeIf { !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(it) } ?: sudamChampion
+            val team2 = singleRecopa?.awayTeam?.takeIf { !com.example.worldcup2026.data.util.KnockoutCalculator.isPlaceholderTeam(it) } ?: libChampion
+            val venueText = listOfNotNull(
+                singleRecopa?.stadium?.takeIf { it.isNotBlank() },
+                singleRecopa?.city?.takeIf { it.isNotBlank() }
+            ).joinToString(" · ").ifBlank { "Ida y Vuelta · Estadios de ambos campeones" }
+            item {
+                CopaFinalCard(
+                    title = "RECOPA SUDAMERICANA",
+                    subTitle = "Campeón Copa Sudamericana vs. Campeón Copa Libertadores",
+                    team1 = team1,
+                    team1Seed = "Campeón Copa Sudamericana 2026",
+                    team2 = team2,
+                    team2Seed = if (libChampion != null) "Campeón Copa Libertadores 2026" else libPendingSeed,
+                    venue = venueText,
+                    officialBadge = "Supercopa CONMEBOL",
+                    match = singleRecopa,
+                    onClick = { if (singleRecopa != null) onMatchClick(singleRecopa) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun TournamentFixtureView(
     matches: List<Match>,
     tournamentId: Int = 5,
@@ -3575,6 +3713,7 @@ fun TournamentFixtureView(
     teamsByGroup: Map<String, List<Team>> = emptyMap(),
     annualStandings: List<AnnualStandingDto> = emptyList(),
     allMatches: List<Match> = emptyList(),
+    globalMatches: List<Match> = allMatches,
     onMatchClick: (Match) -> Unit = {}
 ) {
     if (matches.isEmpty()) {
@@ -3629,16 +3768,20 @@ fun TournamentFixtureView(
             else -> matchdaysGrouped.keys.toList()
         }
     }
-    val knockoutTabs = remember(isLigaProfesional, matchdaysList) {
-        if (isLigaProfesional) {
-            listOfNotNull(
+    val knockoutTabs = remember(isLigaProfesional, isLibertadores, isSudamericana, matchdaysList) {
+        when {
+            isLigaProfesional -> listOfNotNull(
                 if (17 !in matchdaysList) 101 to "OCTAVOS" else null,
                 if (18 !in matchdaysList) 102 to "CUARTOS" else null,
                 if (19 !in matchdaysList) 103 to "SEMIFINAL" else null,
                 if (20 !in matchdaysList) 104 to "FINAL" else null,
                 105 to "COPAS Y FINALES"
             )
-        } else emptyList()
+            isLibertadores || isSudamericana -> listOf(
+                106 to "COPAS Y FINALES"
+            )
+            else -> emptyList()
+        }
     }
     
     // Auto-detectar la fecha actual o próxima más relevante según fecha real de calendario
@@ -3698,7 +3841,7 @@ fun TournamentFixtureView(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Selector horizontal de Fechas / Jornadas
-        if (matchdaysList.size > 1) {
+        if (matchdaysList.size > 1 || knockoutTabs.isNotEmpty()) {
             LazyRow(
                 state = listState,
                 modifier = Modifier
@@ -3788,6 +3931,11 @@ fun TournamentFixtureView(
                 matches = allMatches,
                 teamsByGroup = teamsByGroup,
                 annualStandings = annualStandings,
+                onMatchClick = onMatchClick
+            )
+        } else if (selectedMatchday == 106) {
+            ConmebolCopasYFinalesView(
+                allMatches = globalMatches,
                 onMatchClick = onMatchClick
             )
         } else {
