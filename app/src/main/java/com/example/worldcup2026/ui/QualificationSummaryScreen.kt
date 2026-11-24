@@ -199,9 +199,22 @@ private fun CupsQualificationContent(
 
         if (summary.libertadores_countries.isNotEmpty()) {
             item {
-                LibertadoresCountriesCard(
-                    year = summary.target_cups_year,
+                CupCountriesCard(
+                    title = "CLASIFICADOS POR PAÍS · LIBERTADORES ${summary.target_cups_year}",
+                    subtitle = "Las 10 asociaciones de Sudamérica · Tocá un país para ver sus equipos",
+                    accentColor = Color(0xFFFFD700),
                     countries = summary.libertadores_countries
+                )
+            }
+        }
+
+        if (summary.sudamericana_countries.isNotEmpty()) {
+            item {
+                CupCountriesCard(
+                    title = "CLASIFICADOS POR PAÍS · SUDAMERICANA ${summary.target_cups_year}",
+                    subtitle = "Las 10 asociaciones de Sudamérica · Incluye asegurados con opción a Libertadores",
+                    accentColor = Color(0xFF00B0FF),
+                    countries = summary.sudamericana_countries
                 )
             }
         }
@@ -575,32 +588,33 @@ private fun MovementSlotRow(slot: MovementSlotDto, accentColor: Color) {
 }
 
 @Composable
-private fun LibertadoresCountriesCard(
-    year: Int,
+private fun CupCountriesCard(
+    title: String,
+    subtitle: String,
+    accentColor: Color,
     countries: List<CountryQualificationDto>
 ) {
     var expandedCodes by remember { mutableStateOf(setOf<String>()) }
-    val gold = Color(0xFFFFD700)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, gold.copy(alpha = 0.35f))
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Public, contentDescription = null, tint = gold, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Public, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
-                        text = "CLASIFICADOS POR PAÍS · LIBERTADORES $year",
+                        text = title,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Black,
-                        color = gold
+                        color = accentColor
                     )
                     Text(
-                        text = "Las 10 asociaciones de Sudamérica · Tocá un país para ver sus equipos",
+                        text = subtitle,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                         fontSize = 10.sp
@@ -613,7 +627,7 @@ private fun LibertadoresCountriesCard(
 
             countries.forEachIndexed { index, country ->
                 val isExpanded = country.country_code in expandedCodes
-                CountryLibertadoresItem(
+                CountryCupItem(
                     country = country,
                     expanded = isExpanded,
                     onToggle = {
@@ -636,15 +650,35 @@ private fun LibertadoresCountriesCard(
 }
 
 @Composable
-private fun CountryLibertadoresItem(
+private fun CountryCupItem(
     country: CountryQualificationDto,
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
+    val conditionalCount = country.teams.count { it.status.equals("CONDITIONAL", ignoreCase = true) }
     val isComplete = country.confirmed_count >= country.total_slots
-    val pillColor = if (isComplete) Color(0xFF00E676) else Color(0xFFFFB300)
-    val confirmedWithLogos = country.teams.filter {
-        it.status.equals("CONFIRMED", ignoreCase = true) && it.logo_url.isNotBlank()
+    val pillColor = when {
+        isComplete -> Color(0xFF00E676)
+        country.confirmed_count == 0 && conditionalCount > 0 -> Color(0xFF00B0FF)
+        else -> Color(0xFFFFB300)
+    }
+    val pillText = when {
+        isComplete -> "${country.confirmed_count}/${country.total_slots} ✓"
+        country.confirmed_count == 0 && conditionalCount > 0 -> "$conditionalCount/${country.total_slots}*"
+        else -> "${country.confirmed_count}/${country.total_slots}"
+    }
+    val subtitleText = when {
+        isComplete -> "${country.confirmed_count} confirmados de ${country.total_slots} cupos · Completo"
+        country.confirmed_count > 0 && conditionalCount > 0 ->
+            "${country.confirmed_count} confirmados · $conditionalCount con opción a Libertadores (${country.total_slots} cupos)"
+        country.confirmed_count == 0 && conditionalCount > 0 ->
+            "$conditionalCount asegurados con opción a Libertadores (${country.total_slots} cupos)"
+        else -> "${country.confirmed_count} confirmados de ${country.total_slots} cupos"
+    }
+    val previewTeamsWithLogos = country.teams.filter {
+        (it.status.equals("CONFIRMED", ignoreCase = true) ||
+            it.status.equals("CONDITIONAL", ignoreCase = true)) &&
+            it.logo_url.isNotBlank()
     }
 
     Column(
@@ -680,19 +714,19 @@ private fun CountryLibertadoresItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${country.confirmed_count} confirmados de ${country.total_slots} cupos",
+                    text = subtitleText,
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = 10.sp,
                     color = if (isComplete) Color(0xFF00E676) else MaterialTheme.colorScheme.outline
                 )
             }
 
-            if (!expanded && confirmedWithLogos.isNotEmpty()) {
+            if (!expanded && previewTeamsWithLogos.isNotEmpty()) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    confirmedWithLogos.take(4).forEach { team ->
+                    previewTeamsWithLogos.take(4).forEach { team ->
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(team.logo_url)
@@ -713,7 +747,7 @@ private fun CountryLibertadoresItem(
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = if (isComplete) "${country.confirmed_count}/${country.total_slots} ✓" else "${country.confirmed_count}/${country.total_slots}",
+                    text = pillText,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     color = pillColor
@@ -749,9 +783,11 @@ private fun CountryLibertadoresItem(
 
 @Composable
 private fun CountryCupTeamRow(team: CountryCupTeamDto) {
-    val isConfirmed = team.status.equals("CONFIRMED", ignoreCase = true)
-    val badgeColor = if (isConfirmed) Color(0xFF00E676) else Color(0xFFFFB300)
-    val badgeLabel = if (isConfirmed) "CONFIRMADO" else "A DEFINIR"
+    val (badgeLabel, badgeColor) = when (team.status.uppercase()) {
+        "CONFIRMED" -> "CONFIRMADO" to Color(0xFF00E676)
+        "CONDITIONAL" -> "OPCIÓN LIB." to Color(0xFF00B0FF)
+        else -> "A DEFINIR" to Color(0xFFFFB300)
+    }
 
     Row(
         modifier = Modifier

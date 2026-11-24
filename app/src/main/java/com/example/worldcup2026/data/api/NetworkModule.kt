@@ -320,7 +320,8 @@ data class QualificationSummaryDto(
     val notes: List<String> = emptyList(),
     val annual_badges: List<AnnualBadgeDto> = emptyList(),
     val divisions: List<DivisionMovementDto> = emptyList(),
-    val libertadores_countries: List<CountryQualificationDto> = emptyList()
+    val libertadores_countries: List<CountryQualificationDto> = emptyList(),
+    val sudamericana_countries: List<CountryQualificationDto> = emptyList()
 )
 
 data class LiveMatchDto(
