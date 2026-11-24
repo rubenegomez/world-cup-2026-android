@@ -51,7 +51,7 @@ interface WorldCupApiService {
     @GET("api/tournaments/{id}/goleadores")
     suspend fun getGoleadores(@Path("id") tournamentId: Int): List<GoleadorDto>
 
-    @GET("api/qualification-summary")
+    @GET("api/tournaments/qualification-summary")
     suspend fun getQualificationSummary(): QualificationSummaryDto
 
     @retrofit2.http.POST("api/admin/match/update")
