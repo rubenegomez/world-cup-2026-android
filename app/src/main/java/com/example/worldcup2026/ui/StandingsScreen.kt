@@ -33,9 +33,11 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.worldcup2026.data.api.NetworkModule
+import com.example.worldcup2026.data.api.AnnualBadgeDto
 import com.example.worldcup2026.data.api.AnnualStandingDto
 import com.example.worldcup2026.data.api.DescensoStandingDto
 import com.example.worldcup2026.data.api.GoleadorDto
+import com.example.worldcup2026.data.api.QualificationSummaryDto
 import com.example.worldcup2026.data.model.Match
 import com.example.worldcup2026.data.model.Team
 import com.example.worldcup2026.data.model.isFutureMatch
@@ -356,6 +358,7 @@ fun StandingsScreen(
     var annualStandings by remember { mutableStateOf<List<AnnualStandingDto>?>(null) }
     var descensoStandings by remember { mutableStateOf<List<DescensoStandingDto>?>(null) }
     var goleadores by remember { mutableStateOf<List<GoleadorDto>?>(null) }
+    var qualificationSummary by remember { mutableStateOf<QualificationSummaryDto?>(null) }
 
     var isLoadingAnnual by remember { mutableStateOf(false) }
     var isLoadingDescenso by remember { mutableStateOf(false) }
@@ -505,7 +508,14 @@ fun StandingsScreen(
         when (currentTabTitle) {
             "TABLA ANUAL" -> {
                 isLoadingAnnual = true
-                try { annualStandings = NetworkModule.apiService.getAnnualStandings(tournamentId) }
+                try {
+                    annualStandings = NetworkModule.apiService.getAnnualStandings(tournamentId)
+                    qualificationSummary = try {
+                        NetworkModule.apiService.getQualificationSummary()
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
                 catch (e: Exception) { annualStandings = emptyList(); e.printStackTrace() }
                 finally { isLoadingAnnual = false }
             }
@@ -733,7 +743,8 @@ fun StandingsScreen(
                                 AnnualStandingsTable(
                                     standings = annualStandings ?: emptyList(), 
                                     descensoStandings = descensoStandings ?: emptyList(),
-                                    allMatches = currentTournamentMatches
+                                    allMatches = currentTournamentMatches,
+                                    qualificationSummary = qualificationSummary
                                 ) 
                             }
                         }
@@ -1773,7 +1784,8 @@ fun getAperturaPoints(teamName: String): Int {
 fun AnnualStandingsTable(
     standings: List<AnnualStandingDto>, 
     descensoStandings: List<DescensoStandingDto> = emptyList(),
-    allMatches: List<Match> = emptyList()
+    allMatches: List<Match> = emptyList(),
+    qualificationSummary: QualificationSummaryDto? = null
 ) {
     if (standings.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -1829,9 +1841,15 @@ fun AnnualStandingsTable(
 
         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
+        val badgesByName = remember(qualificationSummary) {
+            qualificationSummary?.annual_badges?.associateBy {
+                normalizeTeamName(it.team_name).lowercase().trim()
+            } ?: emptyMap()
+        }
+
         // Contenedor con scroll horizontal para mantener la alineación exacta sin comprimir
         Box(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
-            Column(modifier = Modifier.width(620.dp)) {
+            Column(modifier = Modifier.width(675.dp)) {
                 // Header de columnas
                 Row(
                     modifier = Modifier
@@ -1840,7 +1858,7 @@ fun AnnualStandingsTable(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("#", modifier = Modifier.width(32.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
-                    Text("EQUIPO", modifier = Modifier.width(150.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    Text("EQUIPO", modifier = Modifier.width(205.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                     Text("PTS", modifier = Modifier.width(38.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline, fontWeight = FontWeight.Bold)
                     Text("PJ", modifier = Modifier.width(32.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                     Text("GOLES", modifier = Modifier.width(52.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
@@ -1855,14 +1873,26 @@ fun AnnualStandingsTable(
 
                 adjustedStandings.forEachIndexed { index, dto ->
                     val pos = index + 1
+                    val teamBadge = badgesByName[normalizeTeamName(dto.team_name).lowercase().trim()]
+                        ?: qualificationSummary?.annual_badges?.firstOrNull {
+                            it.team_name.equals(dto.team_name, ignoreCase = true)
+                        }
                     
                     // Franjas de clasificación reglamentarias oficiales (borde izquierdo)
-                    val classificationColor = when (pos) {
-                        1 -> Color(0xFF00E676) // Verde fluo: Campeón / Libertadores 2027
-                        2, 3 -> Color(0xFFFFD600) // Amarillo: Libertadores
-                        in 4..9 -> Color(0xFF00B0FF) // Celeste: Sudamericana
-                        29, 30 -> Color(0xFFFF1744) // Rojo: Descenso
-                        else -> Color.Transparent
+                    val classificationColor = if (teamBadge != null) {
+                        try {
+                            Color(android.graphics.Color.parseColor(teamBadge.color_hex))
+                        } catch (_: Exception) {
+                            Color.Transparent
+                        }
+                    } else {
+                        when (pos) {
+                            1 -> Color(0xFF00E676) // Verde fluo: Campeón / Libertadores 2027
+                            2, 3 -> Color(0xFFFFD600) // Amarillo: Libertadores
+                            in 4..9 -> Color(0xFF00B0FF) // Celeste: Sudamericana
+                            29, 30 -> Color(0xFFFF1744) // Rojo: Descenso
+                            else -> Color.Transparent
+                        }
                     }
 
                     val formList = remember(dto.team_name, allMatches) {
@@ -1893,9 +1923,9 @@ fun AnnualStandingsTable(
                             color = Color.White
                         )
 
-                        // Escudo + Nombre
+                        // Escudo + Nombre + Badge
                         Row(
-                            modifier = Modifier.width(150.dp),
+                            modifier = Modifier.width(205.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (!dto.logo_url.isNullOrBlank()) {
@@ -1916,8 +1946,25 @@ fun AnnualStandingsTable(
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
-                                color = Color.White
+                                color = Color.White,
+                                modifier = Modifier.weight(1f)
                             )
+                            if (teamBadge != null && teamBadge.short_label.isNotBlank()) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(classificationColor.copy(alpha = 0.18f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                ) {
+                                    Text(
+                                        text = teamBadge.short_label,
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = classificationColor,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
                         }
 
                         // PTS
@@ -2036,7 +2083,7 @@ fun AnnualStandingsTable(
                 Box(modifier = Modifier.size(9.dp).background(Color(0xFF00E676), CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "1.°: Campeón de Liga. Clasificado a Copa Libertadores 2027 y Supercopa Internacional 2026",
+                    text = "Libertadores 2027 (Campeón / Cupo Extra CONMEBOL)",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.85f),
                     fontSize = 11.sp
@@ -2046,7 +2093,7 @@ fun AnnualStandingsTable(
                 Box(modifier = Modifier.size(9.dp).background(Color(0xFFFFD600), CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "2.°-3.°: CONMEBOL Libertadores",
+                    text = "CONMEBOL Libertadores (Tabla Anual · Grupos y Fase Previa 2)",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.85f),
                     fontSize = 11.sp
@@ -2056,7 +2103,7 @@ fun AnnualStandingsTable(
                 Box(modifier = Modifier.size(9.dp).background(Color(0xFF00B0FF), CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "4.°-9.°: CONMEBOL Sudamericana",
+                    text = "CONMEBOL Sudamericana (6 plazas Tabla Anual con corrimiento)",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.85f),
                     fontSize = 11.sp
@@ -2066,10 +2113,18 @@ fun AnnualStandingsTable(
                 Box(modifier = Modifier.size(9.dp).background(Color(0xFFFF1744), CircleShape))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "29.°-30.°: Descenso",
+                    text = "Descenso (Promedios 30.° + Último Tabla Anual no repetido)",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.85f),
                     fontSize = 11.sp
+                )
+            }
+            qualificationSummary?.liberated_spots?.forEach { spot ->
+                Text(
+                    text = "↻ $spot",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFFFFD54F),
+                    fontSize = 10.sp
                 )
             }
         }

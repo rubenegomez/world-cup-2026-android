@@ -56,6 +56,7 @@ fun SettingsContainer(
     onReplayTour: (() -> Unit)? = null
 ) {
     var showTeamsList by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -63,14 +64,37 @@ fun SettingsContainer(
         color = MaterialTheme.colorScheme.surface
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            if (showTeamsList) {
-                TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
-            } else {
-                SettingsMenuScreen(
-                    onShowTeamsList = { showTeamsList = true },
-                    worldCupViewModel = viewModel,
-                    onReplayTour = onReplayTour
-                )
+            when {
+                showTeamsList -> {
+                    TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
+                }
+                showAbout -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    ) {
+                        IconButton(onClick = { showAbout = false }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                        Text(
+                            text = "Acerca de Arena Prode",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Box(modifier = Modifier.weight(1f)) {
+                        AboutScreen()
+                    }
+                }
+                else -> {
+                    SettingsMenuScreen(
+                        onShowTeamsList = { showTeamsList = true },
+                        onShowAbout = { showAbout = true },
+                        worldCupViewModel = viewModel,
+                        onReplayTour = onReplayTour
+                    )
+                }
             }
         }
     }
@@ -83,6 +107,7 @@ fun SettingsDialog(
     onReplayTour: (() -> Unit)? = null
 ) {
     var showTeamsList by remember { mutableStateOf(false) }
+    var showAbout by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -106,29 +131,49 @@ fun SettingsDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (showTeamsList) "Equipos y Selecciones" else "Ajustes",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Black
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (showAbout) {
+                            IconButton(onClick = { showAbout = false }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                        Text(
+                            text = when {
+                                showTeamsList -> "Equipos y Selecciones"
+                                showAbout -> "Acerca de Arena Prode"
+                                else -> "Ajustes"
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Cerrar", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
                 Divider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 8.dp))
 
-                if (showTeamsList) {
-                    TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
-                } else {
-                    SettingsMenuScreen(
-                        onShowTeamsList = { showTeamsList = true },
-                        worldCupViewModel = viewModel,
-                        onReplayTour = {
-                            onDismiss()
-                            onReplayTour?.invoke()
+                when {
+                    showTeamsList -> {
+                        TeamsListScreen(viewModel = viewModel, onBack = { showTeamsList = false })
+                    }
+                    showAbout -> {
+                        Box(modifier = Modifier.weight(1f)) {
+                            AboutScreen()
                         }
-                    )
+                    }
+                    else -> {
+                        SettingsMenuScreen(
+                            onShowTeamsList = { showTeamsList = true },
+                            onShowAbout = { showAbout = true },
+                            worldCupViewModel = viewModel,
+                            onReplayTour = {
+                                onDismiss()
+                                onReplayTour?.invoke()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -138,6 +183,7 @@ fun SettingsDialog(
 @Composable
 fun SettingsMenuScreen(
     onShowTeamsList: () -> Unit,
+    onShowAbout: () -> Unit = {},
     viewModel: ProdeViewModel = viewModel(),
     worldCupViewModel: WorldCupViewModel,
     onReplayTour: (() -> Unit)? = null
@@ -527,6 +573,13 @@ fun SettingsMenuScreen(
                         )
                     }
                 }
+
+                SettingItem(
+                    icon = Icons.Default.Info,
+                    title = "Acerca de Arena Prode",
+                    subtitle = "Versión, créditos, licencias y compartir APK",
+                    onClick = onShowAbout
+                )
             }
         }
         item {

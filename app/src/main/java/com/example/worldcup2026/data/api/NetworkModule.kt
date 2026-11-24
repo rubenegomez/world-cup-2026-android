@@ -51,6 +51,9 @@ interface WorldCupApiService {
     @GET("api/tournaments/{id}/goleadores")
     suspend fun getGoleadores(@Path("id") tournamentId: Int): List<GoleadorDto>
 
+    @GET("api/qualification-summary")
+    suspend fun getQualificationSummary(): QualificationSummaryDto
+
     @retrofit2.http.POST("api/admin/match/update")
     suspend fun updateMatchAdmin(@retrofit2.http.Body req: AdminMatchUpdateRequest): retrofit2.Response<Unit>
 
@@ -252,6 +255,53 @@ data class GoleadorDto(
     val team_name: String,
     val logo_url: String,
     val goals: Int
+)
+
+data class CupSlotDto(
+    val slot_order: Int = 0,
+    val team_name: String = "",
+    val logo_url: String = "",
+    val stage: String = "",
+    val source: String = "",
+    val status: String = "PENDING",
+    val is_extra_conmebol: Boolean = false,
+    val detail: String = ""
+)
+
+data class AnnualBadgeDto(
+    val team_name: String = "",
+    val code: String = "",
+    val short_label: String = "",
+    val detail: String = "",
+    val color_hex: String = "#00E676"
+)
+
+data class MovementSlotDto(
+    val label: String = "",
+    val team_name: String = "",
+    val logo_url: String = "",
+    val status: String = "PENDING",
+    val detail: String = ""
+)
+
+data class DivisionMovementDto(
+    val id: String = "",
+    val name: String = "",
+    val subtitle: String = "",
+    val ascensos: List<MovementSlotDto> = emptyList(),
+    val descensos: List<MovementSlotDto> = emptyList()
+)
+
+data class QualificationSummaryDto(
+    val season: Int = 2026,
+    val target_cups_year: Int = 2027,
+    val updated_at: String = "",
+    val libertadores: List<CupSlotDto> = emptyList(),
+    val sudamericana: List<CupSlotDto> = emptyList(),
+    val liberated_spots: List<String> = emptyList(),
+    val notes: List<String> = emptyList(),
+    val annual_badges: List<AnnualBadgeDto> = emptyList(),
+    val divisions: List<DivisionMovementDto> = emptyList()
 )
 
 data class LiveMatchDto(

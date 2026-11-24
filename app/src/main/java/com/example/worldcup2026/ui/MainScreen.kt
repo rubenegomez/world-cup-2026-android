@@ -131,6 +131,7 @@ fun MainScreen(
             4 -> "Partidos del Día"
             5 -> "Posiciones"
             6 -> "Fixture"
+            7 -> "Clasificación y Ascensos"
             else -> "Desconocido"
         }
         com.example.worldcup2026.data.util.AnalyticsManager.logScreenView(screenName)
@@ -218,8 +219,8 @@ fun MainScreen(
                                 title = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         // Siempre mostramos el título general, excepto en vistas anidadas si quisiéramos botón atrás
-                                        if (selectedScreen == 4) {
-                                            IconButton(onClick = { selectedScreen = 0 }) {
+                                        if (selectedScreen == 4 || selectedScreen == 2) {
+                                            IconButton(onClick = { selectedScreen = if (selectedScreen == 2) 3 else 0 }) {
                                                 Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onSurface)
                                             }
                                         }
@@ -346,6 +347,20 @@ fun MainScreen(
                                     )
 
                                     NavigationBarItem(
+                                        selected = selectedScreen == 7,
+                                        onClick = { 
+                                            com.example.worldcup2026.data.util.SoundManager.playTic()
+                                            selectedScreen = 7 
+                                        },
+                                        icon = { Icon(Icons.Default.EmojiEvents, contentDescription = null) },
+                                        label = { Text("Clasif.", style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        )
+                                    )
+
+                                    NavigationBarItem(
                                         selected = selectedScreen == 1,
                                         onClick = { 
                                             com.example.worldcup2026.data.util.SoundManager.playTic()
@@ -353,19 +368,6 @@ fun MainScreen(
                                         },
                                         icon = { Icon(Icons.Default.Star, contentDescription = null) },
                                         label = { Text("Prode", style = MaterialTheme.typography.labelSmall) },
-                                        colors = NavigationBarItemDefaults.colors(
-                                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                        )
-                                    )
-                                    NavigationBarItem(
-                                        selected = selectedScreen == 2,
-                                        onClick = { 
-                                            com.example.worldcup2026.data.util.SoundManager.playTic()
-                                            selectedScreen = 2 
-                                        },
-                                        icon = { Icon(Icons.Default.Info, contentDescription = null) },
-                                        label = { Text("Acerca de", style = MaterialTheme.typography.labelSmall) },
                                         colors = NavigationBarItemDefaults.colors(
                                             selectedIconColor = MaterialTheme.colorScheme.primary,
                                             unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -495,6 +497,7 @@ fun MainScreen(
                                               }
                                           )
                                       }
+                                      7 -> QualificationSummaryScreen()
                                  }
 
                                   if (celebrationMatch != null) {
