@@ -511,6 +511,12 @@ fun DayFilteredFixture(
                         },
                         label = { 
                             val chipLabel = when {
+                                matches.isNotEmpty() && matches.all { it.tournament_id == 99 } -> when (mDay) {
+                                    1 -> "Final · Ida"
+                                    2 -> "Final · Vuelta"
+                                    3 -> "Desempate"
+                                    else -> "Partido $mDay"
+                                }
                                 isCopaArgentinaOnly -> getCopaArgentinaStageName(mDay)
                                 isFederalAOnly -> getFederalAStageName(mDay)
                                 isPrimeraBOnly -> getPrimeraBStageName(mDay)
@@ -936,6 +942,21 @@ fun MatchCard(
                     } else "Fecha 9"
                 }
                 27 -> "Final · Supercopa Internacional"
+                99 -> {
+                    val grp = match.homeTeam.group.ifBlank { match.awayTeam.group }.trim()
+                    val leg = when (match.matchday) {
+                        1 -> "Ida"
+                        2 -> "Vuelta"
+                        3 -> "Desempate"
+                        else -> ""
+                    }
+                    when {
+                        grp.isNotBlank() && leg.isNotBlank() -> "$grp · $leg"
+                        leg.isNotBlank() -> "Final · $leg"
+                        grp.isNotBlank() -> grp
+                        else -> ""
+                    }
+                }
                 13 -> { // Promocional Amateur
                     val isZonaB = match.homeTeam.group.contains("B", ignoreCase = true) || match.awayTeam.group.contains("B", ignoreCase = true)
                     if (match.matchday != null && match.matchday > 0) {

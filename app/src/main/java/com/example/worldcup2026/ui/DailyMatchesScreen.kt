@@ -342,6 +342,12 @@ fun DailyMatchesScreen(
                         8 -> "⚽ ${getPrimeraBStageName(selectedMatchday!!).uppercase()}"
                         15 -> "⚽ ${getFederalAStageName(selectedMatchday!!).uppercase()}"
                         33 -> "🏆 RECOPA SUDAMERICANA"
+                        99 -> when (selectedMatchday) {
+                            1 -> "🏆 FINAL · IDA"
+                            2 -> "🏆 FINAL · VUELTA"
+                            3 -> "🏆 FINAL · DESEMPATE"
+                            else -> "🏆 PARTIDO $selectedMatchday"
+                        }
                         else -> "⚽ FECHA $selectedMatchday DE ${availableMatchdays.maxOrNull() ?: 0}"
                     }
                     Text(

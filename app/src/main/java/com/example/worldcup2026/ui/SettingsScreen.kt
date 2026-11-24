@@ -1,6 +1,7 @@
 package com.example.worldcup2026.ui
 
 import android.app.Activity
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -193,16 +194,33 @@ fun SettingsMenuScreen(
     val authManager = remember { AuthManager(context) }
     val coroutineScope = rememberCoroutineScope()
     val currentEmail = com.example.worldcup2026.data.api.AuthManager.currentEmailState.value
+    val isAdminUser = remember(isAuthenticated, currentEmail) {
+        com.example.worldcup2026.data.api.AuthManager.isAdmin()
+    }
+    var selectedSettingsTab by remember { mutableIntStateOf(0) }
+    LaunchedEffect(isAdminUser) {
+        if (!isAdminUser) selectedSettingsTab = 0
+    }
     val user = remember(isAuthenticated, currentEmail) {
         com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            SettingSection(title = "Cuenta") {
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (isAdminUser) {
+            SettingsAdminTabBar(
+                selectedTab = selectedSettingsTab,
+                onSelect = { selectedSettingsTab = it }
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (!isAdminUser || selectedSettingsTab == 0) {
+                item {
+                    SettingSection(title = "Cuenta") {
                 if (isAuthenticated && user != null) {
                     // Profile Info
                     Row(
@@ -485,36 +503,6 @@ fun SettingsMenuScreen(
                 )
             }
         }
-        // Sección de Pruebas y Simulación (Exclusiva para Desarrollo / Administrador)
-        val isAdminUser = com.example.worldcup2026.data.api.AuthManager.isAdmin()
-        val isDevMode = isAdminUser
-
-        if (isDevMode) {
-            item {
-                SettingSection(title = "Pruebas y Simulación (Dev)") {
-                    SettingItem(
-                        icon = Icons.Default.PlayArrow,
-                        title = "⚽ Simular Gol en Vivo",
-                        subtitle = "Probar festejo animado transparente y sonido",
-                        onClick = {
-                            val testIntent = Intent("com.example.worldcup2026.MATCH_EVENT").apply {
-                                setPackage(context.packageName)
-                                putExtra("match_id", 9999)
-                                putExtra("eventType", "goal")
-                                putExtra("homeTeam", "Boca Juniors")
-                                putExtra("awayTeam", "River Plate")
-                                putExtra("homeScore", "1")
-                                putExtra("awayScore", "0")
-                                putExtra("scorer", "Edinson Cavani")
-                                putExtra("minute", "78")
-                                putExtra("homeFlag", "https://a.espncdn.com/i/teamlogos/soccer/500/5.png")
-                            }
-                            context.sendBroadcast(testIntent)
-                        }
-                    )
-                }
-            }
-        }
         item {
             SettingSection(title = "Actualizaciones y Versión") {
                 val sharedPrefs = remember { context.getSharedPreferences("world_cup_prefs", Context.MODE_PRIVATE) }
@@ -664,47 +652,112 @@ fun SettingsMenuScreen(
                 )
             }
         }
-        if (isAdminUser) {
-            item {
-                var showAdminScrapersDialog by remember { mutableStateOf(false) }
+            } else {
+                item {
+                    var showAdminScrapersDialog by remember { mutableStateOf(false) }
 
-                SettingSection(title = "Panel de Control Servidor (Admin)") {
-                    SettingItem(
-                        icon = Icons.Default.Build,
-                        title = "🛠️ Control de Scrapers y Servidor",
-                        subtitle = "Forzar escaneos y ver estado de los torneos",
-                        onClick = { showAdminScrapersDialog = true }
-                    )
+                    SettingSection(title = "Panel de Control Servidor") {
+                        SettingItem(
+                            icon = Icons.Default.Build,
+                            title = "🛠️ Control de Scrapers y Servidor",
+                            subtitle = "Forzar escaneos y ver estado de los torneos",
+                            onClick = { showAdminScrapersDialog = true }
+                        )
+                    }
+
+                    if (showAdminScrapersDialog) {
+                        AdminScrapersDialog(onDismiss = { showAdminScrapersDialog = false })
+                    }
                 }
 
-                if (showAdminScrapersDialog) {
-                    AdminScrapersDialog(onDismiss = { showAdminScrapersDialog = false })
+                item {
+                    SettingSection(title = "Pruebas y Simulación") {
+                        SettingItem(
+                            icon = Icons.Default.PlayArrow,
+                            title = "⚽ Simular Gol en Vivo",
+                            subtitle = "Probar festejo animado transparente y sonido",
+                            onClick = {
+                                val testIntent = Intent("com.example.worldcup2026.MATCH_EVENT").apply {
+                                    setPackage(context.packageName)
+                                    putExtra("match_id", 9999)
+                                    putExtra("eventType", "goal")
+                                    putExtra("homeTeam", "Boca Juniors")
+                                    putExtra("awayTeam", "River Plate")
+                                    putExtra("homeScore", "1")
+                                    putExtra("awayScore", "0")
+                                    putExtra("scorer", "Edinson Cavani")
+                                    putExtra("minute", "78")
+                                    putExtra("homeFlag", "https://a.espncdn.com/i/teamlogos/soccer/500/5.png")
+                                }
+                                context.sendBroadcast(testIntent)
+                            }
+                        )
+                    }
                 }
-            }
 
-            item {
-                SettingSection(title = "Publicidad y Anuncios (Admin)") {
-                    val adFreeUntil by worldCupViewModel.adFreeUntil
-                    val isAdFree = adFreeUntil > System.currentTimeMillis()
-                    val remainingMinutes = if (isAdFree) ((adFreeUntil - System.currentTimeMillis()) / 60000) + 1 else 0
-                    val activityContext = context as? Activity
+                item {
+                    SettingSection(title = "Publicidad y Anuncios") {
+                        val adFreeUntil by worldCupViewModel.adFreeUntil
+                        val isAdFree = adFreeUntil > System.currentTimeMillis()
+                        val remainingMinutes = if (isAdFree) ((adFreeUntil - System.currentTimeMillis()) / 60000) + 1 else 0
+                        val activityContext = context as? Activity
 
-                    SettingItem(
-                        icon = Icons.Default.Star,
-                        title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Obtener Modo Sin Anuncios",
-                        subtitle = if (isAdFree) "Toca para reactivar anuncios (Dev)" else "Toca para ver un anuncio y obtener +2 horas sin anuncios",
-                        onClick = {
-                            if (isAdFree) {
-                                worldCupViewModel.resetAdFreeTime()
-                                android.widget.Toast.makeText(context, "Publicidad reactivada para pruebas", android.widget.Toast.LENGTH_SHORT).show()
-                            } else {
-                                if (activityContext != null) {
-                                    AdManager.showRewardedAd(activityContext) {
-                                        worldCupViewModel.addAdFreeTime(2 * 60 * 60 * 1000L)
+                        SettingItem(
+                            icon = Icons.Default.Star,
+                            title = if (isAdFree) "Modo Sin Anuncios Activo ($remainingMinutes min restantes)" else "Obtener Modo Sin Anuncios",
+                            subtitle = if (isAdFree) "Toca para reactivar anuncios (Pruebas)" else "Toca para ver un anuncio y obtener +2 horas sin anuncios",
+                            onClick = {
+                                if (isAdFree) {
+                                    worldCupViewModel.resetAdFreeTime()
+                                    android.widget.Toast.makeText(context, "Publicidad reactivada para pruebas", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    if (activityContext != null) {
+                                        AdManager.showRewardedAd(activityContext) {
+                                            worldCupViewModel.addAdFreeTime(2 * 60 * 60 * 1000L)
+                                        }
                                     }
                                 }
                             }
-                        }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsAdminTabBar(
+    selectedTab: Int,
+    onSelect: (Int) -> Unit
+) {
+    val gold = Color(0xFFFFC107)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        listOf("Generales", "Administración").forEachIndexed { idx, label ->
+            val selected = idx == selectedTab
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onSelect(idx) },
+                shape = RoundedCornerShape(20.dp),
+                color = if (selected) gold.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.06f),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (selected) gold else Color.White.copy(alpha = 0.14f)
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 12.sp,
+                        fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                        color = if (selected) gold else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.78f)
                     )
                 }
             }

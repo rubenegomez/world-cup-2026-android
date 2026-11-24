@@ -284,12 +284,22 @@ data class MovementSlotDto(
     val detail: String = ""
 )
 
+data class DivisionParticipantDto(
+    val team_name: String = "",
+    val logo_url: String = "",
+    val origin: String = "STAY",
+    val detail: String = ""
+)
+
 data class DivisionMovementDto(
     val id: String = "",
     val name: String = "",
     val subtitle: String = "",
     val ascensos: List<MovementSlotDto> = emptyList(),
-    val descensos: List<MovementSlotDto> = emptyList()
+    val descensos: List<MovementSlotDto> = emptyList(),
+    val target_teams_2027: Int = 0,
+    val participants_note: String = "",
+    val participants_2027: List<DivisionParticipantDto> = emptyList()
 )
 
 data class CountryCupTeamDto(

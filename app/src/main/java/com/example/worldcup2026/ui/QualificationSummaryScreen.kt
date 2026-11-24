@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +37,7 @@ import com.example.worldcup2026.data.api.CountryCupTeamDto
 import com.example.worldcup2026.data.api.CountryQualificationDto
 import com.example.worldcup2026.data.api.CupSlotDto
 import com.example.worldcup2026.data.api.DivisionMovementDto
+import com.example.worldcup2026.data.api.DivisionParticipantDto
 import com.example.worldcup2026.data.api.MovementSlotDto
 import com.example.worldcup2026.data.api.NetworkModule
 import com.example.worldcup2026.data.api.QualificationSummaryDto
@@ -133,132 +136,155 @@ private fun CupsQualificationContent(
     summary: QualificationSummaryDto,
     onRefresh: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            CupSectionCard(
-                title = "CONMEBOL LIBERTADORES ${summary.target_cups_year}",
-                subtitle = "Cupos argentinos · Campeones + Tabla Anual con corrimiento automático",
-                accentColor = Color(0xFF00E676),
-                slots = summary.libertadores,
-                onRefresh = onRefresh
-            )
-        }
+    var selectedSubTab by remember { mutableIntStateOf(0) }
 
-        if (summary.liberated_spots.isNotEmpty() || summary.notes.isNotEmpty()) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, Color(0xFFFFB300).copy(alpha = 0.35f))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "CUPOS LIBERADOS Y CORRIMIENTOS",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFFFFB300)
-                            )
-                        }
-                        summary.liberated_spots.forEach { msg ->
-                            Text(
-                                text = "• $msg",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.9f),
-                                fontSize = 12.sp
-                            )
-                        }
-                        summary.notes.forEach { note ->
-                            Text(
-                                text = "• $note",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.78f),
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-                }
-            }
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        SubFilterPillBar(
+            options = listOf("Argentina", "Libertadores", "Sudamericana"),
+            selectedIndex = selectedSubTab,
+            accentColor = when (selectedSubTab) {
+                1 -> Color(0xFFFFD700)
+                2 -> Color(0xFF00B0FF)
+                else -> Color(0xFF00E676)
+            },
+            onSelect = { selectedSubTab = it }
+        )
 
-        item {
-            CupSectionCard(
-                title = "CONMEBOL SUDAMERICANA ${summary.target_cups_year}",
-                subtitle = "6 plazas por Tabla Anual (descontando clasificados a Libertadores y descendidos)",
-                accentColor = Color(0xFF00B0FF),
-                slots = summary.sudamericana
-            )
-        }
-
-        if (summary.libertadores_countries.isNotEmpty()) {
-            item {
-                CupCountriesCard(
-                    title = "CLASIFICADOS POR PAÍS · LIBERTADORES ${summary.target_cups_year}",
-                    subtitle = "Las 10 asociaciones de Sudamérica · Tocá un país para ver sus equipos",
-                    accentColor = Color(0xFFFFD700),
-                    countries = summary.libertadores_countries
-                )
-            }
-        }
-
-        if (summary.sudamericana_countries.isNotEmpty()) {
-            item {
-                CupCountriesCard(
-                    title = "CLASIFICADOS POR PAÍS · SUDAMERICANA ${summary.target_cups_year}",
-                    subtitle = "Las 10 asociaciones de Sudamérica · Incluye asegurados con opción a Libertadores",
-                    accentColor = Color(0xFF00B0FF),
-                    countries = summary.sudamericana_countries
-                )
-            }
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-            ) {
-                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "REGLAMENTO DE CLASIFICACIÓN",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFFFFD700)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            when (selectedSubTab) {
+                0 -> {
+                    item {
+                        CupSectionCard(
+                            title = "CONMEBOL LIBERTADORES ${summary.target_cups_year}",
+                            subtitle = "Cupos argentinos · Campeones + Tabla Anual con corrimiento automático",
+                            accentColor = Color(0xFF00E676),
+                            slots = summary.libertadores,
+                            onRefresh = onRefresh
                         )
                     }
-                    Text(
-                        text = "• El campeón de Libertadores y el campeón de Sudamericana obtienen plaza directa (cupo extra CONMEBOL) a la fase de grupos de la Libertadores siguiente.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        text = "• Si un campeón argentino ya ocupa zona de copas en la Tabla Anual, libera su cupo al siguiente equipo mejor ubicado.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 11.sp
-                    )
-                    Text(
-                        text = "• Si el campeón de Copa Argentina ya está clasificado a Libertadores, el cupo pasa al subcampeón (o a Tabla Anual si ambos ya clasificaron).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 11.sp
-                    )
+
+                    if (summary.liberated_spots.isNotEmpty() || summary.notes.isNotEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = BorderStroke(1.dp, Color(0xFFFFB300).copy(alpha = 0.35f))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.SwapHoriz, contentDescription = null, tint = Color(0xFFFFB300), modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "CUPOS LIBERADOS Y CORRIMIENTOS",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFFFFB300)
+                                        )
+                                    }
+                                    summary.liberated_spots.forEach { msg ->
+                                        Text(
+                                            text = "• $msg",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.9f),
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                    summary.notes.forEach { note ->
+                                        Text(
+                                            text = "• $note",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.White.copy(alpha = 0.78f),
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item {
+                        CupSectionCard(
+                            title = "CONMEBOL SUDAMERICANA ${summary.target_cups_year}",
+                            subtitle = "6 plazas por Tabla Anual (descontando clasificados a Libertadores y descendidos)",
+                            accentColor = Color(0xFF00B0FF),
+                            slots = summary.sudamericana
+                        )
+                    }
+
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Info, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "REGLAMENTO DE CLASIFICACIÓN",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFFFD700)
+                                    )
+                                }
+                                Text(
+                                    text = "• El campeón de Libertadores y el campeón de Sudamericana obtienen plaza directa (cupo extra CONMEBOL) a la fase de grupos de la Libertadores siguiente.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = "• Si un campeón argentino ya ocupa zona de copas en la Tabla Anual, libera su cupo al siguiente equipo mejor ubicado.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = "• Si el campeón de Copa Argentina ya está clasificado a Libertadores, el cupo pasa al subcampeón (o a Tabla Anual si ambos ya clasificaron).",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                    }
+                }
+                1 -> {
+                    if (summary.libertadores_countries.isNotEmpty()) {
+                        item {
+                            CupCountriesCard(
+                                title = "CLASIFICADOS POR PAÍS · LIBERTADORES ${summary.target_cups_year}",
+                                subtitle = "Las 10 asociaciones de Sudamérica · Tocá un país para ver sus equipos",
+                                accentColor = Color(0xFFFFD700),
+                                countries = summary.libertadores_countries,
+                                onRefresh = onRefresh
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    if (summary.sudamericana_countries.isNotEmpty()) {
+                        item {
+                            CupCountriesCard(
+                                title = "CLASIFICADOS POR PAÍS · SUDAMERICANA ${summary.target_cups_year}",
+                                subtitle = "Las 10 asociaciones de Sudamérica · Incluye asegurados con opción a Libertadores",
+                                accentColor = Color(0xFF00B0FF),
+                                countries = summary.sudamericana_countries,
+                                onRefresh = onRefresh
+                            )
+                        }
+                    }
                 }
             }
-        }
 
-        item { Spacer(modifier = Modifier.height(60.dp)) }
+            item { Spacer(modifier = Modifier.height(60.dp)) }
+        }
     }
 }
 
@@ -427,60 +453,103 @@ private fun DivisionsMovementContent(
     summary: QualificationSummaryDto,
     onRefresh: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "PIRÁMIDE AFA · TEMPORADA ${summary.season}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFFFFD700)
-                )
-                IconButton(onClick = onRefresh, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+    var selectedSubTab by remember { mutableIntStateOf(0) }
+    val filterIds = listOf("", "lpf", "primera_nacional", "federal_a", "primera_b")
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        SubFilterPillBar(
+            options = listOf("Resumen", "Liga Profesional", "Primera Nacional", "Federal A", "Primera B"),
+            selectedIndex = selectedSubTab,
+            accentColor = Color(0xFFFFD700),
+            onSelect = { selectedSubTab = it }
+        )
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (selectedSubTab == 0) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "PIRÁMIDE AFA · TEMPORADA ${summary.season}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFFFD700)
+                        )
+                        IconButton(onClick = onRefresh, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+
+                summary.divisions.forEach { division ->
+                    item(key = division.id) {
+                        DivisionMovementCard(division = division)
+                    }
+                }
+            } else {
+                val targetId = filterIds.getOrElse(selectedSubTab) { "" }
+                val selectedDiv = summary.divisions.firstOrNull { it.id == targetId }
+                if (selectedDiv != null) {
+                    item(key = "${selectedDiv.id}_moves") {
+                        DivisionMovementCard(division = selectedDiv, onRefresh = onRefresh)
+                    }
+                    if (selectedDiv.participants_2027.isNotEmpty()) {
+                        item(key = "${selectedDiv.id}_p2027") {
+                            DivisionParticipants2027Card(division = selectedDiv, year = summary.target_cups_year)
+                        }
+                    }
                 }
             }
-        }
 
-        summary.divisions.forEach { division ->
-            item(key = division.id) {
-                DivisionMovementCard(division = division)
-            }
+            item { Spacer(modifier = Modifier.height(60.dp)) }
         }
-
-        item { Spacer(modifier = Modifier.height(60.dp)) }
     }
 }
 
 @Composable
-private fun DivisionMovementCard(division: DivisionMovementDto) {
+private fun DivisionMovementCard(
+    division: DivisionMovementDto,
+    onRefresh: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = division.name,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Black,
-                color = Color.White
-            )
-            if (division.subtitle.isNotBlank()) {
-                Text(
-                    text = division.subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    fontSize = 10.sp
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = division.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    if (division.subtitle.isNotBlank()) {
+                        Text(
+                            text = division.subtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                if (onRefresh != null) {
+                    IconButton(onClick = onRefresh, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+                    }
+                }
             }
 
             if (division.ascensos.isNotEmpty()) {
@@ -592,7 +661,8 @@ private fun CupCountriesCard(
     title: String,
     subtitle: String,
     accentColor: Color,
-    countries: List<CountryQualificationDto>
+    countries: List<CountryQualificationDto>,
+    onRefresh: (() -> Unit)? = null
 ) {
     var expandedCodes by remember { mutableStateOf(setOf<String>()) }
 
@@ -603,22 +673,33 @@ private fun CupCountriesCard(
         border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Public, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Black,
-                        color = accentColor
-                    )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                        fontSize = 10.sp
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.Public, contentDescription = null, tint = accentColor, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = accentColor
+                        )
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                if (onRefresh != null) {
+                    IconButton(onClick = onRefresh, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
+                    }
                 }
             }
 
@@ -846,6 +927,228 @@ private fun CountryCupTeamRow(team: CountryCupTeamDto) {
         Box(
             modifier = Modifier
                 .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(5.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = badgeLabel,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Black,
+                color = badgeColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubFilterPillBar(
+    options: List<String>,
+    selectedIndex: Int,
+    accentColor: Color,
+    onSelect: (Int) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        itemsIndexed(options) { idx, title ->
+            val selected = idx == selectedIndex
+            val bgColor = if (selected) accentColor.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.06f)
+            val borderColor = if (selected) accentColor else Color.White.copy(alpha = 0.14f)
+            val textColor = if (selected) accentColor else Color.White.copy(alpha = 0.78f)
+            Surface(
+                modifier = Modifier.clickable { onSelect(idx) },
+                shape = RoundedCornerShape(20.dp),
+                color = bgColor,
+                border = BorderStroke(1.dp, borderColor)
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 11.sp,
+                    fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                    color = textColor,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DivisionParticipants2027Card(
+    division: DivisionMovementDto,
+    year: Int
+) {
+    val gold = Color(0xFFFFD700)
+    val promotedCnt = division.participants_2027.count { it.origin.equals("PROMOTED", ignoreCase = true) }
+    val relegatedCnt = division.participants_2027.count { it.origin.equals("RELEGATED", ignoreCase = true) }
+    val pendingCnt = division.participants_2027.count { it.origin.equals("PENDING", ignoreCase = true) }
+    val stayCnt = division.participants_2027.count { it.origin.equals("STAY", ignoreCase = true) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, gold.copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "EQUIPOS TEMPORADA $year",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = gold
+                    )
+                    if (division.participants_note.isNotBlank()) {
+                        Text(
+                            text = division.participants_note,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+                if (division.target_teams_2027 > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(gold.copy(alpha = 0.16f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "${division.target_teams_2027} clubes",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            color = gold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (promotedCnt > 0) {
+                    SummaryOriginChip(label = "$promotedCnt ascend.", color = Color(0xFF00E676))
+                }
+                if (relegatedCnt > 0) {
+                    SummaryOriginChip(label = "$relegatedCnt descend.", color = Color(0xFFFF5252))
+                }
+                if (pendingCnt > 0) {
+                    SummaryOriginChip(label = "$pendingCnt a definir", color = Color(0xFFFFB300))
+                }
+                if (stayCnt > 0) {
+                    SummaryOriginChip(label = "$stayCnt siguen", color = Color(0xFF90A4AE))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+            Spacer(modifier = Modifier.height(4.dp))
+
+            division.participants_2027.forEach { participant ->
+                DivisionParticipantRow(participant = participant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryOriginChip(label: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .background(color.copy(alpha = 0.14f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 7.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
+
+@Composable
+private fun DivisionParticipantRow(participant: DivisionParticipantDto) {
+    val (badgeLabel, badgeColor) = when (participant.origin.uppercase()) {
+        "PROMOTED" -> "ASCENDIÓ" to Color(0xFF00E676)
+        "RELEGATED" -> "DESCENDIÓ" to Color(0xFFFF5252)
+        "PENDING" -> "A DEFINIR" to Color(0xFFFFB300)
+        else -> "SIGUE" to Color(0xFF90A4AE)
+    }
+    val rowBg = if (participant.origin.equals("STAY", ignoreCase = true)) {
+        Color.White.copy(alpha = 0.03f)
+    } else {
+        badgeColor.copy(alpha = 0.07f)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .background(rowBg, RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (participant.logo_url.isNotBlank()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(participant.logo_url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = participant.team_name,
+                modifier = Modifier.size(22.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            val initial = participant.team_name.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "?"
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(badgeColor.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = initial,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = badgeColor
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = participant.team_name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (participant.detail.isNotBlank()) {
+                Text(
+                    text = participant.detail,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    fontSize = 10.sp
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(6.dp))
+        Box(
+            modifier = Modifier
+                .background(badgeColor.copy(alpha = 0.16f), RoundedCornerShape(5.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
             Text(
