@@ -2,6 +2,7 @@ package com.example.worldcup2026.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -10,7 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
@@ -27,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.worldcup2026.data.api.CountryCupTeamDto
+import com.example.worldcup2026.data.api.CountryQualificationDto
 import com.example.worldcup2026.data.api.CupSlotDto
 import com.example.worldcup2026.data.api.DivisionMovementDto
 import com.example.worldcup2026.data.api.MovementSlotDto
@@ -189,6 +195,15 @@ private fun CupsQualificationContent(
                 accentColor = Color(0xFF00B0FF),
                 slots = summary.sudamericana
             )
+        }
+
+        if (summary.libertadores_countries.isNotEmpty()) {
+            item {
+                LibertadoresCountriesCard(
+                    year = summary.target_cups_year,
+                    countries = summary.libertadores_countries
+                )
+            }
         }
 
         item {
@@ -552,6 +567,254 @@ private fun MovementSlotRow(slot: MovementSlotDto, accentColor: Color) {
             Text(
                 text = badgeText,
                 fontSize = 9.sp,
+                fontWeight = FontWeight.Black,
+                color = badgeColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun LibertadoresCountriesCard(
+    year: Int,
+    countries: List<CountryQualificationDto>
+) {
+    var expandedCodes by remember { mutableStateOf(setOf<String>()) }
+    val gold = Color(0xFFFFD700)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, gold.copy(alpha = 0.35f))
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Public, contentDescription = null, tint = gold, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Column {
+                    Text(
+                        text = "CLASIFICADOS POR PAÍS · LIBERTADORES $year",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = gold
+                    )
+                    Text(
+                        text = "Las 10 asociaciones de Sudamérica · Tocá un país para ver sus equipos",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+            countries.forEachIndexed { index, country ->
+                val isExpanded = country.country_code in expandedCodes
+                CountryLibertadoresItem(
+                    country = country,
+                    expanded = isExpanded,
+                    onToggle = {
+                        expandedCodes = if (isExpanded) {
+                            expandedCodes - country.country_code
+                        } else {
+                            expandedCodes + country.country_code
+                        }
+                    }
+                )
+                if (index < countries.size - 1) {
+                    HorizontalDivider(
+                        thickness = 0.3.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CountryLibertadoresItem(
+    country: CountryQualificationDto,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    val isComplete = country.confirmed_count >= country.total_slots
+    val pillColor = if (isComplete) Color(0xFF00E676) else Color(0xFFFFB300)
+    val confirmedWithLogos = country.teams.filter {
+        it.status.equals("CONFIRMED", ignoreCase = true) && it.logo_url.isNotBlank()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
+            .padding(vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (country.flag_url.isNotBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(country.flag_url)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = country.country_name,
+                    modifier = Modifier.size(width = 24.dp, height = 17.dp).clip(RoundedCornerShape(3.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = country.country_name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${country.confirmed_count} confirmados de ${country.total_slots} cupos",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    color = if (isComplete) Color(0xFF00E676) else MaterialTheme.colorScheme.outline
+                )
+            }
+
+            if (!expanded && confirmedWithLogos.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    confirmedWithLogos.take(4).forEach { team ->
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(team.logo_url)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = team.team_name,
+                            modifier = Modifier.size(18.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+
+            Box(
+                modifier = Modifier
+                    .background(pillColor.copy(alpha = 0.16f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = if (isComplete) "${country.confirmed_count}/${country.total_slots} ✓" else "${country.confirmed_count}/${country.total_slots}",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = pillColor
+                )
+            }
+
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        if (expanded) {
+            Spacer(modifier = Modifier.height(6.dp))
+            if (country.note.isNotBlank()) {
+                Text(
+                    text = "• ${country.note}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF00B0FF),
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+            country.teams.forEach { team ->
+                CountryCupTeamRow(team = team)
+            }
+        }
+    }
+}
+
+@Composable
+private fun CountryCupTeamRow(team: CountryCupTeamDto) {
+    val isConfirmed = team.status.equals("CONFIRMED", ignoreCase = true)
+    val badgeColor = if (isConfirmed) Color(0xFF00E676) else Color(0xFFFFB300)
+    val badgeLabel = if (isConfirmed) "CONFIRMADO" else "A DEFINIR"
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (team.logo_url.isNotBlank()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(team.logo_url)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = team.team_name,
+                modifier = Modifier.size(22.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = badgeColor, modifier = Modifier.size(12.dp))
+            }
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = team.team_name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            val routeText = buildString {
+                append(team.source)
+                if (team.stage.isNotBlank()) {
+                    append(" · ")
+                    append(team.stage)
+                }
+            }
+            Text(
+                text = routeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+                fontSize = 10.sp
+            )
+        }
+        Spacer(modifier = Modifier.width(6.dp))
+        Box(
+            modifier = Modifier
+                .background(badgeColor.copy(alpha = 0.15f), RoundedCornerShape(5.dp))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = badgeLabel,
+                fontSize = 8.sp,
                 fontWeight = FontWeight.Black,
                 color = badgeColor
             )

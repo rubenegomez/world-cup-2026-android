@@ -292,6 +292,24 @@ data class DivisionMovementDto(
     val descensos: List<MovementSlotDto> = emptyList()
 )
 
+data class CountryCupTeamDto(
+    val team_name: String = "",
+    val logo_url: String = "",
+    val source: String = "",
+    val stage: String = "",
+    val status: String = "CONFIRMED"
+)
+
+data class CountryQualificationDto(
+    val country_code: String = "",
+    val country_name: String = "",
+    val flag_url: String = "",
+    val total_slots: Int = 4,
+    val confirmed_count: Int = 0,
+    val note: String = "",
+    val teams: List<CountryCupTeamDto> = emptyList()
+)
+
 data class QualificationSummaryDto(
     val season: Int = 2026,
     val target_cups_year: Int = 2027,
@@ -301,7 +319,8 @@ data class QualificationSummaryDto(
     val liberated_spots: List<String> = emptyList(),
     val notes: List<String> = emptyList(),
     val annual_badges: List<AnnualBadgeDto> = emptyList(),
-    val divisions: List<DivisionMovementDto> = emptyList()
+    val divisions: List<DivisionMovementDto> = emptyList(),
+    val libertadores_countries: List<CountryQualificationDto> = emptyList()
 )
 
 data class LiveMatchDto(
