@@ -260,19 +260,7 @@ class WorldCupViewModel(application: Application) : AndroidViewModel(application
                             isMandatory = obj.optBoolean("isMandatory", false)
                         )
                         
-                        val prefs = getApplication<Application>().getSharedPreferences("world_cup_prefs", android.content.Context.MODE_PRIVATE)
-                        val isAutoUpdate = prefs.getBoolean("auto_update_enabled", true)
-                        
                         _appUpdateInfo.value = update
-                        
-                        // Si está en automático, dispara la descarga silenciosa
-                        if (isAutoUpdate) {
-                            try {
-                                openDownloadUrlInChromeOrFallback(getApplication(), fullUrl)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
                     }
                 }
             } catch (e: Exception) {
